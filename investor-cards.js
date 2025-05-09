@@ -3459,3 +3459,159 @@ window.addEventListener('load', function() {
         }
     }
 });
+
+/**
+ * إصلاح بسيط للانتقال بين الصفحات - ضعه في نهاية صفحتك
+ */
+
+(function() {
+    // انتظر تحميل الصفحة
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('جاري إصلاح مشكلة الصفحات البيضاء...');
+        
+        // تعريف أبسط لدالة showPage
+        window.showPage = function(pageId) {
+            console.log('الانتقال إلى الصفحة:', pageId);
+            
+            // إخفاء جميع الصفحات
+            var pages = document.querySelectorAll('.page');
+            for (var i = 0; i < pages.length; i++) {
+                pages[i].style.display = 'none';
+            }
+            
+            // إلغاء تنشيط جميع عناصر القائمة
+            var menuItems = document.querySelectorAll('.menu-item');
+            for (var i = 0; i < menuItems.length; i++) {
+                menuItems[i].classList.remove('active');
+            }
+            
+            // عرض الصفحة المطلوبة
+            var page = document.getElementById(pageId);
+            if (page) {
+                page.style.display = 'block';
+                
+                // تنشيط عنصر القائمة المناسب
+                var menuItem = document.querySelector('a[href="#' + pageId.replace('-page', '') + '"]');
+                if (menuItem) {
+                    menuItem.classList.add('active');
+                }
+                
+                // تحديث المحتوى بناءً على الصفحة
+                if (typeof InvestorCardSystem !== 'undefined') {
+                    if (pageId === 'investor-cards-page') {
+                        InvestorCardSystem.renderCards('all');
+                    } else if (pageId === 'active-cards-page') {
+                        InvestorCardSystem.renderCards('active');
+                    } else if (pageId === 'expired-cards-page') {
+                        InvestorCardSystem.renderCards('expired');
+                    } else if (pageId === 'new-card-page') {
+                        if (typeof InvestorCardSystem.updateInvestorSelect === 'function') {
+                            InvestorCardSystem.updateInvestorSelect();
+                        }
+                        if (typeof InvestorCardSystem.updateCardPreview === 'function') {
+                            InvestorCardSystem.updateCardPreview();
+                        }
+                    } else if (pageId === 'barcode-scanner-page') {
+                        if (typeof InvestorCardSystem.initBarcodeScanner === 'function') {
+                            InvestorCardSystem.initBarcodeScanner();
+                        }
+                    } else if (pageId === 'card-stats-page') {
+                        if (typeof InvestorCardSystem.renderCardStats === 'function') {
+                            InvestorCardSystem.renderCardStats();
+                        }
+                    }
+                }
+            } else {
+                console.error('الصفحة غير موجودة:', pageId);
+            }
+        };
+        
+        // إصلاح جميع عناصر التنقل
+        var menuItems = document.querySelectorAll('.menu-item');
+        for (var i = 0; i < menuItems.length; i++) {
+            var item = menuItems[i];
+            var href = item.getAttribute('href');
+            if (href && href.startsWith('#')) {
+                var pageId = href.substring(1) + '-page';
+                
+                // إعادة تعريف event listener للنقر
+                item.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    var pageId = this.getAttribute('href').substring(1) + '-page';
+                    showPage(pageId);
+                });
+            }
+        }
+        
+        // إصلاح الأزرار
+        var buttons = document.querySelectorAll('button[onclick*="showPage"]');
+        for (var i = 0; i < buttons.length; i++) {
+            var button = buttons[i];
+            var onclickValue = button.getAttribute('onclick');
+            var pageIdMatch = onclickValue.match(/showPage\(['"]([^'"]+)['"]\)/);
+            
+            if (pageIdMatch && pageIdMatch[1]) {
+                var pageId = pageIdMatch[1];
+                
+                button.addEventListener('click', function(pageId) {
+                    return function(e) {
+                        e.preventDefault();
+                        showPage(pageId);
+                    };
+                }(pageId));
+            }
+        }
+        
+        // التأكد من أن المحتوى موجود في كل صفحة
+        var pages = document.querySelectorAll('.page');
+        for (var i = 0; i < pages.length; i++) {
+            var page = pages[i];
+            
+            // التحقق من وجود محتوى
+            if (page.children.length === 0) {
+                var pageId = page.id;
+                createDefaultContent(pageId);
+            }
+        }
+        
+        // عرض الصفحة الرئيسية افتراضيًا
+        var homePage = 'investor-cards-page';
+        var currentHash = window.location.hash;
+        
+        if (currentHash && currentHash.startsWith('#')) {
+            var hashPageId = currentHash.substring(1) + '-page';
+            if (document.getElementById(hashPageId)) {
+                homePage = hashPageId;
+            }
+        }
+        
+        console.log('عرض الصفحة الافتراضية:', homePage);
+        showPage(homePage);
+    });
+    
+    // إنشاء محتوى افتراضي لصفحة فارغة
+    function createDefaultContent(pageId) {
+        var page = document.getElementById(pageId);
+        if (!page) return;
+        
+        var title = pageId.replace('-page', '').replace(/-/g, ' ');
+        title = title.charAt(0).toUpperCase() + title.slice(1);
+        
+        var defaultHTML = `
+            <div class="header">
+                <h1 class="page-title">${title}</h1>
+            </div>
+            <div class="content-area" id="${pageId}-content">
+                <div class="empty-state">
+                    <i class="fas fa-info-circle fa-3x"></i>
+                    <h3>صفحة قيد الإنشاء</h3>
+                    <p>هذه الصفحة قيد الإنشاء وستكون جاهزة قريبًا.</p>
+                </div>
+            </div>
+        `;
+        
+        page.innerHTML = defaultHTML;
+        console.log('تم إنشاء محتوى افتراضي للصفحة:', pageId);
+    }
+})();
+
