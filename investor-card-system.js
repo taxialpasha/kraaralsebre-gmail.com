@@ -1860,3 +1860,47 @@ if (typeof originalCreateOperation === 'function') {
     };
 }
 
+
+
+
+// Ensure openCreateCardModal is available globally with enhanced error handling
+window.openCreateCardModal = function() {
+    console.log('Opening create card modal');
+    
+    // Reset form
+    const createCardForm = document.getElementById('createCardForm');
+    if (createCardForm) createCardForm.reset();
+    
+    // Set default expiry date to 3 years from now
+    const expiryInput = document.getElementById('cardExpiry');
+    if (expiryInput) {
+        const now = new Date();
+        const futureDate = new Date(now.getFullYear() + 3, now.getMonth());
+        expiryInput.value = futureDate.toISOString().slice(0, 7);
+    }
+    
+    // Populate investor select
+    populateCardInvestorSelect();
+    
+    // Update card preview
+    updateCardPreview();
+    
+    // Try to open modal using different methods
+    try {
+        // First try the standard openModal function
+        if (typeof openModal === 'function') {
+            openModal('createCardModal');
+        } else {
+            // Fallback to adding the active class directly
+            document.getElementById('createCardModal').classList.add('active');
+        }
+    } catch (e) {
+        console.error('Error opening modal:', e);
+        // Last resort fallback
+        const modal = document.getElementById('createCardModal');
+        if (modal) modal.classList.add('active');
+    }
+};
+
+// Make openCreateCardModal available globally
+window.openCreateCardModal = openCreateCardModal;
