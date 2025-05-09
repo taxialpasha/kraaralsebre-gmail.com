@@ -1997,17 +1997,16 @@ const InvestorCardSystem = (function() {
      */
     function getCardStyles() {
         return `
-          /* أنماط CSS لبطاقات المستثمرين */
-
+            /* أنماط البطاقات */
+            /* تكملة أنماط CSS للبطاقات */
 .investor-card {
     width: 350px;
     height: 220px;
     border-radius: 15px;
     position: relative;
     perspective: 1000px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     margin: 0 auto;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 .card-inner {
@@ -2044,8 +2043,6 @@ const InvestorCardSystem = (function() {
     position: absolute;
     top: 40px;
     right: 40px;
-    background-image: linear-gradient(135deg, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0) 100%);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .card-hologram {
@@ -2065,13 +2062,6 @@ const InvestorCardSystem = (function() {
     left: 40px;
     border-radius: 5px;
     opacity: 0.8;
-    animation: hologram-shine 3s infinite;
-}
-
-@keyframes hologram-shine {
-    0% { opacity: 0.6; }
-    50% { opacity: 0.9; }
-    100% { opacity: 0.6; }
 }
 
 .card-logo {
@@ -2080,7 +2070,6 @@ const InvestorCardSystem = (function() {
     right: 20px;
     font-size: 1.2rem;
     font-weight: bold;
-    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .card-number {
@@ -2090,7 +2079,6 @@ const InvestorCardSystem = (function() {
     font-size: 1.3rem;
     letter-spacing: 2px;
     font-family: 'Courier New', monospace;
-    text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.1);
 }
 
 .card-holder {
@@ -2103,7 +2091,6 @@ const InvestorCardSystem = (function() {
     font-size: 0.7rem;
     opacity: 0.8;
     text-transform: uppercase;
-    margin-bottom: 3px;
 }
 
 .card-holder .name {
@@ -2122,7 +2109,6 @@ const InvestorCardSystem = (function() {
     font-size: 0.7rem;
     opacity: 0.8;
     text-transform: uppercase;
-    margin-bottom: 3px;
 }
 
 .card-expires .date {
@@ -2145,23 +2131,6 @@ const InvestorCardSystem = (function() {
     height: 50px;
     background: #000;
     margin-top: 20px;
-    position: relative;
-    overflow: hidden;
-}
-
-.magnetic-strip::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(90deg, 
-        transparent 0%, 
-        rgba(255, 255, 255, 0.1) 20%, 
-        transparent 40%, 
-        rgba(255, 255, 255, 0.05) 60%, 
-        transparent 80%);
 }
 
 .signature-strip {
@@ -2171,8 +2140,6 @@ const InvestorCardSystem = (function() {
     margin: 20px auto;
     position: relative;
     border: 1px solid #ddd;
-    display: flex;
-    align-items: center;
 }
 
 .signature-area {
@@ -2206,7 +2173,6 @@ const InvestorCardSystem = (function() {
     background: white;
     padding: 5px;
     border-radius: 5px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .qr-code img {
@@ -2233,7 +2199,7 @@ const InvestorCardSystem = (function() {
     margin-top: 10px !important;
 }
 
-/* أنماط عرض البطاقات في الشبكة */
+/* أنماط قائمة البطاقات */
 .cards-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
@@ -2251,7 +2217,7 @@ const InvestorCardSystem = (function() {
 
 .card-item:hover {
     transform: translateY(-5px);
-    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
 }
 
 .card-info-overlay {
@@ -2259,7 +2225,7 @@ const InvestorCardSystem = (function() {
     bottom: 0;
     left: 0;
     right: 0;
-    background: rgba(0, 0, 0, 0.8);
+    background: rgba(0, 0, 0, 0.7);
     color: white;
     padding: 15px;
     border-bottom-left-radius: 15px;
@@ -2278,18 +2244,16 @@ const InvestorCardSystem = (function() {
 }
 
 .card-info-overlay p {
-    margin: 0;
+    margin: 2px 0;
     font-size: 0.9rem;
-    opacity: 0.8;
 }
 
 .status {
     display: inline-block;
-    padding: 4px 8px;
+    padding: 3px 8px;
     border-radius: 4px;
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     font-weight: 600;
-    margin-top: 5px;
 }
 
 .status.active {
@@ -2302,38 +2266,7 @@ const InvestorCardSystem = (function() {
     color: #721c24;
 }
 
-/* أنماط الحالة الفارغة */
-.empty-state {
-    text-align: center;
-    padding: 40px;
-    color: #666;
-    background: #f9f9f9;
-    border-radius: 10px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-}
-
-.empty-state i {
-    color: #ddd;
-    margin-bottom: 20px;
-    font-size: 3rem;
-}
-
-.empty-state h3 {
-    margin: 0 0 10px 0;
-    font-size: 1.5rem;
-    color: #333;
-}
-
-.empty-state p {
-    margin: 0 0 20px 0;
-    color: #666;
-}
-
-.empty-state button {
-    margin-top: 10px;
-}
-
-/* أنماط صفحة تفاصيل البطاقة */
+/* أنماط تفاصيل البطاقة */
 .card-detail-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -2364,7 +2297,6 @@ const InvestorCardSystem = (function() {
     color: #007bff;
     cursor: pointer;
     font-size: 1.1rem;
-    transition: color 0.3s ease;
 }
 
 .card-flip-button:hover {
@@ -2376,7 +2308,7 @@ const InvestorCardSystem = (function() {
     flex-wrap: wrap;
     gap: 10px;
     justify-content: center;
-    margin-top: 20px;
+    margin-top: 15px;
 }
 
 .info-card {
@@ -2388,11 +2320,10 @@ const InvestorCardSystem = (function() {
 }
 
 .info-card h3 {
-    margin: 0 0 15px 0;
+    margin-bottom: 15px;
     color: #343a40;
     border-bottom: 2px solid #007bff;
     padding-bottom: 10px;
-    font-size: 1.3rem;
 }
 
 .info-grid {
@@ -2424,15 +2355,11 @@ const InvestorCardSystem = (function() {
 .pin-code {
     font-family: 'Courier New', monospace;
     letter-spacing: 2px;
-    display: inline-block;
 }
 
-/* أنماط سجل الأنشطة */
 .activities-list {
     max-height: 400px;
     overflow-y: auto;
-    border-radius: 5px;
-    border: 1px solid #eee;
 }
 
 .activity-item {
@@ -2440,15 +2367,10 @@ const InvestorCardSystem = (function() {
     align-items: center;
     padding: 10px;
     border-bottom: 1px solid #dee2e6;
-    transition: background-color 0.2s ease;
 }
 
 .activity-item:last-child {
     border-bottom: none;
-}
-
-.activity-item:hover {
-    background-color: #f8f9fa;
 }
 
 .activity-icon {
@@ -2459,7 +2381,7 @@ const InvestorCardSystem = (function() {
     align-items: center;
     justify-content: center;
     margin-left: 15px;
-    font-size: 1.2rem;
+    font-size: 1rem;
 }
 
 .activity-details {
@@ -2482,12 +2404,6 @@ const InvestorCardSystem = (function() {
     color: #495057;
 }
 
-.empty-activities {
-    text-align: center;
-    padding: 30px;
-    color: #6c757d;
-}
-
 /* أنماط نموذج إنشاء البطاقة */
 .form-container {
     max-width: 900px;
@@ -2504,11 +2420,10 @@ const InvestorCardSystem = (function() {
 }
 
 .form-section h3 {
-    margin: 0 0 15px 0;
+    margin-bottom: 15px;
     color: #495057;
-    font-size: 1.2rem;
     border-bottom: 1px solid #dee2e6;
-    padding-bottom: 10px;
+    padding-bottom: 8px;
 }
 
 .form-row {
@@ -2524,24 +2439,9 @@ const InvestorCardSystem = (function() {
 
 .form-label {
     display: block;
-    margin-bottom: 5px;
     font-weight: 600;
+    margin-bottom: 5px;
     color: #495057;
-}
-
-.form-select, .form-control {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #ced4da;
-    border-radius: 4px;
-    font-size: 1rem;
-    transition: border-color 0.3s ease, box-shadow 0.3s ease;
-}
-
-.form-select:focus, .form-control:focus {
-    border-color: #80bdff;
-    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
-    outline: none;
 }
 
 .checkbox-group {
@@ -2568,78 +2468,11 @@ const InvestorCardSystem = (function() {
     background: #f8f9fa;
 }
 
-.checkbox-label input[type="checkbox"] {
-    margin: 0;
-}
-
 .form-actions {
     display: flex;
     justify-content: flex-end;
     gap: 10px;
     margin-top: 20px;
-}
-
-/* أنماط الإحصائيات */
-.stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 20px;
-    margin-bottom: 40px;
-}
-
-.stat-card {
-    background: white;
-    padding: 20px;
-    border-radius: 10px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-    position: relative;
-    overflow: hidden;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-.stat-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);
-}
-
-.stat-value {
-    font-size: 2.5rem;
-    font-weight: 700;
-    color: #343a40;
-    margin-bottom: 5px;
-}
-
-.stat-label {
-    font-size: 1rem;
-    color: #6c757d;
-}
-
-.stat-icon {
-    position: absolute;
-    top: 20px;
-    left: 20px;
-    font-size: 3rem;
-    opacity: 0.1;
-}
-
-.charts-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
-    gap: 30px;
-    margin-bottom: 40px;
-}
-
-.chart-container {
-    background: white;
-    padding: 20px;
-    border-radius: 10px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-}
-
-.chart-container h3 {
-    margin-bottom: 20px;
-    color: #343a40;
-    text-align: center;
 }
 
 /* أنماط ماسح الباركود */
@@ -2652,9 +2485,6 @@ const InvestorCardSystem = (function() {
 #reader {
     width: 100%;
     margin-bottom: 30px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    border-radius: 8px;
-    overflow: hidden;
 }
 
 .manual-search {
@@ -2679,154 +2509,35 @@ const InvestorCardSystem = (function() {
     flex: 1;
 }
 
-/* أنماط وسائل الشبكة */
-@media (max-width: 768px) {
-    .cards-grid {
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    }
-    
-    .investor-card {
-        width: 300px;
-        height: 190px;
-    }
-    
-    .card-detail-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .charts-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .form-section {
-        padding: 15px;
-    }
-}
-
-/* أنماط الأزرار */
-.btn {
-    padding: 10px 20px;
-    border-radius: 4px;
-    font-size: 1rem;
-    font-weight: 600;
+/* أنماط الشاشات الفارغة */
+.empty-state {
     text-align: center;
-    cursor: pointer;
-    border: none;
-    transition: all 0.3s ease;
-}
-
-.btn-primary {
-    background-color: #007bff;
-    color: white;
-}
-
-.btn-primary:hover {
-    background-color: #0069d9;
-}
-
-.btn-success {
-    background-color: #28a745;
-    color: white;
-}
-
-.btn-success:hover {
-    background-color: #218838;
-}
-
-.btn-warning {
-    background-color: #ffc107;
-    color: #212529;
-}
-
-.btn-warning:hover {
-    background-color: #e0a800;
-}
-
-.btn-danger {
-    background-color: #dc3545;
-    color: white;
-}
-
-.btn-danger:hover {
-    background-color: #c82333;
-}
-
-.btn-info {
-    background-color: #17a2b8;
-    color: white;
-}
-
-.btn-info:hover {
-    background-color: #138496;
-}
-
-.btn-light {
-    background-color: #f8f9fa;
-    color: #212529;
-    border: 1px solid #dee2e6;
-}
-
-.btn-light:hover {
-    background-color: #e2e6ea;
-}
-
-.btn-sm {
-    padding: 5px 10px;
-    font-size: 0.875rem;
-}
-
-/* أنماط شريط البحث */
-.search-bar {
-    position: relative;
-    margin: 0 10px;
-}
-
-.search-input {
-    padding: 10px 15px 10px 40px;
-    border: 1px solid #ced4da;
-    border-radius: 4px;
-    font-size: 1rem;
-    width: 100%;
-    transition: border-color 0.3s ease, box-shadow 0.3s ease;
-}
-
-.search-input:focus {
-    border-color: #80bdff;
-    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
-    outline: none;
-}
-
-.search-icon {
-    position: absolute;
-    left: 15px;
-    top: 50%;
-    transform: translateY(-50%);
+    padding: 40px;
     color: #6c757d;
 }
 
-/* أنماط الترويسة */
-.header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+.empty-state i {
+    color: #dee2e6;
     margin-bottom: 20px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid #dee2e6;
 }
 
-.page-title {
-    margin: 0;
-    font-size: 1.8rem;
-    color: #343a40;
+.empty-state h3 {
+    margin-bottom: 10px;
+    color: #495057;
 }
 
-.header-actions {
-    display: flex;
-    align-items: center;
-    gap: 10px;
+.empty-state p {
+    margin-bottom: 20px;
+    color: #6c757d;
 }
 
-/* أنماط المشاركة */
+.empty-activities {
+    text-align: center;
+    padding: 20px;
+    color: #6c757d;
+}
+
+/* أنماط النافذة المنبثقة */
 .modal-overlay {
     position: fixed;
     top: 0;
@@ -2834,19 +2545,35 @@ const InvestorCardSystem = (function() {
     right: 0;
     bottom: 0;
     background-color: rgba(0, 0, 0, 0.5);
-    z-index: 9999;
+    z-index: 1050;
     display: flex;
     justify-content: center;
     align-items: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+}
+
+.modal-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
 }
 
 .modal {
     background: white;
     border-radius: 8px;
-    max-width: 500px;
     width: 90%;
+    max-width: 500px;
     max-height: 90vh;
     overflow-y: auto;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    position: relative;
+    transform: translateY(20px);
+    transition: transform 0.3s ease;
+}
+
+.modal-overlay.active .modal {
+    transform: translateY(0);
 }
 
 .modal-header {
@@ -2859,14 +2586,15 @@ const InvestorCardSystem = (function() {
 
 .modal-title {
     margin: 0;
-    font-size: 1.5rem;
+    font-size: 1.25rem;
+    color: #343a40;
 }
 
 .modal-close {
     cursor: pointer;
-    font-size: 1.5rem;
+    font-size: 1.25rem;
     color: #6c757d;
-    transition: color 0.3s ease;
+    transition: color 0.2s ease;
 }
 
 .modal-close:hover {
@@ -2877,74 +2605,42 @@ const InvestorCardSystem = (function() {
     padding: 20px;
 }
 
-.share-options {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    gap: 15px;
-}
-
-.share-option {
-    text-align: center;
-    padding: 15px;
-    border: 1px solid #dee2e6;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.share-option:hover {
-    border-color: #007bff;
-    background: #f8f9fa;
-    transform: translateY(-3px);
-}
-
-.share-option i {
-    color: #007bff;
-    margin-bottom: 10px;
-}
-
-.share-option p {
-    margin: 0;
-    font-weight: 600;
-}
-
-/* تنسيق الإشعارات */
+/* أنماط الإشعارات */
 .alert {
     padding: 15px;
-    border-radius: 4px;
+    border-radius: 6px;
     margin-bottom: 15px;
-    border: 1px solid transparent;
     display: flex;
     align-items: flex-start;
 }
 
 .alert-success {
     background-color: #d4edda;
-    border-color: #c3e6cb;
     color: #155724;
+    border: 1px solid #c3e6cb;
 }
 
 .alert-danger {
     background-color: #f8d7da;
-    border-color: #f5c6cb;
     color: #721c24;
+    border: 1px solid #f5c6cb;
 }
 
 .alert-warning {
     background-color: #fff3cd;
-    border-color: #ffeeba;
     color: #856404;
+    border: 1px solid #ffeeba;
 }
 
 .alert-info {
     background-color: #d1ecf1;
-    border-color: #bee5eb;
     color: #0c5460;
+    border: 1px solid #bee5eb;
 }
 
 .alert-icon {
     margin-left: 15px;
-    font-size: 1.2rem;
+    font-size: 1.1rem;
 }
 
 .alert-content {
@@ -2956,1062 +2652,810 @@ const InvestorCardSystem = (function() {
     margin-bottom: 5px;
 }
 
-.alert-text {
-    margin: 0;
+/* زر الإضافة العائم */
+.floating-add-button {
+    position: fixed;
+    bottom: 30px;
+    left: 30px;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: #007bff;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    z-index: 1000;
 }
 
-/**
- * استكمال كود نظام بطاقات المستثمرين وتهيئة النظام وتكامله مع المنصة
- */
+.floating-add-button:hover {
+    transform: scale(1.1);
+    background: #0056b3;
+}
 
-// استكمال كود نظام بطاقات المستثمرين المتكامل
-(function() {
-    // تهيئة أساسية للنظام عند تحميل الصفحة
-    document.addEventListener('DOMContentLoaded', function() {
-        console.log('تهيئة نظام بطاقات المستثمرين...');
-        
-        // تحميل البطاقات والأنشطة
-        if (typeof InvestorCardSystem !== 'undefined') {
-            InvestorCardSystem.init();
-        } else {
-            console.error('نظام بطاقات المستثمرين غير متاح!');
-        }
-    });
+/* وضع الطباعة */
+@media print {
+    .header-actions,
+    .card-actions,
+    .card-flip-button,
+    .floating-add-button,
+    .sidebar,
+    .navbar {
+        display: none !important;
+    }
     
-    // إضافة دوال للنظام
-    if (typeof InvestorCardSystem === 'undefined') {
-        console.error('نظام بطاقات المستثمرين غير متاح. تعذر إضافة الوظائف الإضافية!');
+    .card-detail-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .page {
+        margin: 0;
+        padding: 0;
+        box-shadow: none;
+    }
+    
+    .investor-card {
+        width: 86mm !important;
+        height: 54mm !important;
+        margin: 0 auto;
+        page-break-after: always;
+    }
+}
+
+/* التكملة: وظائف إضافية وتهيئة النظام */
+
+/**
+ * تجديد جميع البطاقات المنتهية
+ */
+function renewAllExpired() {
+    const expiredCards = cards.filter(card => isExpired(card));
+    
+    if (expiredCards.length === 0) {
+        createNotification('تنبيه', 'لا توجد بطاقات منتهية الصلاحية', 'warning');
         return;
     }
     
-    /**
-     * تجديد جميع البطاقات المنتهية
-     */
-    InvestorCardSystem.renewAllExpired = function() {
-        // البحث عن البطاقات المنتهية
-        const expiredCards = InvestorCardSystem.cards.filter(card => InvestorCardSystem.isExpired(card));
-        
-        if (expiredCards.length === 0) {
-            InvestorCardSystem.createNotification('تنبيه', 'لا توجد بطاقات منتهية الصلاحية', 'warning');
-            return;
-        }
-        
-        // التأكيد على العملية
-        if (!confirm(`سيتم تجديد ${expiredCards.length} بطاقة. هل تريد المتابعة؟`)) {
-            return;
-        }
-        
-        // تجديد كل بطاقة
-        let renewedCount = 0;
-        expiredCards.forEach(card => {
-            card.expiryDate = InvestorCardSystem.calculateExpiryDate();
-            card.status = 'active';
-            InvestorCardSystem.recordActivity('renew', card);
-            renewedCount++;
-        });
-        
-        // حفظ التغييرات
-        InvestorCardSystem.saveCards();
-        
-        // تحديث العرض
-        InvestorCardSystem.renderCards('expired');
-        
-        // إظهار رسالة نجاح
-        InvestorCardSystem.createNotification('نجاح', `تم تجديد ${renewedCount} بطاقة بنجاح`, 'success');
+    if (!confirm(`سيتم تجديد ${expiredCards.length} بطاقة. هل تريد المتابعة؟`)) {
+        return;
+    }
+    
+    // تجديد جميع البطاقات المنتهية
+    expiredCards.forEach(card => {
+        card.expiryDate = calculateExpiryDate();
+        card.status = 'active';
+        recordActivity('renew', card);
+    });
+    
+    // حفظ البطاقات
+    saveCards();
+    
+    // تحديث العرض
+    renderCards('expired');
+    
+    createNotification('نجاح', `تم تجديد ${expiredCards.length} بطاقة بنجاح`, 'success');
+}
+
+/**
+ * تشغيل صوت
+ * @param {string} type - نوع الصوت
+ */
+function playSound(type) {
+    const audioMap = {
+        success: 'data:audio/wav;base64,UklGRigBAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQBAADpAFgqe623y83KwrWqof3v6+PbyMbVz+LZzMKnn5n9DUJ0j57Et7udbDcYCgvy//z+/vklK0RXfYWerrrDztTe3trSwbGain4+FQkB+vz91tJfTzNFSmJwdnp9iZOepJ6NeE4lGh4wS1Y6KxEDAP4YIiAsFgcEDhodHiMmIRoTBPLlztDc6/n+BggFAP37BRMfKywqIQ8B9e/o3tfQzMfAuLWvqKWjoJ6enp2fnqCprbG0urvAxMXEwbu2sKumo6GgDQAKABsABQAFAAwA4wANABUACgAAAAcA5QDgAOAA4ADgAOEA4QDhAOEA4QDiAOIA4gDiAOIA4wDjAOMA4wDjAOQA5ADkAOQA5ADlAOUA5QDlAA==',
+        error: 'data:audio/wav;base64,UklGRjoFAABXQVZFZm10IBAAAAABAAEAESsAABErAAABAAgAZGF0YRoFAACZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmQ=='
     };
     
-    /**
-     * إصدار بطاقات بديلة للبطاقات المفقودة
-     * @param {string} cardId - معرّف البطاقة الأصلية
-     */
-    InvestorCardSystem.issueReplacement = function(cardId) {
-        const originalCard = InvestorCardSystem.cards.find(c => c.id === cardId);
-        if (!originalCard) {
-            InvestorCardSystem.createNotification('خطأ', 'البطاقة غير موجودة', 'danger');
-            return;
-        }
-        
-        // إيقاف البطاقة الأصلية
-        originalCard.status = 'suspended';
-        InvestorCardSystem.recordActivity('suspend', originalCard, { reason: 'replacement' });
-        
-        // إنشاء بطاقة بديلة
-        const replacementCard = {
-            id: InvestorCardSystem.generateId(),
-            cardNumber: InvestorCardSystem.generateCardNumber(),
-            cardType: originalCard.cardType,
-            investorId: originalCard.investorId,
-            investorName: originalCard.investorName,
-            expiryDate: originalCard.expiryDate, // نفس تاريخ الانتهاء
-            cvv: InvestorCardSystem.generateCVV(),
-            status: 'active',
-            issueDate: new Date().toISOString().split('T')[0],
-            lastUsed: null,
-            hasQRCode: originalCard.hasQRCode,
-            hasChip: originalCard.hasChip,
-            hasHologram: originalCard.hasHologram,
-            pinCode: originalCard.pinCode ? InvestorCardSystem.generatePIN() : null,
-            cardColors: originalCard.cardColors,
-            replacementFor: originalCard.id // الإشارة إلى البطاقة الأصلية
-        };
-        
-        // إضافة البطاقة البديلة
-        InvestorCardSystem.cards.push(replacementCard);
-        InvestorCardSystem.saveCards();
-        
-        // تسجيل نشاط
-        InvestorCardSystem.recordActivity('create', replacementCard, { isReplacement: true });
-        
-        // عرض رسالة نجاح وعرض تفاصيل البطاقة البديلة
-        InvestorCardSystem.createNotification('نجاح', 'تم إصدار بطاقة بديلة بنجاح', 'success');
-        InvestorCardSystem.viewCardDetails(replacementCard.id);
-    };
-    
-    /**
-     * تحديث عدادات البطاقات في القائمة
-     */
-    InvestorCardSystem.updateCardCounters = function() {
-        // إجمالي البطاقات
-        const totalCount = InvestorCardSystem.cards.length;
-        
-        // البطاقات النشطة
-        const activeCount = InvestorCardSystem.cards.filter(card => 
-            card.status === 'active' && !InvestorCardSystem.isExpired(card)
-        ).length;
-        
-        // البطاقات المنتهية
-        const expiredCount = InvestorCardSystem.cards.filter(card => 
-            InvestorCardSystem.isExpired(card)
-        ).length;
-        
-        // تحديث عدادات القائمة
-        const allCardsBadge = document.getElementById('all-cards-badge');
-        const activeCardsBadge = document.getElementById('active-cards-badge');
-        const expiredCardsBadge = document.getElementById('expired-cards-badge');
-        
-        if (allCardsBadge) allCardsBadge.textContent = totalCount;
-        if (activeCardsBadge) activeCardsBadge.textContent = activeCount;
-        if (expiredCardsBadge) expiredCardsBadge.textContent = expiredCount;
-        
-        // تحديث عدادات في أزرار القائمة
-        const menuCounters = document.querySelectorAll('.menu-counter');
-        menuCounters.forEach(counter => {
-            const type = counter.getAttribute('data-card-type');
-            if (type === 'all') counter.textContent = totalCount;
-            else if (type === 'active') counter.textContent = activeCount;
-            else if (type === 'expired') counter.textContent = expiredCount;
-        });
-    };
-    
-    /**
-     * تصفية البطاقات حسب النوع
-     * @param {string} type - نوع البطاقة
-     */
-    InvestorCardSystem.filterByType = function(type) {
-        if (type === 'all') {
-            InvestorCardSystem.renderCards();
-            return;
-        }
-        
-        const gridId = document.querySelector('.page.active')?.id?.includes('active') ? 
-            'activeCardsGrid' : document.querySelector('.page.active')?.id?.includes('expired') ? 
-            'expiredCardsGrid' : 'cardsGrid';
-        
-        const cardsGrid = document.getElementById(gridId);
-        if (!cardsGrid) return;
-        
-        let filteredCards = InvestorCardSystem.cards.filter(card => card.cardType === type);
-        
-        // تطبيق المزيد من الفلاتر حسب الصفحة الحالية
-        if (gridId === 'activeCardsGrid') {
-            filteredCards = filteredCards.filter(card => 
-                card.status === 'active' && !InvestorCardSystem.isExpired(card)
-            );
-        } else if (gridId === 'expiredCardsGrid') {
-            filteredCards = filteredCards.filter(card => 
-                InvestorCardSystem.isExpired(card)
-            );
-        }
-        
-        if (filteredCards.length === 0) {
-            cardsGrid.innerHTML = `
-                <div class="empty-state">
-                    <i class="fas fa-credit-card fa-3x"></i>
-                    <h3>لا توجد بطاقات</h3>
-                    <p>لا توجد بطاقات من نوع "${InvestorCardSystem.getCardTypeName(type)}" ${
-                        gridId === 'activeCardsGrid' ? 'نشطة' : 
-                        gridId === 'expiredCardsGrid' ? 'منتهية الصلاحية' : ''
-                    }.</p>
-                </div>
-            `;
-            return;
-        }
-        
-        cardsGrid.innerHTML = filteredCards.map(card => `
-            <div class="card-item" onclick="InvestorCardSystem.viewCardDetails('${card.id}')">
-                ${InvestorCardSystem.renderCard(card)}
-                <div class="card-info-overlay">
-                    <h4>${card.investorName || 'غير معروف'}</h4>
-                    <p>${InvestorCardSystem.getCardTypeName(card.cardType)}</p>
-                    <p class="status ${card.status === 'active' ? 'active' : 'inactive'}">
-                        ${card.status === 'active' ? 'نشطة' : 'موقوفة'}
-                    </p>
-                </div>
-            </div>
-        `).join('');
-        
-        // تحديث الفلتر النشط في واجهة المستخدم
-        const filterButtons = document.querySelectorAll('.card-type-filter');
-        filterButtons.forEach(button => {
-            button.classList.toggle('active', button.getAttribute('data-type') === type);
-        });
-    };
-    
-    /**
-     * الحصول على اسم نوع البطاقة
-     * @param {string} cardType - نوع البطاقة
-     * @returns {string} اسم نوع البطاقة
-     */
-    InvestorCardSystem.getCardTypeName = function(cardType) {
-        const typeObj = InvestorCardSystem.cardTypes.find(t => t.value === cardType);
-        return typeObj ? typeObj.name : cardType;
-    };
-    
-    /**
-     * تشغيل صوت
-     * @param {string} type - نوع الصوت
-     */
-    InvestorCardSystem.playSound = function(type) {
-        const sounds = {
-            success: 'data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU3LjU2LjEwMQAAAAAAAAAAAAAA//tAwAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAAASAAAeMwAUFBQUFCgoPDw8PDxISFZWVlZWamqAgICAgJSUpKSkpKS4uMTExMTE1NTk5OTk5PT0//////////////////////////////////////////////////////////////////8AAAAATGF2YzU3LjY0AAAAAAAAAAAAAAAAJAAAAAAAAAAAABzMxUK4AAAA//tAwAAABHwTcUUwpACPg25GYYgAIAmSBQPBwMBgYHQcOhE3DIII4NwfB8HwfA+D8+D4PwfB8H4Pg/B+D8HwfB8H4Pg/B8HwfB8H4Pg/B8HwfB8H4Pg/B8HwfB8H4Pg/B8HwfB8H4Pg/B8HwfB8H4Pg/B8HwfB8H4Ph/4Pg+D8H4Pg/B8H4Pg/B8HwfK//tAwA4ABJQbYd2MAAiOA+jwtlAB/4Pg/B8HwfB8H4Pg/B8H4Pg/B8HwfB8H4Pg/B8HwfB8H4Pg/B8HwfB8H4Pg/B8HwfB8H4Pg/B8HwfB8H4Pg/B8HwfB8H4Pg/B8HwfB8H4Pg/B8HwfB8HwfB8EDMfGnGaHc6nLkv/6gA4QjQtD+AgCeBAfB8HweCMRLw+D4SCA4OC6fB+AQZD//tAwBAAB0QpZ/2UgAiVA6z+shAAHwfB8HwQg+D4PwfB8H4Pg/B8HwfB8H4Pg/B8HwfB8H4Pg/B8HwfB8H4Pg/B8HwfB8H4Pg/B8HwfB8H4Pg/B8HwfB8H4Pg/B8HwfB8H4Pg/B8HwfB8HwfB8H4Pg/B8HwfB8HwfB8H4Pg/B8HwfB8HwfB8HwfB8EAOMQ//tAwBGAB0gVZ/2cgAiGA6n+8YAAMDrMzCdilhTW4GBgYGBgYGBg8/gwGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYG//tAwBQABsQjV/2TAAiaA6r+wMAABgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGA==',
-            error: 'data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjIwLjEwMAAAAAAAAAAAAAAA//tUwAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAAAiAAAkIAAXFxcXISEhISEsLCwsLDY2NjY2QUFBQUFLS0tLS1VVVVVVYGBgYGBqampqanV1dXV1f39/f3+KioqKipSUlJSUn5+fn5+pqampqbS0tLS0vr6+vr7JycnJydPT09PT3t7e3t7o6Ojo6PP//////////wAAAABMYXZjNTguMzUuMTAw//tUwAAABrRHb63lIAIbgOInhngQVzJjQTe6EEEETdFI3SQSC8iLAQGJQYSYuiSB+0I3qIE7siMTu63/xETqInREi7ut1///REiM//0RMTEDIrut1EZ5XdEREZlmWZmZRECILi7rdu7d27cmmqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqo=',
-            notification: 'data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjMyLjEwNAAAAAAAAAAAAAAA//tUwAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAAAaAABHtAAGBgwMEhIYGB4eJCQqKjAwNjY8PEBARERIT09UVFpaYGBmZmxscnJ4eH5+hISKipCQlpaamsLCx8fNzdLS2NjZ2d/f5+ft7fPz+Pj///8AAAAATGF2YzU4LjU5aHR0cDovL3d3dy5zb3VuZGpheS5jb20vc2FtcGxlcy9FbmVyZ2V0aWMtTm90aWZpY2F0aW9uLVNvdW5kLUVmZmVjdC8xNjE2Nzk2MTc1//tUwD4ABYwZU/dBAAoZgur/4qkBU0pJJJJBBCEEIQZBnUEEIQQgznOc5znOggzqCDIIIQhIIJBnOcgggyCCQQQQZ1BBBBJJJIOdSTOc5CQQQZBIIIJBBJJJJJJJSSSSSSSTnOc5znOc5znOpJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJ'
-        };
-        
-        const soundData = sounds[type];
-        if (!soundData) return;
-        
-        const audio = new Audio(soundData);
+    if (audioMap[type]) {
+        const audio = new Audio(audioMap[type]);
         audio.play();
-    };
+    }
+}
+
+/**
+ * تحويل صورة البطاقة إلى تنسيق PNG
+ * @param {string} cardId - معرّف البطاقة
+ */
+function exportCardImage(cardId) {
+    const card = cards.find(c => c.id === cardId);
+    if (!card) return;
     
-    /**
-     * استيراد بطاقات من ملف JSON
-     * @param {File} file - ملف JSON
-     */
-    InvestorCardSystem.importCards = function(file) {
-        if (!file) {
-            InvestorCardSystem.createNotification('خطأ', 'لم يتم تحديد ملف', 'danger');
-            return;
-        }
-        
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            try {
-                const importedData = JSON.parse(e.target.result);
-                
-                if (!Array.isArray(importedData)) {
-                    InvestorCardSystem.createNotification('خطأ', 'تنسيق الملف غير صالح', 'danger');
-                    return;
-                }
-                
-                // التحقق من صحة البيانات
-                let validCards = 0;
-                const invalidCards = [];
-                
-                importedData.forEach(card => {
-                    if (!card.id || !card.cardNumber || !card.investorId || !card.investorName) {
-                        invalidCards.push(card);
-                        return;
-                    }
-                    
-                    // التحقق من عدم وجود تكرار في معرّفات البطاقات
-                    if (InvestorCardSystem.cards.some(c => c.id === card.id)) {
-                        // تغيير معرّف البطاقة لتجنب التكرار
-                        card.id = InvestorCardSystem.generateId();
-                    }
-                    
-                    // التحقق من وجود المستثمر
-                    if (!window.investors || !window.investors.some(i => i.id === card.investorId)) {
-                        invalidCards.push(card);
-                        return;
-                    }
-                    
-                    // إضافة البطاقة إلى المصفوفة
-                    InvestorCardSystem.cards.push(card);
-                    
-                    // تسجيل نشاط
-                    InvestorCardSystem.recordActivity('import', card);
-                    
-                    validCards++;
-                });
-                
-                // حفظ البطاقات
-                InvestorCardSystem.saveCards();
-                
-                // تحديث العرض
-                InvestorCardSystem.renderCards();
-                
-                // عرض رسالة نجاح
-                InvestorCardSystem.createNotification(
-                    'نجاح', 
-                    `تم استيراد ${validCards} بطاقة بنجاح${invalidCards.length > 0 ? ` (${invalidCards.length} بطاقة غير صالحة)` : ''}`, 
-                    'success'
-                );
-            } catch (error) {
-                console.error('خطأ في استيراد البطاقات:', error);
-                InvestorCardSystem.createNotification('خطأ', 'تعذر استيراد البطاقات. الملف غير صالح', 'danger');
-            }
-        };
-        
-        reader.readAsText(file);
-    };
+    // إنشاء عنصر canvas لرسم البطاقة
+    const canvas = document.createElement('canvas');
+    canvas.width = 700;
+    canvas.height = 440;
     
-    /**
-     * تصدير البطاقات إلى ملف JSON
-     */
-    InvestorCardSystem.exportCards = function() {
-        if (InvestorCardSystem.cards.length === 0) {
-            InvestorCardSystem.createNotification('تنبيه', 'لا توجد بطاقات للتصدير', 'warning');
-            return;
-        }
-        
-        // إنشاء نسخة من البطاقات (مع حذف المعلومات الحساسة اختياريًا)
-        const exportData = InvestorCardSystem.cards.map(card => {
-            const exportCard = { ...card };
+    // الحصول على سياق الرسم
+    const ctx = canvas.getContext('2d');
+    
+    // رسم خلفية البطاقة
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // الحصول على عنصر البطاقة
+    const cardElement = document.createElement('div');
+    cardElement.innerHTML = renderCard(card);
+    cardElement.style.transform = 'scale(2)';
+    cardElement.style.transformOrigin = 'top left';
+    
+    // استخدام html2canvas إذا كان متاحاً
+    if (typeof html2canvas === 'function') {
+        html2canvas(cardElement.querySelector('.investor-card')).then(canvas => {
+            // تحميل الصورة
+            const link = document.createElement('a');
+            link.href = canvas.toDataURL('image/png');
+            link.download = `card_${card.id}.png`;
+            link.click();
             
-            // يمكنك حذف أي معلومات حساسة هنا
-            // مثلًا:
-            // delete exportCard.cvv;
-            // delete exportCard.pinCode;
-            
-            return exportCard;
+            createNotification('نجاح', 'تم تصدير صورة البطاقة بنجاح', 'success');
         });
-        
-        // تحويل البيانات إلى JSON
-        const jsonData = JSON.stringify(exportData, null, 2);
-        
-        // إنشاء ملف للتنزيل
-        const blob = new Blob([jsonData], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `investor_cards_export_${new Date().toISOString().split('T')[0]}.json`;
-        a.style.display = 'none';
-        
-        document.body.appendChild(a);
-        a.click();
-        
-        setTimeout(() => {
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        }, 100);
-        
-        InvestorCardSystem.createNotification('نجاح', `تم تصدير ${exportData.length} بطاقة بنجاح`, 'success');
-    };
+    } else {
+        createNotification('خطأ', 'مكتبة html2canvas غير متوفرة', 'danger');
+    }
+}
+
+/**
+ * دالة تهيئة النظام
+ */
+function init() {
+    console.log('تهيئة نظام بطاقات المستثمرين...');
     
-    /**
-     * تهيئة نظام بطاقات المستثمرين
-     */
-    InvestorCardSystem.init = function() {
-        console.log('تهيئة نظام بطاقات المستثمرين...');
-        
-        // تحميل البطاقات والأنشطة
-        InvestorCardSystem.loadCards();
-        InvestorCardSystem.loadActivities();
-        
-        // إضافة عناصر القائمة
-        InvestorCardSystem.addMenuItems();
-        
-        // إضافة صفحات البطاقات
-        InvestorCardSystem.addCardPages();
-        
-        // إضافة أنماط CSS
-        InvestorCardSystem.addCardStyles();
-        
-        // تحديث عدادات البطاقات
-        InvestorCardSystem.updateCardCounters();
-        
-        console.log('تم تهيئة نظام بطاقات المستثمرين بنجاح');
-        console.log(`البطاقات المتاحة: ${InvestorCardSystem.cards.length}`);
-        console.log(`الأنشطة المسجلة: ${InvestorCardSystem.activities.length}`);
-        
-        // مزامنة مع Firebase إذا كان متاحاً
-        InvestorCardSystem.initFirebaseSync();
-    };
+    // تحميل البيانات المحفوظة
+    loadCards();
+    loadActivities();
     
-    /**
-     * إضافة عناصر القائمة
-     */
-    InvestorCardSystem.addMenuItems = function() {
-        const sidebar = document.querySelector('.sidebar-menu');
-        if (!sidebar) {
-            console.error('عنصر القائمة الجانبية غير موجود');
-            return;
-        }
-        
-        // البحث عن قسم النظام
-        const systemCategory = Array.from(sidebar.querySelectorAll('.menu-category'))
-            .find(el => el.textContent.includes('النظام'));
-        
-        // عدم إضافة القائمة إذا كانت موجودة بالفعل
-        if (sidebar.querySelector('.menu-category:contains("بطاقات المستثمرين")')) {
-            return;
-        }
-        
-        // إنشاء HTML لقسم بطاقات المستثمرين
-        const cardMenuHTML = `
-            <div class="menu-category">بطاقات المستثمرين</div>
-            <a href="#investor-cards" class="menu-item" onclick="showCardPage('investor-cards')">
-                <span class="menu-icon"><i class="fas fa-id-card"></i></span>
-                <span>كل البطاقات</span>
-                <span class="menu-counter badge badge-primary" id="all-cards-badge" data-card-type="all">0</span>
-            </a>
-            <a href="#active-cards" class="menu-item" onclick="showCardPage('active-cards')">
-                <span class="menu-icon"><i class="fas fa-check-circle"></i></span>
-                <span>البطاقات النشطة</span>
-                <span class="menu-counter badge badge-success" id="active-cards-badge" data-card-type="active">0</span>
-            </a>
-            <a href="#expired-cards" class="menu-item" onclick="showCardPage('expired-cards')">
-                <span class="menu-icon"><i class="fas fa-times-circle"></i></span>
-                <span>البطاقات المنتهية</span>
-                <span class="menu-counter badge badge-danger" id="expired-cards-badge" data-card-type="expired">0</span>
-            </a>
-            <a href="#barcode-scanner" class="menu-item" onclick="showCardPage('barcode-scanner')">
-                <span class="menu-icon"><i class="fas fa-qrcode"></i></span>
-                <span>مسح الباركود</span>
-            </a>
-            <a href="#new-card" class="menu-item" onclick="showCardPage('new-card')">
-                <span class="menu-icon"><i class="fas fa-plus-circle"></i></span>
-                <span>بطاقة جديدة</span>
-            </a>
-            <a href="#card-stats" class="menu-item" onclick="showCardPage('card-stats')">
-                <span class="menu-icon"><i class="fas fa-chart-pie"></i></span>
-                <span>إحصائيات البطاقات</span>
-            </a>
-        `;
-        
-        // إضافة القائمة قبل قسم النظام إذا وُجد، وإلا إضافتها في النهاية
-        if (systemCategory) {
-            systemCategory.insertAdjacentHTML('beforebegin', cardMenuHTML);
-        } else {
-            sidebar.insertAdjacentHTML('beforeend', cardMenuHTML);
-        }
-    };
+    // إنشاء صفحات النظام إذا لم تكن موجودة
+    createSystemPages();
     
-    /**
-     * إضافة صفحات البطاقات
-     */
-    InvestorCardSystem.addCardPages = function() {
-        const content = document.querySelector('.content');
-        if (!content) {
-            console.error('عنصر المحتوى غير موجود');
-            return;
-        }
+    // إضافة عناصر القائمة
+    addMenuItems();
+    
+    // إضافة أنماط CSS
+    addStyles();
+    
+    // إضافة زر الإضافة العائم
+    addFloatingButton();
+    
+    // إصلاح مشكلة التنقل بين الصفحات
+    fixCardNavigation();
+    
+    // تسجيل الأحداث
+    registerEventListeners();
+    
+    // مزامنة مع Firebase إذا كان متاحاً
+    setupFirebaseSync();
+    
+    console.log('تم تهيئة نظام بطاقات المستثمرين بنجاح');
+}
+
+/**
+ * إنشاء صفحات النظام
+ */
+function createSystemPages() {
+    const content = document.querySelector('.content');
+    if (!content) {
+        console.error('منطقة المحتوى غير موجودة');
+        return;
+    }
+    
+    // التحقق من وجود الصفحات
+    if (document.getElementById('investor-cards-page')) {
+        console.log('الصفحات موجودة بالفعل');
+        return;
+    }
+    
+    // إنشاء صفحات النظام
+    const pagesHTML = `
+        <!-- صفحة جميع البطاقات -->
+        <div id="investor-cards-page" class="page">
+            <div class="header">
+                <h1 class="page-title">بطاقات المستثمرين</h1>
+                <div class="header-actions">
+                    <div class="search-bar">
+                        <input type="text" class="search-input" placeholder="بحث عن بطاقة..." 
+                               oninput="InvestorCardSystem.handleSearch(this.value)">
+                        <i class="fas fa-search search-icon"></i>
+                    </div>
+                    <select class="form-select" onchange="InvestorCardSystem.filterByType(this.value)">
+                        <option value="all">جميع الأنواع</option>
+                        ${cardTypes.map(type => `
+                            <option value="${type.value}">${type.name}</option>
+                        `).join('')}
+                    </select>
+                    <button class="btn btn-primary" onclick="showPage('new-card-page')">
+                        <i class="fas fa-plus"></i> بطاقة جديدة
+                    </button>
+                </div>
+            </div>
+            <div class="cards-grid" id="cardsGrid"></div>
+        </div>
         
-        // عدم إضافة الصفحات إذا كانت موجودة بالفعل
-        if (document.getElementById('investor-cards-page')) {
-            return;
-        }
+        <!-- صفحة البطاقات النشطة -->
+        <div id="active-cards-page" class="page">
+            <div class="header">
+                <h1 class="page-title">البطاقات النشطة</h1>
+                <div class="header-actions">
+                    <div class="search-bar">
+                        <input type="text" class="search-input" placeholder="بحث عن بطاقة..." 
+                               oninput="InvestorCardSystem.handleSearch(this.value, 'active')">
+                        <i class="fas fa-search search-icon"></i>
+                    </div>
+                    <button class="btn btn-primary" onclick="showPage('new-card-page')">
+                        <i class="fas fa-plus"></i> بطاقة جديدة
+                    </button>
+                </div>
+            </div>
+            <div class="cards-grid" id="activeCardsGrid"></div>
+        </div>
         
-        // إنشاء HTML لصفحات البطاقات
-        const cardPagesHTML = `
-            <div id="investor-cards-page" class="page">
-                <div class="header">
-                    <h1 class="page-title">بطاقات المستثمرين</h1>
-                    <div class="header-actions">
-                        <div class="search-bar">
-                            <input type="text" class="search-input" placeholder="بحث عن بطاقة..." 
-                                   oninput="InvestorCardSystem.handleSearch(this.value)">
-                            <i class="fas fa-search search-icon"></i>
-                        </div>
-                        <div class="card-type-filters">
-                            <button class="btn btn-sm btn-light card-type-filter active" data-type="all" onclick="InvestorCardSystem.filterByType('all')">الكل</button>
-                            <button class="btn btn-sm btn-light card-type-filter" data-type="platinum" onclick="InvestorCardSystem.filterByType('platinum')">بلاتينية</button>
-                            <button class="btn btn-sm btn-light card-type-filter" data-type="gold" onclick="InvestorCardSystem.filterByType('gold')">ذهبية</button>
-                            <button class="btn btn-sm btn-light card-type-filter" data-type="premium" onclick="InvestorCardSystem.filterByType('premium')">بريميوم</button>
-                        </div>
-                        <button class="btn btn-primary" onclick="showCardPage('new-card')">
-                            <i class="fas fa-plus"></i> بطاقة جديدة
+        <!-- صفحة البطاقات المنتهية -->
+        <div id="expired-cards-page" class="page">
+            <div class="header">
+                <h1 class="page-title">البطاقات المنتهية</h1>
+                <div class="header-actions">
+                    <div class="search-bar">
+                        <input type="text" class="search-input" placeholder="بحث عن بطاقة..." 
+                               oninput="InvestorCardSystem.handleSearch(this.value, 'expired')">
+                        <i class="fas fa-search search-icon"></i>
+                    </div>
+                    <button class="btn btn-warning" onclick="InvestorCardSystem.renewAllExpired()">
+                        <i class="fas fa-redo"></i> تجديد الكل
+                    </button>
+                </div>
+            </div>
+            <div class="cards-grid" id="expiredCardsGrid"></div>
+        </div>
+        
+        <!-- صفحة ماسح الباركود -->
+        <div id="barcode-scanner-page" class="page">
+            <div class="header">
+                <h1 class="page-title">مسح الباركود</h1>
+            </div>
+            <div class="scanner-container">
+                <div id="reader"></div>
+                <div class="manual-search">
+                    <h3>أو ابحث يدوياً</h3>
+                    <div class="search-bar">
+                        <input type="text" class="form-control" id="manualSearchInput" placeholder="أدخل رقم البطاقة">
+                        <button class="btn btn-primary" onclick="InvestorCardSystem.manualSearch()">
+                            <i class="fas fa-search"></i> بحث
                         </button>
                     </div>
                 </div>
-                <div class="cards-grid" id="cardsGrid"></div>
             </div>
-            
-            <div id="active-cards-page" class="page">
-                <div class="header">
-                    <h1 class="page-title">البطاقات النشطة</h1>
-                    <div class="header-actions">
-                        <div class="search-bar">
-                            <input type="text" class="search-input" placeholder="بحث..." 
-                                   oninput="InvestorCardSystem.handleSearch(this.value, 'active')">
-                            <i class="fas fa-search search-icon"></i>
-                        </div>
-                        <div class="card-type-filters">
-                            <button class="btn btn-sm btn-light card-type-filter active" data-type="all" onclick="InvestorCardSystem.filterByType('all')">الكل</button>
-                            <button class="btn btn-sm btn-light card-type-filter" data-type="platinum" onclick="InvestorCardSystem.filterByType('platinum')">بلاتينية</button>
-                            <button class="btn btn-sm btn-light card-type-filter" data-type="gold" onclick="InvestorCardSystem.filterByType('gold')">ذهبية</button>
-                            <button class="btn btn-sm btn-light card-type-filter" data-type="premium" onclick="InvestorCardSystem.filterByType('premium')">بريميوم</button>
-                        </div>
-                        <button class="btn btn-primary" onclick="showCardPage('new-card')">
-                            <i class="fas fa-plus"></i> بطاقة جديدة
-                        </button>
-                    </div>
-                </div>
-                <div class="cards-grid" id="activeCardsGrid"></div>
+        </div>
+        
+        <!-- صفحة إنشاء بطاقة جديدة -->
+        <div id="new-card-page" class="page">
+            <div class="header">
+                <h1 class="page-title">إنشاء بطاقة جديدة</h1>
             </div>
-            
-            <div id="expired-cards-page" class="page">
-                <div class="header">
-                    <h1 class="page-title">البطاقات المنتهية</h1>
-                    <div class="header-actions">
-                        <div class="search-bar">
-                            <input type="text" class="search-input" placeholder="بحث..." 
-                                   oninput="InvestorCardSystem.handleSearch(this.value, 'expired')">
-                            <i class="fas fa-search search-icon"></i>
-                        </div>
-                        <button class="btn btn-warning" onclick="InvestorCardSystem.renewAllExpired()">
-                            <i class="fas fa-redo"></i> تجديد الكل
-                        </button>
-                    </div>
-                </div>
-                <div class="cards-grid" id="expiredCardsGrid"></div>
-            </div>
-            
-            <div id="barcode-scanner-page" class="page">
-                <div class="header">
-                    <h1 class="page-title">مسح الباركود</h1>
-                </div>
-                <div class="scanner-container">
-                    <div id="reader"></div>
-                    <div class="manual-search">
-                        <h3>أو ابحث يدوياً</h3>
-                        <div class="search-bar">
-                            <input type="text" class="form-control" id="manualSearchInput" 
-                                   placeholder="أدخل رقم البطاقة">
-                            <button class="btn btn-primary" onclick="InvestorCardSystem.manualSearch()">
-                                <i class="fas fa-search"></i> بحث
-                            </button>
+            <div class="form-container">
+                <form id="newCardForm" onsubmit="event.preventDefault(); InvestorCardSystem.createNewCard()">
+                    <div class="form-section">
+                        <h3>معلومات المستثمر</h3>
+                        <div class="form-group">
+                            <label class="form-label">المستثمر</label>
+                            <select class="form-select" name="investorSelect" required onchange="InvestorCardSystem.updateCardPreview()">
+                                <option value="">اختر المستثمر</option>
+                            </select>
                         </div>
                     </div>
-                </div>
-            </div>
-            
-            <div id="new-card-page" class="page">
-                <div class="header">
-                    <h1 class="page-title">إنشاء بطاقة جديدة</h1>
-                </div>
-                <div class="form-container">
-                    <form id="newCardForm" onsubmit="event.preventDefault(); InvestorCardSystem.createNewCard()">
-                        <div class="form-section">
-                            <h3>معلومات المستثمر</h3>
+                    
+                    <div class="form-section">
+                        <h3>خصائص البطاقة</h3>
+                        <div class="form-row">
                             <div class="form-group">
-                                <label class="form-label">المستثمر</label>
-                                <select class="form-select" name="investorSelect" required 
-                                        onchange="InvestorCardSystem.updateCardPreview()">
-                                    <option value="">اختر المستثمر</option>
+                                <label class="form-label">نوع البطاقة</label>
+                                <select class="form-select" name="cardType" onchange="InvestorCardSystem.updateCardPreview()">
+                                    ${cardTypes.map(type => `
+                                        <option value="${type.value}" ${type.value === settings.defaultCardType ? 'selected' : ''}>
+                                            ${type.name}
+                                        </option>
+                                    `).join('')}
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">مدة الصلاحية</label>
+                                <select class="form-select" name="cardValidity" onchange="InvestorCardSystem.updateCardPreview()">
+                                    <option value="1">سنة واحدة</option>
+                                    <option value="2">سنتان</option>
+                                    <option value="3" selected>3 سنوات</option>
+                                    <option value="5">5 سنوات</option>
                                 </select>
                             </div>
                         </div>
                         
-                        <div class="form-section">
-                            <h3>خصائص البطاقة</h3>
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label class="form-label">نوع البطاقة</label>
-                                    <select class="form-select" name="cardType" 
-                                            onchange="InvestorCardSystem.updateCardPreview()">
-                                        <option value="platinum" selected>بلاتينية</option>
-                                        <option value="gold">ذهبية</option>
-                                        <option value="premium">بريميوم</option>
-                                        <option value="diamond">ماسية</option>
-                                        <option value="islamic">إسلامية</option>
-                                        <option value="custom">مخصصة</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">مدة الصلاحية</label>
-                                    <select class="form-select" name="cardValidity" 
-                                            onchange="InvestorCardSystem.updateCardPreview()">
-                                        <option value="1">سنة واحدة</option>
-                                        <option value="2">سنتان</option>
-                                        <option value="3" selected>3 سنوات</option>
-                                        <option value="5">5 سنوات</option>
-                                    </select>
-                                </div>
-                            </div>
-                            
-                            <div class="checkbox-group">
-                                <label class="checkbox-label">
-                                    <input type="checkbox" name="hasQRCode" 
-                                           onchange="InvestorCardSystem.updateCardPreview()">
-                                    <span>إضافة QR Code</span>
-                                </label>
-                                <label class="checkbox-label">
-                                    <input type="checkbox" name="hasChip" checked 
-                                           onchange="InvestorCardSystem.updateCardPreview()">
-                                    <span>شريحة ذكية</span>
-                                </label>
-                                <label class="checkbox-label">
-                                    <input type="checkbox" name="hasHologram" 
-                                           onchange="InvestorCardSystem.updateCardPreview()">
-                                    <span>هولوغرام</span>
-                                </label>
-                                <label class="checkbox-label">
-                                    <input type="checkbox" name="hasPINCode" 
-                                           onchange="InvestorCardSystem.updateCardPreview()">
-                                    <span>رقم PIN</span>
-                                </label>
-                            </div>
+                        <div class="checkbox-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="hasQRCode" onchange="InvestorCardSystem.updateCardPreview()">
+                                <span>إضافة QR Code</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="hasChip" checked onchange="InvestorCardSystem.updateCardPreview()">
+                                <span>شريحة ذكية</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="hasHologram" onchange="InvestorCardSystem.updateCardPreview()">
+                                <span>هولوغرام</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="hasPINCode" onchange="InvestorCardSystem.updateCardPreview()">
+                                <span>رقم PIN</span>
+                            </label>
                         </div>
-                        
-                        <div class="form-section">
-                            <h3>معاينة البطاقة</h3>
-                            <div id="cardPreviewContainer">
-                                <div class="empty-preview">
-                                    <i class="fas fa-credit-card fa-3x"></i>
-                                    <p>اختر المستثمر لمعاينة البطاقة</p>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="form-actions">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-save"></i> إنشاء البطاقة
-                            </button>
-                            <button type="reset" class="btn btn-light" onclick="InvestorCardSystem.updateCardPreview()">
-                                <i class="fas fa-redo"></i> إعادة تعيين
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-            
-            <div id="card-stats-page" class="page">
-                <div class="header">
-                    <h1 class="page-title">إحصائيات البطاقات</h1>
-                    <div class="header-actions">
-                        <button class="btn btn-light" onclick="InvestorCardSystem.exportStats()">
-                            <i class="fas fa-file-export"></i> تصدير التقرير
-                        </button>
-                    </div>
-                </div>
-                <div id="statsContainer"></div>
-            </div>
-            
-            <div id="card-detail-page" class="page">
-                <div class="header">
-                    <h1 class="page-title">تفاصيل البطاقة</h1>
-                    <div class="header-actions">
-                        <button class="btn btn-light" onclick="showCardPage('investor-cards')">
-                            <i class="fas fa-arrow-right"></i> رجوع
-                        </button>
-                    </div>
-                </div>
-                <div id="cardDetailContainer"></div>
-            </div>
-            
-            <div id="card-import-export-page" class="page">
-                <div class="header">
-                    <h1 class="page-title">استيراد وتصدير البطاقات</h1>
-                    <div class="header-actions">
-                        <button class="btn btn-light" onclick="showCardPage('investor-cards')">
-                            <i class="fas fa-arrow-right"></i> رجوع
-                        </button>
-                    </div>
-                </div>
-                <div class="import-export-container">
-                    <div class="form-section">
-                        <h3>استيراد البطاقات</h3>
-                        <p>استيراد بطاقات المستثمرين من ملف JSON.</p>
-                        <div class="form-group">
-                            <input type="file" id="importCardFile" accept=".json" class="form-control">
-                        </div>
-                        <button class="btn btn-primary" onclick="InvestorCardSystem.importFromFile()">
-                            <i class="fas fa-file-import"></i> استيراد
-                        </button>
                     </div>
                     
                     <div class="form-section">
-                        <h3>تصدير البطاقات</h3>
-                        <p>تصدير بطاقات المستثمرين إلى ملف JSON.</p>
-                        <button class="btn btn-primary" onclick="InvestorCardSystem.exportCards()">
-                            <i class="fas fa-file-export"></i> تصدير جميع البطاقات
+                        <h3>معاينة البطاقة</h3>
+                        <div id="cardPreviewContainer"></div>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> إنشاء البطاقة
+                        </button>
+                        <button type="reset" class="btn btn-light" onclick="InvestorCardSystem.updateCardPreview()">
+                            <i class="fas fa-redo"></i> إعادة تعيين
                         </button>
                     </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- صفحة إحصائيات البطاقات -->
+        <div id="card-stats-page" class="page">
+            <div class="header">
+                <h1 class="page-title">إحصائيات البطاقات</h1>
+                <div class="header-actions">
+                    <button class="btn btn-light" onclick="InvestorCardSystem.exportStats()">
+                        <i class="fas fa-file-export"></i> تصدير التقرير
+                    </button>
                 </div>
             </div>
-        `;
+            <div id="statsContainer"></div>
+        </div>
         
-        // إضافة الصفحات للمحتوى
-        content.insertAdjacentHTML('beforeend', cardPagesHTML);
+        <!-- صفحة تفاصيل البطاقة -->
+        <div id="card-detail-page" class="page">
+            <div class="header">
+                <h1 class="page-title">تفاصيل البطاقة</h1>
+                <div class="header-actions">
+                    <button class="btn btn-light" onclick="showPage('investor-cards-page')">
+                        <i class="fas fa-arrow-right"></i> رجوع
+                    </button>
+                </div>
+            </div>
+            <div id="cardDetailContainer"></div>
+        </div>
+    `;
+    
+    // إضافة الصفحات للمحتوى
+    content.insertAdjacentHTML('beforeend', pagesHTML);
+}
+
+/**
+ * إضافة عناصر القائمة
+ */
+function addMenuItems() {
+    const sidebar = document.querySelector('.sidebar-menu');
+    if (!sidebar) {
+        console.error('القائمة الجانبية غير موجودة');
+        return;
+    }
+    
+    // التحقق من وجود عناصر القائمة
+    if (sidebar.querySelector('.menu-item[onclick*="showPage(\'investor-cards-page\')"]')) {
+        console.log('عناصر القائمة موجودة بالفعل');
+        return;
+    }
+    
+    // إنشاء عناصر القائمة
+    const cardMenuHTML = `
+        <div class="menu-category">بطاقات المستثمرين</div>
+        <a href="#investor-cards" class="menu-item" onclick="showPage('investor-cards-page')">
+            <span class="menu-icon"><i class="fas fa-id-card"></i></span>
+            <span>كل البطاقات</span>
+        </a>
+        <a href="#active-cards" class="menu-item" onclick="showPage('active-cards-page')">
+            <span class="menu-icon"><i class="fas fa-check-circle"></i></span>
+            <span>البطاقات النشطة</span>
+        </a>
+        <a href="#expired-cards" class="menu-item" onclick="showPage('expired-cards-page')">
+            <span class="menu-icon"><i class="fas fa-times-circle"></i></span>
+            <span>البطاقات المنتهية</span>
+        </a>
+        <a href="#barcode-scanner" class="menu-item" onclick="showPage('barcode-scanner-page')">
+            <span class="menu-icon"><i class="fas fa-qrcode"></i></span>
+            <span>مسح الباركود</span>
+        </a>
+        <a href="#new-card" class="menu-item" onclick="showPage('new-card-page')">
+            <span class="menu-icon"><i class="fas fa-plus-circle"></i></span>
+            <span>بطاقة جديدة</span>
+        </a>
+        <a href="#card-stats" class="menu-item" onclick="showPage('card-stats-page')">
+            <span class="menu-icon"><i class="fas fa-chart-pie"></i></span>
+            <span>إحصائيات البطاقات</span>
+        </a>
+    `;
+    
+    // البحث عن المكان المناسب للإضافة
+    const systemCategory = sidebar.querySelector('.menu-category:nth-last-child(2)');
+    
+    if (systemCategory) {
+        systemCategory.insertAdjacentHTML('beforebegin', cardMenuHTML);
+    } else {
+        sidebar.insertAdjacentHTML('beforeend', cardMenuHTML);
+    }
+}
+
+/**
+ * إضافة أنماط CSS
+ */
+function addStyles() {
+    // التحقق من وجود أنماط CSS
+    if (document.getElementById('investor-card-styles')) {
+        return;
+    }
+    
+    // إنشاء عنصر style
+    const style = document.createElement('style');
+    style.id = 'investor-card-styles';
+    style.textContent = getCardStyles();
+    
+    // إضافة الأنماط إلى الصفحة
+    document.head.appendChild(style);
+}
+
+/**
+ * إضافة زر الإضافة العائم
+ */
+function addFloatingButton() {
+    // التحقق من وجود الزر
+    if (document.querySelector('.floating-add-button')) {
+        return;
+    }
+    
+    // إنشاء الزر
+    const floatingButton = document.createElement('div');
+    floatingButton.className = 'floating-add-button';
+    floatingButton.innerHTML = '<i class="fas fa-plus"></i>';
+    floatingButton.title = 'إنشاء بطاقة جديدة';
+    floatingButton.onclick = function() {
+        showPage('new-card-page');
     };
     
-    /**
-     * إضافة أنماط CSS للبطاقات
-     */
-    InvestorCardSystem.addCardStyles = function() {
-        // التحقق من وجود الأنماط
-        if (document.getElementById('investor-card-styles')) {
-            return;
-        }
-        
-        // إنشاء عنصر style
-        const styleElement = document.createElement('style');
-        styleElement.id = 'investor-card-styles';
-        styleElement.textContent = InvestorCardSystem.getCardStyles();
-        
-        // إضافة العنصر للصفحة
-        document.head.appendChild(styleElement);
-        
-        // إضافة سمات إضافية للصفحة
-        document.body.classList.add('rtl-support');
-        
-        // إضافة زر إضافة عائم
-        if (!document.querySelector('.floating-add-button')) {
-            const floatingButton = document.createElement('div');
-            floatingButton.className = 'floating-add-button';
-            floatingButton.innerHTML = '<i class="fas fa-plus"></i>';
-            floatingButton.onclick = function() {
-                showCardPage('new-card');
-            };
+    // إضافة الزر إلى الصفحة
+    document.body.appendChild(floatingButton);
+}
+
+/**
+ * إصلاح مشكلة التنقل بين الصفحات
+ */
+function fixCardNavigation() {
+    // التأكد من وجود دالة showPage
+    if (typeof window.showPage !== 'function') {
+        window.showPage = function(pageId) {
+            console.log('الانتقال إلى الصفحة:', pageId);
             
-            document.body.appendChild(floatingButton);
-            
-            // إضافة تنسيق للزر العائم
-            styleElement.textContent += `
-                .floating-add-button {
-                    position: fixed;
-                    bottom: 30px;
-                    left: 30px;
-                    width: 60px;
-                    height: 60px;
-                    border-radius: 50%;
-                    background: #007bff;
-                    color: white;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    font-size: 1.5rem;
-                    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-                    cursor: pointer;
-                    transition: all 0.3s ease;
-                    z-index: 1000;
-                }
-                
-                .floating-add-button:hover {
-                    transform: scale(1.1);
-                    background: #0056b3;
-                }
-                
-                @media (max-width: 768px) {
-                    .floating-add-button {
-                        width: 50px;
-                        height: 50px;
-                        bottom: 20px;
-                        left: 20px;
-                    }
-                }
-            `;
-        }
-    };
-    
-    /**
-     * مزامنة البيانات مع Firebase
-     */
-    InvestorCardSystem.initFirebaseSync = function() {
-        if (!window.firebase || !window.firebase.database || !window.firebaseApp || !window.firebaseApp.user) {
-            console.log('Firebase غير متاح للمزامنة');
-            return;
-        }
-        
-        console.log('بدء المزامنة مع Firebase...');
-        
-        try {
-            // مزامنة البطاقات
-            firebase.database().ref('investorCards').on('value', (snapshot) => {
-                const firebaseCards = snapshot.val();
-                if (firebaseCards) {
-                    InvestorCardSystem.cards = Object.values(firebaseCards);
-                    InvestorCardSystem.renderCards();
-                    InvestorCardSystem.updateCardCounters();
-                    console.log('تم مزامنة البطاقات من Firebase');
-                }
+            // إخفاء جميع الصفحات
+            document.querySelectorAll('.page').forEach(page => {
+                page.classList.remove('active');
             });
             
-            // مزامنة الأنشطة
-            firebase.database().ref('cardActivities').on('value', (snapshot) => {
-                const firebaseActivities = snapshot.val();
-                if (firebaseActivities) {
-                    InvestorCardSystem.activities = Object.values(firebaseActivities);
-                    console.log('تم مزامنة الأنشطة من Firebase');
-                }
-            });
-            
-            console.log('تم بدء المزامنة مع Firebase بنجاح');
-        } catch (error) {
-            console.error('خطأ في المزامنة مع Firebase:', error);
-        }
-    };
-    
-    /**
-     * استيراد بطاقات من ملف محدد في واجهة المستخدم
-     */
-    InvestorCardSystem.importFromFile = function() {
-        const fileInput = document.getElementById('importCardFile');
-        if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
-            InvestorCardSystem.createNotification('خطأ', 'يرجى تحديد ملف JSON', 'danger');
-            return;
-        }
-        
-        InvestorCardSystem.importCards(fileInput.files[0]);
-    };
-    
-    /**
-     * تحديث دالة عرض الصفحة
-     */
-    window.showCardPage = function(pageId) {
-        console.log('الانتقال إلى صفحة البطاقة:', pageId);
-        
-        // إخفاء جميع الصفحات
-        document.querySelectorAll('.page').forEach(page => {
-            page.classList.remove('active');
-        });
-        
-        // عرض الصفحة المطلوبة
-        const pageElement = document.getElementById(`${pageId}-page`);
-        if (pageElement) {
-            pageElement.classList.add('active');
-            
-            // تفعيل عنصر القائمة المناسب
+            // إزالة الفئة النشطة من جميع عناصر القائمة
             document.querySelectorAll('.menu-item').forEach(item => {
                 item.classList.remove('active');
             });
             
-            const activeMenuItem = document.querySelector(`.menu-item[onclick="showCardPage('${pageId}')"]`);
-            if (activeMenuItem) {
-                activeMenuItem.classList.add('active');
-            }
-            
-            // تنفيذ الإجراء المناسب بناءً على الصفحة
-            switch (pageId) {
-                case 'investor-cards':
-                    InvestorCardSystem.renderCards('all');
-                    break;
-                case 'active-cards':
-                    InvestorCardSystem.renderCards('active');
-                    break;
-                case 'expired-cards':
-                    InvestorCardSystem.renderCards('expired');
-                    break;
-                case 'barcode-scanner':
-                    InvestorCardSystem.initBarcodeScanner();
-                    break;
-                case 'new-card':
-                    InvestorCardSystem.updateInvestorSelect();
-                    InvestorCardSystem.updateCardPreview();
-                    break;
-                case 'card-stats':
-                    InvestorCardSystem.renderCardStats();
-                    break;
-                case 'card-import-export':
-                    // لا شيء خاص بهذه الصفحة
-                    break;
-            }
-        } else {
-            console.error('الصفحة غير موجودة:', pageId);
-        }
-    };
-    
-    // إضافة بعض الأمثلة للاختبار عند التطوير
-    InvestorCardSystem.addSampleCards = function() {
-        if (!window.investors || !Array.isArray(window.investors) || window.investors.length === 0) {
-            console.error('لا يوجد مستثمرين لإنشاء بطاقات تجريبية');
-            return;
-        }
-        
-        const cardTypes = ['platinum', 'gold', 'premium', 'diamond', 'islamic'];
-        const count = Math.min(10, window.investors.length);
-        
-        for (let i = 0; i < count; i++) {
-            const investorId = window.investors[i].id;
-            const cardType = cardTypes[Math.floor(Math.random() * cardTypes.length)];
-            
-            const options = {
-                years: Math.floor(Math.random() * 3) + 1,
-                hasQRCode: Math.random() > 0.5,
-                hasChip: true,
-                hasHologram: Math.random() > 0.7,
-                hasPINCode: Math.random() > 0.3
-            };
-            
-            InvestorCardSystem.createCard(investorId, cardType, options);
-        }
-        
-        // إضافة بعض البطاقات المنتهية للاختبار
-        if (window.investors.length >= 2) {
-            const expiredCard = {
-                id: InvestorCardSystem.generateId(),
-                cardNumber: InvestorCardSystem.generateCardNumber(),
-                cardType: 'gold',
-                investorId: window.investors[1].id,
-                investorName: window.investors[1].name,
-                expiryDate: '01/20', // تاريخ منتهي
-                cvv: InvestorCardSystem.generateCVV(),
-                status: 'active',
-                issueDate: '2019-01-15',
-                lastUsed: null,
-                hasQRCode: true,
-                hasChip: true,
-                hasHologram: false,
-                pinCode: InvestorCardSystem.generatePIN(),
-                cardColors: InvestorCardSystem.cardTypes.find(t => t.value === 'gold').colors
-            };
-            
-            InvestorCardSystem.cards.push(expiredCard);
-            InvestorCardSystem.recordActivity('create', expiredCard);
-            InvestorCardSystem.saveCards();
-        }
-        
-        InvestorCardSystem.createNotification('نجاح', `تم إنشاء ${count + 1} بطاقة تجريبية بنجاح`, 'success');
-        InvestorCardSystem.renderCards();
-    };
-    
-    // الدوال المساعدة المتاحة عالمياً
-    window.InvestorCardSystem = InvestorCardSystem;
-})();
-
-// إصلاح مشكلة النقر المزدوج في واجهة المستخدم
-(function() {
-    document.addEventListener('DOMContentLoaded', function() {
-        // تحسين معالجة النقر للبطاقات
-        document.addEventListener('click', function(event) {
-            // النقر على عنصر البطاقة
-            if (event.target.closest('.card-item')) {
-                const cardItem = event.target.closest('.card-item');
-                const cardId = cardItem.querySelector('.investor-card')?.dataset.cardId;
+            // عرض الصفحة المطلوبة
+            const pageElement = document.getElementById(pageId);
+            if (pageElement) {
+                pageElement.classList.add('active');
                 
-                if (cardId && typeof InvestorCardSystem !== 'undefined') {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    
-                    // استدعاء دالة عرض تفاصيل البطاقة
-                    InvestorCardSystem.viewCardDetails(cardId);
+                // تفعيل عنصر القائمة المناسب
+                document.querySelectorAll(`.menu-item[onclick*="showPage('${pageId}')"]`).forEach(item => {
+                    item.classList.add('active');
+                });
+                
+                // تنفيذ إجراءات خاصة بالصفحة
+                switch (pageId) {
+                    case 'investor-cards-page':
+                        InvestorCardSystem.renderCards('all');
+                        break;
+                    case 'active-cards-page':
+                        InvestorCardSystem.renderCards('active');
+                        break;
+                    case 'expired-cards-page':
+                        InvestorCardSystem.renderCards('expired');
+                        break;
+                    case 'barcode-scanner-page':
+                        InvestorCardSystem.initBarcodeScanner();
+                        break;
+                    case 'new-card-page':
+                        InvestorCardSystem.updateInvestorSelect();
+                        InvestorCardSystem.updateCardPreview();
+                        break;
+                    case 'card-stats-page':
+                        InvestorCardSystem.renderCardStats();
+                        break;
                 }
-                
-                return;
+            } else {
+                console.error('الصفحة غير موجودة:', pageId);
             }
-            
-            // النقر على زر في القائمة
-            if (event.target.closest('.menu-item[onclick^="showCardPage"]')) {
-                const menuItem = event.target.closest('.menu-item');
-                const pageId = menuItem.getAttribute('onclick').match(/'([^']+)'/)[1];
-                
-                if (pageId && typeof showCardPage === 'function') {
-                    event.preventDefault();
-                    
-                    // استدعاء دالة عرض الصفحة
-                    showCardPage(pageId);
-                }
-                
-                return;
-            }
-            
-            // النقر على زر في إجراءات البطاقة
-            if (event.target.closest('.card-actions button')) {
-                const button = event.target.closest('.card-actions button');
-                const onclickAttr = button.getAttribute('onclick');
-                
-                if (onclickAttr && typeof InvestorCardSystem !== 'undefined') {
-                    event.preventDefault();
-                    
-                    // تنفيذ الإجراء مباشرةً
-                    const functionMatch = onclickAttr.match(/InvestorCardSystem\.([a-zA-Z]+)\('([^']+)'\)/);
-                    if (functionMatch) {
-                        const functionName = functionMatch[1];
-                        const cardId = functionMatch[2];
-                        
-                        if (typeof InvestorCardSystem[functionName] === 'function') {
-                            InvestorCardSystem[functionName](cardId);
-                        }
-                    }
-                }
-                
-                return;
-            }
-            
-            // النقر على أزرار أخرى
-            if (event.target.closest('button[onclick], a[onclick]')) {
-                const element = event.target.closest('button[onclick], a[onclick]');
-                const onclickAttr = element.getAttribute('onclick');
-                
-                if (onclickAttr && !onclickAttr.includes('event.preventDefault()')) {
-                    // التحقق من أنواع الدوال التي نريد تحسينها
-                    if (onclickAttr.includes('showCardPage') || 
-                        onclickAttr.includes('InvestorCardSystem') || 
-                        onclickAttr.includes('showPage')) {
-                        
-                        event.preventDefault();
-                        
-                        // تنفيذ الدالة مباشرةً
-                        try {
-                            eval(onclickAttr);
-                        } catch (error) {
-                            console.error('خطأ في تنفيذ onclick:', error);
-                        }
-                    }
-                }
-            }
-        }, true); // استخدام capturing لضمان تنفيذ المعالج قبل أي معالجات أخرى
-    });
-})();
+        };
+    }
+}
 
 /**
- * =====================================================
- * تكامل نظام بطاقات المستثمرين مع النظام الرئيسي
- * =====================================================
+ * تسجيل الأحداث
  */
+function registerEventListeners() {
+    // تسجيل أحداث النقر على أزرار القائمة
+    document.querySelectorAll('.menu-item[onclick*="showPage"]').forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+            const pageId = this.getAttribute('onclick').match(/'([^']+)'/)[1];
+            showPage(pageId);
+        });
+    });
+    
+    // تسجيل أحداث البحث اليدوي عن البطاقة
+    const manualSearchInput = document.getElementById('manualSearchInput');
+    if (manualSearchInput) {
+        manualSearchInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                InvestorCardSystem.manualSearch();
+            }
+        });
+    }
+    
+    // تسجيل التغييرات في نموذج إنشاء البطاقة
+    const newCardForm = document.getElementById('newCardForm');
+    if (newCardForm) {
+        newCardForm.querySelectorAll('input, select').forEach(input => {
+            input.addEventListener('change', function() {
+                InvestorCardSystem.updateCardPreview();
+            });
+        });
+    }
+}
 
-// تهيئة النظام عند تحميل الصفحة
-document.addEventListener('DOMContentLoaded', function() {
-    // التحقق من وجود النظام
-    if (typeof InvestorCardSystem === 'undefined') {
-        console.error('نظام بطاقات المستثمرين غير متاح!');
+/**
+ * إعداد المزامنة مع Firebase
+ */
+function setupFirebaseSync() {
+    // التحقق من توفر Firebase
+    if (window.firebase && window.firebase.database && window.firebaseApp && window.firebaseApp.user) {
+        console.log('إعداد المزامنة مع Firebase...');
+        
+        // مزامنة البطاقات
+        firebase.database().ref('investorCards').on('value', (snapshot) => {
+            const firebaseCards = snapshot.val();
+            if (firebaseCards) {
+                cards = Object.values(firebaseCards);
+                renderCards();
+                console.log('تم مزامنة البطاقات من Firebase');
+            }
+        });
+        
+        // مزامنة الأنشطة
+        firebase.database().ref('cardActivities').on('value', (snapshot) => {
+            const firebaseActivities = snapshot.val();
+            if (firebaseActivities) {
+                activities = Object.values(firebaseActivities);
+                console.log('تم مزامنة الأنشطة من Firebase');
+            }
+        });
+    }
+}
+
+/**
+ * تصفية البطاقات حسب النوع
+ * @param {string} type - نوع البطاقة
+ */
+function filterByType(type) {
+    console.log('تصفية البطاقات حسب النوع:', type);
+    
+    if (type === 'all') {
+        renderCards();
         return;
     }
     
-    // تهيئة النظام
-    setTimeout(function() {
-        InvestorCardSystem.init();
-    }, 500);
+    // تصفية البطاقات
+    const filteredCards = cards.filter(card => card.cardType === type);
     
-    // تحديث عدادات البطاقات عند تغيير البطاقات
-    setInterval(function() {
-        if (typeof InvestorCardSystem !== 'undefined') {
-            InvestorCardSystem.updateCardCounters();
-        }
-    }, 30000);
+    // عرض البطاقات المصفاة
+    const cardsGrid = document.getElementById('cardsGrid');
+    if (!cardsGrid) return;
     
-    // إضافة مستمعات الأحداث
-    document.addEventListener('keydown', function(event) {
-        // الانتقال السريع باستخدام لوحة المفاتيح
-        if (event.ctrlKey && event.key === 'c') {
-            // Ctrl+C للانتقال إلى صفحة البطاقات
-            event.preventDefault();
-            showCardPage('investor-cards');
-        } else if (event.ctrlKey && event.key === 'n') {
-            // Ctrl+N لإنشاء بطاقة جديدة
-            event.preventDefault();
-            showCardPage('new-card');
-        }
-    });
+    if (filteredCards.length === 0) {
+        cardsGrid.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-filter fa-3x"></i>
+                <h3>لا توجد بطاقات</h3>
+                <p>لا توجد بطاقات من النوع المحدد.</p>
+            </div>
+        `;
+        return;
+    }
+    
+    cardsGrid.innerHTML = filteredCards.map(card => `
+        <div class="card-item" onclick="InvestorCardSystem.viewCardDetails('${card.id}')">
+            ${renderCard(card)}
+            <div class="card-info-overlay">
+                <h4>${card.investorName || 'غير معروف'}</h4>
+                <p>${cardTypes.find(t => t.value === card.cardType)?.name || card.cardType}</p>
+                <p class="status ${card.status === 'active' ? 'active' : 'inactive'}">
+                    ${card.status === 'active' ? 'نشطة' : 'موقوفة'}
+                </p>
+            </div>
+        </div>
+    `).join('');
+}
+
+// الواجهة العامة للنظام
+return {
+    init: init,
+    createCard: createCard,
+    renderCards: renderCards,
+    viewCardDetails: viewCardDetails,
+    flipCard: flipCard,
+    togglePIN: togglePIN,
+    printCard: printCard,
+    shareCard: shareCard,
+    shareViaQR: shareViaQR,
+    shareViaEmail: shareViaEmail,
+    shareViaText: shareViaText,
+    exportCardJSON: exportCardJSON,
+    exportCardImage: exportCardImage,
+    deleteCard: deleteCard,
+    suspendCard: suspendCard,
+    activateCard: activateCard,
+    renewCard: renewCard,
+    renewAllExpired: renewAllExpired,
+    manualSearch: manualSearch,
+    handleSearch: handleSearch,
+    filterByType: filterByType,
+    initBarcodeScanner: initBarcodeScanner,
+    createNewCard: createNewCard,
+    updateCardPreview: updateCardPreview,
+    updateInvestorSelect: updateInvestorSelect,
+    renderCardStats: renderCardStats,
+    exportStats: exportStats,
+    cards: cards,
+    activities: activities
+};
+})();
+
+// تهيئة النظام عند تحميل الصفحة
+document.addEventListener('DOMContentLoaded', function() {
+    InvestorCardSystem.init();
 });
 
-// استدعاء وظيفة إنشاء بطاقات تجريبية (للتطوير فقط)
-// window.setTimeout(function() {
-//     if (typeof InvestorCardSystem !== 'undefined') {
-//         InvestorCardSystem.addSampleCards();
-//     }
-// }, 2000);
+// دالة فحص توافق المتصفح
+function checkBrowserCompatibility() {
+    const features = {
+        localStorage: typeof localStorage !== 'undefined',
+        JSON: typeof JSON !== 'undefined',
+        querySelector: typeof document.querySelector === 'function',
+        addEventListener: typeof window.addEventListener === 'function'
+    };
+    
+    const incompatible = Object.keys(features).filter(feature => !features[feature]);
+    
+    if (incompatible.length > 0) {
+        console.error('المتصفح الحالي غير متوافق. الميزات غير المدعومة:', incompatible.join(', '));
+        
+        // عرض رسالة للمستخدم
+        const message = document.createElement('div');
+        message.style.position = 'fixed';
+        message.style.top = '0';
+        message.style.left = '0';
+        message.style.right = '0';
+        message.style.padding = '15px';
+        message.style.background = '#f8d7da';
+        message.style.color = '#721c24';
+        message.style.textAlign = 'center';
+        message.style.zIndex = '9999';
+        message.innerHTML = 'المتصفح الذي تستخدمه قديم ولا يدعم بعض الميزات المطلوبة. يرجى استخدام متصفح حديث للحصول على أفضل تجربة.';
+        
+        document.body.appendChild(message);
+        
+        return false;
+    }
+    
+    return true;
+}
+
+// إنشاء أنماط إضافية لإصلاح مشكلة النقر المزدوج
+function fixDoubleClickIssue() {
+    // إضافة نمط لمنع النقر المزدوج
+    const style = document.createElement('style');
+    style.innerHTML = `
+        /* إصلاح مشكلة النقر المزدوج */
+        .card-item {
+            pointer-events: auto;
+        }
+        
+        .card-item * {
+            pointer-events: none;
+        }
+        
+        .btn, .menu-item, .floating-add-button {
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        /* تحسين تجربة النقر على الأجهزة اللمسية */
+        @media (hover: none) {
+            .card-item:hover .card-info-overlay {
+                transform: translateY(0);
+            }
+            
+            .card-item:active {
+                transform: scale(0.98);
+            }
+            
+            .btn:active, .menu-item:active, .floating-add-button:active {
+                opacity: 0.8;
+            }
+        }
+    `;
+    
+    document.head.appendChild(style);
+    
+    // تسجيل أحداث النقر
+    document.addEventListener('click', function(e) {
+        // تمييز العنصر المنقور عليه
+        let target = e.target;
+        
+        // إذا كان العنصر هو .card-item أو أحد عناصره الفرعية
+        const cardItem = target.closest('.card-item');
+        if (cardItem) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            // استخراج معرّف البطاقة
+            const cardId = cardItem.querySelector('.investor-card').dataset.cardId;
+            if (cardId) {
+                InvestorCardSystem.viewCardDetails(cardId);
+            }
+        }
+    }, true);
+}
+
+// تنفيذ الإصلاحات عند تحميل الصفحة
+window.addEventListener('load', function() {
+    // فحص توافق المتصفح
+    if (!checkBrowserCompatibility()) return;
+    
+    // إصلاح مشكلة النقر المزدوج
+    fixDoubleClickIssue();
+    
+    // تحميل بيانات المستثمرين إذا لم تكن متاحة
+    if (!window.investors || !Array.isArray(window.investors) || window.investors.length === 0) {
+        try {
+            const storedInvestors = localStorage.getItem('investors');
+            if (storedInvestors) {
+                window.investors = JSON.parse(storedInvestors);
+                console.log('تم تحميل المستثمرين من التخزين المحلي:', window.investors.length);
+            } else {
+                // إنشاء بيانات افتراضية للتجربة
+                window.investors = [
+                    { id: 'inv1', name: 'أحمد محمد', phone: '07701234567', email: 'ahmed@example.com', address: 'بغداد - الكرادة' },
+                    { id: 'inv2', name: 'سارة علي', phone: '07709876543', email: 'sara@example.com', address: 'بغداد - المنصور' },
+                    { id: 'inv3', name: 'محمد جاسم', phone: '07712345678', email: 'mohammad@example.com', address: 'البصرة - العشار' }
+                ];
+                localStorage.setItem('investors', JSON.stringify(window.investors));
+                console.log('تم إنشاء بيانات افتراضية للمستثمرين');
+            }
+        } catch (error) {
+            console.error('خطأ في تحميل بيانات المستثمرين:', error);
+        }
+    }
+});
