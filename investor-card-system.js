@@ -92,6 +92,10 @@ function initInvestorCardSystem() {
     investorCardSystem.switchCardsTab = switchCardsTab;
     investorCardSystem.searchInvestorCards = searchInvestorCards;
     
+    // CORRECTION: Add openCreateCardModal to the global scope and to the investorCardSystem
+    window.openCreateCardModal = openCreateCardModal;
+    investorCardSystem.openCreateCardModal = openCreateCardModal;
+    
     // Load cards from Firebase on initialization
     loadCardsFromFirebase();
     
@@ -106,42 +110,69 @@ function initInvestorCardSystem() {
  * Set up UI events for card system
  */
 function setupCardUIEvents() {
-    // Add event listener for creating new cards
-    document.addEventListener('DOMContentLoaded', function() {
+    console.log('Setting up card UI events');
+    
+    // CORRECTION: Optimize event listener setup for create card buttons
+    const setupCreateCardButtons = function() {
         const createCardButtons = document.querySelectorAll('.btn[onclick="openCreateCardModal()"]');
+        console.log('Found create card buttons:', createCardButtons.length);
+        
         createCardButtons.forEach(button => {
-            button.onclick = openCreateCardModal;
+            button.removeAttribute('onclick'); // Remove inline onclick to prevent double execution
+            button.addEventListener('click', openCreateCardModal);
         });
-        
-        // Handle card investor selection change
-        const cardInvestorSelect = document.getElementById('cardInvestor');
-        if (cardInvestorSelect) {
-            cardInvestorSelect.addEventListener('change', function() {
-                updateCardInvestorInfo();
-                updateCardPreview();
-            });
-        }
-        
-        // Handle card type selection change
-        const cardTypeInputs = document.querySelectorAll('input[name="cardType"]');
-        cardTypeInputs.forEach(input => {
-            input.addEventListener('change', updateCardPreview);
+    };
+    
+    // Setup event handlers immediately if DOM is already loaded
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+        setupCreateCardButtons();
+        setupFormEventHandlers();
+        setupPageNavigation();
+    }
+    
+    // Also setup on DOMContentLoaded to ensure they are set
+    document.addEventListener('DOMContentLoaded', function() {
+        setupCreateCardButtons();
+        setupFormEventHandlers();
+        setupPageNavigation();
+    });
+}
+
+/**
+ * Setup form event handlers
+ */
+function setupFormEventHandlers() {
+    // Handle card investor selection change
+    const cardInvestorSelect = document.getElementById('cardInvestor');
+    if (cardInvestorSelect) {
+        cardInvestorSelect.addEventListener('change', function() {
+            updateCardInvestorInfo();
+            updateCardPreview();
         });
-        
-        // Handle card expiry change
-        const cardExpiryInput = document.getElementById('cardExpiry');
-        if (cardExpiryInput) {
-            cardExpiryInput.addEventListener('change', updateCardPreview);
-        }
+    }
+    
+    // Handle card type selection change
+    const cardTypeInputs = document.querySelectorAll('input[name="cardType"]');
+    cardTypeInputs.forEach(input => {
+        input.addEventListener('change', updateCardPreview);
     });
     
+    // Handle card expiry change
+    const cardExpiryInput = document.getElementById('cardExpiry');
+    if (cardExpiryInput) {
+        cardExpiryInput.addEventListener('change', updateCardPreview);
+    }
+}
+
+/**
+ * Setup page navigation
+ */
+function setupPageNavigation() {
     // Load investor cards when investor cards page is shown
-    document.addEventListener('DOMContentLoaded', function() {
-        const investorCardsLinks = document.querySelectorAll('a[href="#investorCards"]');
-        investorCardsLinks.forEach(link => {
-            link.addEventListener('click', function() {
-                loadInvestorCards();
-            });
+    const investorCardsLinks = document.querySelectorAll('a[href="#investorCards"]');
+    investorCardsLinks.forEach(link => {
+        link.addEventListener('click', function() {
+            loadInvestorCards();
         });
     });
 }
@@ -152,26 +183,48 @@ function setupCardUIEvents() {
 function openCreateCardModal() {
     console.log('Opening create card modal');
     
-    // Reset form
-    const createCardForm = document.getElementById('createCardForm');
-    if (createCardForm) createCardForm.reset();
-    
-    // Set default expiry date to 3 years from now
-    const expiryInput = document.getElementById('cardExpiry');
-    if (expiryInput) {
-        const now = new Date();
-        const futureDate = new Date(now.getFullYear() + 3, now.getMonth());
-        expiryInput.value = futureDate.toISOString().slice(0, 7);
+    try {
+        // Reset form
+        const createCardForm = document.getElementById('createCardForm');
+        if (createCardForm) {
+            createCardForm.reset();
+        } else {
+            console.error('Cannot find createCardForm element');
+        }
+        
+        // Set default expiry date to 3 years from now
+        const expiryInput = document.getElementById('cardExpiry');
+        if (expiryInput) {
+            const now = new Date();
+            const futureDate = new Date(now.getFullYear() + 3, now.getMonth());
+            expiryInput.value = futureDate.toISOString().slice(0, 7);
+        } else {
+            console.error('Cannot find cardExpiry element');
+        }
+        
+        // Populate investor select
+        populateCardInvestorSelect();
+        
+        // Update card preview
+        updateCardPreview();
+        
+        // Open modal
+        const modalElement = document.getElementById('createCardModal');
+        if (!modalElement) {
+            console.error('Cannot find createCardModal element');
+            return;
+        }
+        
+        // CORRECTION: Check if openModal is available, if not, add the active class directly
+        if (typeof openModal === 'function') {
+            openModal('createCardModal');
+        } else {
+            console.warn('openModal function not found, adding active class directly');
+            modalElement.classList.add('active');
+        }
+    } catch (error) {
+        console.error('Error opening create card modal:', error);
     }
-    
-    // Populate investor select
-    populateCardInvestorSelect();
-    
-    // Update card preview
-    updateCardPreview();
-    
-    // Open modal
-    openModal('createCardModal');
 }
 
 /**
@@ -179,10 +232,20 @@ function openCreateCardModal() {
  */
 function populateCardInvestorSelect() {
     const select = document.getElementById('cardInvestor');
-    if (!select) return;
+    if (!select) {
+        console.error('Cannot find cardInvestor select element');
+        return;
+    }
     
     // Clear previous options
     select.innerHTML = '<option value="">اختر المستثمر</option>';
+    
+    // Get investors from the global scope
+    const investors = window.investors || [];
+    if (!investors.length) {
+        console.warn('No investors found in the global investors array');
+        return;
+    }
     
     // Sort investors by name
     const sortedInvestors = [...investors].sort((a, b) => a.name.localeCompare(b.name));
@@ -194,6 +257,8 @@ function populateCardInvestorSelect() {
         option.textContent = investor.name;
         select.appendChild(option);
     });
+    
+    console.log('Populated investor select with', sortedInvestors.length, 'investors');
 }
 
 /**
@@ -206,6 +271,7 @@ function updateCardInvestorInfo() {
     if (!investorId || !phoneInput) return;
     
     // Find investor
+    const investors = window.investors || [];
     const investor = investors.find(inv => inv.id === investorId);
     if (investor) {
         phoneInput.value = investor.phone;
@@ -219,10 +285,15 @@ function updateCardInvestorInfo() {
  */
 function updateCardPreview() {
     const cardPreview = document.getElementById('cardPreview');
-    if (!cardPreview) return;
+    if (!cardPreview) {
+        console.error('Cannot find cardPreview element');
+        return;
+    }
     
     // Get form values
-    const investorId = document.getElementById('cardInvestor').value;
+    const investorIdElement = document.getElementById('cardInvestor');
+    const investorId = investorIdElement ? investorIdElement.value : '';
+    
     const cardTypeInputs = document.querySelectorAll('input[name="cardType"]');
     let cardType = 'platinum';
     cardTypeInputs.forEach(input => {
@@ -243,6 +314,7 @@ function updateCardPreview() {
     }
     
     // Find investor
+    const investors = window.investors || [];
     const investor = investors.find(inv => inv.id === investorId);
     const investorName = investor ? investor.name : 'حامل البطاقة';
     
@@ -291,71 +363,89 @@ function formatCardNumber(number) {
  * Create a new investor card
  */
 function createInvestorCard() {
-    // Get form values
-    const investorId = document.getElementById('cardInvestor').value;
-    const expiryInput = document.getElementById('cardExpiry').value;
-    
-    // Validate required fields
-    if (!investorId || !expiryInput) {
-        createNotification('خطأ', 'يرجى ملء جميع الحقول المطلوبة', 'danger');
-        return;
-    }
-    
-    // Find investor
-    const investor = investors.find(inv => inv.id === investorId);
-    if (!investor) {
-        createNotification('خطأ', 'المستثمر غير موجود', 'danger');
-        return;
-    }
-    
-    // Get selected card type
-    const cardTypeInputs = document.querySelectorAll('input[name="cardType"]');
-    let cardType = 'platinum';
-    cardTypeInputs.forEach(input => {
-        if (input.checked) {
-            cardType = input.value;
+    try {
+        // Get form values
+        const investorId = document.getElementById('cardInvestor').value;
+        const expiryInput = document.getElementById('cardExpiry').value;
+        
+        // Validate required fields
+        if (!investorId || !expiryInput) {
+            createNotification('خطأ', 'يرجى ملء جميع الحقول المطلوبة', 'danger');
+            return;
         }
-    });
-    
-    // Format expiry date
-    const [expiryYear, expiryMonth] = expiryInput.split('-');
-    const expiryDate = `${expiryMonth}/${expiryYear.slice(2)}`;
-    
-    // Generate a new card
-    const cardId = generateId();
-    const cardNumber = generateCardNumber();
-    const cvv = Math.floor(100 + Math.random() * 900).toString(); // 3-digit CVV
-    
-    // Create new card object
-    const newCard = {
-        id: cardId,
-        investorId: investorId,
-        investorName: investor.name,
-        phone: investor.phone,
-        cardNumber: cardNumber,
-        cvv: cvv,
-        type: cardType,
-        status: 'active',
-        createdAt: new Date().toISOString(),
-        expiryDate: expiryDate,
-        lastUsed: null,
-        transactions: []
-    };
-    
-    // Add card to array
-    investorCardSystem.cards.push(newCard);
-    
-    // Save to Firebase
-    saveCardToFirebase(newCard);
-    
-    // Close modal
-    closeModal('createCardModal');
-    
-    // Refresh cards
-    loadInvestorCards();
-    
-    // Show success notification
-    createNotification('نجاح', 'تم إنشاء البطاقة بنجاح', 'success', cardId, 'card');
+        
+        // Find investor
+        const investors = window.investors || [];
+        const investor = investors.find(inv => inv.id === investorId);
+        if (!investor) {
+            createNotification('خطأ', 'المستثمر غير موجود', 'danger');
+            return;
+        }
+        
+        // Get selected card type
+        const cardTypeInputs = document.querySelectorAll('input[name="cardType"]');
+        let cardType = 'platinum';
+        cardTypeInputs.forEach(input => {
+            if (input.checked) {
+                cardType = input.value;
+            }
+        });
+        
+        // Format expiry date
+        const [expiryYear, expiryMonth] = expiryInput.split('-');
+        const expiryDate = `${expiryMonth}/${expiryYear.slice(2)}`;
+        
+        // Generate a new card
+        const cardId = generateId();
+        const cardNumber = generateCardNumber();
+        const cvv = Math.floor(100 + Math.random() * 900).toString(); // 3-digit CVV
+        
+        // Create new card object
+        const newCard = {
+            id: cardId,
+            investorId: investorId,
+            investorName: investor.name,
+            phone: investor.phone,
+            cardNumber: cardNumber,
+            cvv: cvv,
+            type: cardType,
+            status: 'active',
+            createdAt: new Date().toISOString(),
+            expiryDate: expiryDate,
+            lastUsed: null,
+            transactions: []
+        };
+        
+        // Add card to array
+        investorCardSystem.cards.push(newCard);
+        
+        // Save to Firebase
+        saveCardToFirebase(newCard);
+        
+        // Close modal
+        if (typeof closeModal === 'function') {
+            closeModal('createCardModal');
+        } else {
+            const modalElement = document.getElementById('createCardModal');
+            if (modalElement) {
+                modalElement.classList.remove('active');
+            }
+        }
+        
+        // Refresh cards
+        loadInvestorCards();
+        
+        // Show success notification
+        if (typeof createNotification === 'function') {
+            createNotification('نجاح', 'تم إنشاء البطاقة بنجاح', 'success', cardId, 'card');
+        } else {
+            console.log('Card created successfully');
+            alert('تم إنشاء البطاقة بنجاح');
+        }
+    } catch (error) {
+        console.error('Error creating investor card:', error);
+        alert('حدث خطأ أثناء إنشاء البطاقة: ' + error.message);
+    }
 }
 
 /**
@@ -380,6 +470,7 @@ function saveCardToFirebase(card) {
         } else {
             // Save to localStorage as fallback
             localStorage.setItem('investorCards', JSON.stringify(investorCardSystem.cards));
+            console.log('Card saved to localStorage (Firebase not available)');
         }
     } catch (error) {
         console.error('Error saving card:', error);
@@ -431,10 +522,16 @@ function loadCardsFromFirebase() {
  * Load cards from localStorage (fallback)
  */
 function loadCardsFromLocalStorage() {
-    const storedCards = localStorage.getItem('investorCards');
-    if (storedCards) {
-        investorCardSystem.cards = JSON.parse(storedCards);
-        console.log(`Loaded ${investorCardSystem.cards.length} cards from localStorage`);
+    try {
+        const storedCards = localStorage.getItem('investorCards');
+        if (storedCards) {
+            investorCardSystem.cards = JSON.parse(storedCards);
+            console.log(`Loaded ${investorCardSystem.cards.length} cards from localStorage`);
+        } else {
+            console.log('No cards found in localStorage');
+        }
+    } catch (error) {
+        console.error('Error loading cards from localStorage:', error);
     }
 }
 
@@ -576,6 +673,7 @@ function generateQRCode(elementId, data) {
                     <i class="fas fa-qrcode" style="font-size: 32px;"></i>
                 </div>
             `;
+            console.warn('QR code library not available, using fallback placeholder');
         }
     } catch (error) {
         console.error('Error generating QR code:', error);
@@ -596,7 +694,10 @@ function loadInvestorCards(filter = 'all') {
     console.log(`Loading investor cards with filter: ${filter}`);
     
     const cardsGrid = document.getElementById('cardsGrid');
-    if (!cardsGrid) return;
+    if (!cardsGrid) {
+        console.error('Cannot find cardsGrid element');
+        return;
+    }
     
     // Update badge counts
     updateCardBadgeCounts();
@@ -621,11 +722,18 @@ function loadInvestorCards(filter = 'all') {
             <div class="no-cards-message">
                 <i class="fas fa-credit-card fa-3x"></i>
                 <p>لا توجد بطاقات ${filter === 'active' ? 'نشطة' : filter === 'suspended' ? 'متوقفة' : ''}</p>
-                <button class="btn btn-primary" onclick="openCreateCardModal()">
+                <button class="btn btn-primary" id="createCardButton">
                     <i class="fas fa-plus"></i> إنشاء بطاقة جديدة
                 </button>
             </div>
         `;
+        
+        // Add event listener to the created button
+        const createCardButton = document.getElementById('createCardButton');
+        if (createCardButton) {
+            createCardButton.addEventListener('click', openCreateCardModal);
+        }
+        
         return;
     }
     
@@ -663,7 +771,9 @@ function loadInvestorCards(filter = 'all') {
         cardsGrid.appendChild(cardElement);
         
         // Generate QR code
-        generateQRCode(`qr-${card.id}`, card.id);
+        setTimeout(() => {
+            generateQRCode(`qr-${card.id}`, card.id);
+        }, 100);
     });
 }
 
@@ -769,7 +879,7 @@ function searchInvestorCards() {
         cardElement.onclick = () => viewCardDetails(card.id);
         
         cardElement.innerHTML = `
-            <div class="card-preview card-${card.type}" style="background: ${cardType.bgColor};">
+            <div class="card-preview card-${card.type}" style="background: ${cardTypeObj.bgColor};">
                 <div class="card-header">MASTERCARD</div>
                 <div class="card-chip"></div>
                 <div class="card-qr" id="qr-search-${card.id}"></div>
@@ -795,7 +905,9 @@ function searchInvestorCards() {
         cardsGrid.appendChild(cardElement);
         
         // Generate QR code
-        generateQRCode(`qr-search-${card.id}`, card.id);
+        setTimeout(() => {
+            generateQRCode(`qr-search-${card.id}`, card.id);
+        }, 100);
     });
 }
 
@@ -812,22 +924,29 @@ function viewCardDetails(cardId) {
     // Find card
     const card = getInvestorCardById(cardId);
     if (!card) {
-        createNotification('خطأ', 'البطاقة غير موجودة', 'danger');
+        if (typeof createNotification === 'function') {
+            createNotification('خطأ', 'البطاقة غير موجودة', 'danger');
+        } else {
+            alert('البطاقة غير موجودة');
+        }
         return;
     }
     
     // Find investor
+    const investors = window.investors || [];
     const investor = investors.find(inv => inv.id === card.investorId);
     
     // Get card type
     const cardType = investorCardSystem.cardTypes.find(t => t.id === card.type) || investorCardSystem.cardTypes[0];
     
     // Get card transactions
+    const operations = window.operations || [];
     const cardTransactions = operations.filter(op => op.investorId === card.investorId)
         .sort((a, b) => new Date(b.date) - new Date(a.date))
         .slice(0, 10); // Get last 10 transactions
     
     // Calculate investor statistics
+    const investments = window.investments || [];
     const totalInvestment = investments
         .filter(inv => inv.investorId === card.investorId && inv.status === 'active')
         .reduce((total, inv) => total + inv.amount, 0);
@@ -839,8 +958,11 @@ function viewCardDetails(cardId) {
     investments
         .filter(inv => inv.investorId === card.investorId && inv.status === 'active')
         .forEach(inv => {
-            const profit = calculateProfit(inv.amount, inv.date, today.toISOString());
-            totalProfit += profit;
+            // Check if calculateProfit function exists
+            if (typeof calculateProfit === 'function') {
+                const profit = calculateProfit(inv.amount, inv.date, today.toISOString());
+                totalProfit += profit;
+            }
         });
     
     // Get profit payment operations
@@ -852,6 +974,11 @@ function viewCardDetails(cardId) {
     // Create card details modal content
     const cardDetailsContent = document.getElementById('cardDetailsContent');
     if (!cardDetailsContent) return;
+    
+    // Use the formatCurrency and formatDate functions if available
+    const formatCurrencyFn = typeof formatCurrency === 'function' ? formatCurrency : (amount) => amount + ' د.ع';
+    const formatDateFn = typeof formatDate === 'function' ? formatDate : (date) => new Date(date).toLocaleDateString();
+    const getOperationTypeNameFn = typeof getOperationTypeName === 'function' ? getOperationTypeName : (type) => type;
     
     cardDetailsContent.innerHTML = `
         <div class="card-details-container">
@@ -891,7 +1018,7 @@ function viewCardDetails(cardId) {
                         </tr>
                         <tr>
                             <th>تاريخ الإنشاء:</th>
-                            <td>${formatDate(card.createdAt)}</td>
+                            <td>${formatDateFn(card.createdAt)}</td>
                         </tr>
                         <tr>
                             <th>تاريخ الانتهاء:</th>
@@ -899,7 +1026,7 @@ function viewCardDetails(cardId) {
                         </tr>
                         <tr>
                             <th>الحد اليومي:</th>
-                            <td>${formatCurrency(cardType.dailyLimit)}</td>
+                            <td>${formatCurrencyFn(cardType.dailyLimit)}</td>
                         </tr>
                         <tr>
                             <th>المعاملات المجانية:</th>
@@ -918,22 +1045,22 @@ function viewCardDetails(cardId) {
             <div class="card-details-stats">
                 <div class="stat-card">
                     <div class="stat-icon"><i class="fas fa-money-bill-wave"></i></div>
-                    <div class="stat-value">${formatCurrency(totalInvestment)}</div>
+                    <div class="stat-value">${formatCurrencyFn(totalInvestment)}</div>
                     <div class="stat-title">إجمالي الاستثمار</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-icon"><i class="fas fa-chart-line"></i></div>
-                    <div class="stat-value">${formatCurrency(totalProfit.toFixed(2))}</div>
+                    <div class="stat-value">${formatCurrencyFn(totalProfit.toFixed(2))}</div>
                     <div class="stat-title">إجمالي الأرباح</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
-                    <div class="stat-value">${formatCurrency(totalProfitPaid.toFixed(2))}</div>
+                    <div class="stat-value">${formatCurrencyFn(totalProfitPaid.toFixed(2))}</div>
                     <div class="stat-title">الأرباح المدفوعة</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-icon"><i class="fas fa-clock"></i></div>
-                    <div class="stat-value">${formatCurrency((totalProfit - totalProfitPaid).toFixed(2))}</div>
+                    <div class="stat-value">${formatCurrencyFn((totalProfit - totalProfitPaid).toFixed(2))}</div>
                     <div class="stat-title">الأرباح المستحقة</div>
                 </div>
             </div>
@@ -956,9 +1083,9 @@ function viewCardDetails(cardId) {
                             ${cardTransactions.map(transaction => `
                             <tr>
                                 <td>${transaction.id}</td>
-                                <td>${getOperationTypeName(transaction.type)}</td>
-                                <td>${formatCurrency(transaction.amount)}</td>
-                                <td>${formatDate(transaction.date)}</td>
+                                <td>${getOperationTypeNameFn(transaction.type)}</td>
+                                <td>${formatCurrencyFn(transaction.amount)}</td>
+                                <td>${formatDateFn(transaction.date)}</td>
                                 <td><span class="status ${transaction.status === 'pending' ? 'pending' : 'active'}">${transaction.status === 'pending' ? 'معلق' : 'مكتمل'}</span></td>
                             </tr>
                             `).join('')}
@@ -993,15 +1120,19 @@ function viewCardDetails(cardId) {
                         </thead>
                         <tbody>
                             ${investments.filter(inv => inv.investorId === investor.id && inv.status === 'active').map(investment => {
-                                const monthlyProfit = calculateMonthlyProfit(investment.amount);
-                                const totalInvestmentProfit = calculateProfit(investment.amount, investment.date, today.toISOString());
+                                const monthlyProfit = typeof calculateMonthlyProfit === 'function' ? 
+                                    calculateMonthlyProfit(investment.amount) : 
+                                    (investment.amount * (window.settings?.monthlyProfitRate || 1.75)) / 100;
+                                
+                                const totalInvestmentProfit = typeof calculateProfit === 'function' ? 
+                                    calculateProfit(investment.amount, investment.date, today.toISOString()) : 0;
                                 
                                 return `
                                 <tr>
-                                    <td>${formatCurrency(investment.amount)}</td>
-                                    <td>${formatDate(investment.date)}</td>
-                                    <td>${formatCurrency(monthlyProfit.toFixed(2))}</td>
-                                    <td>${formatCurrency(totalInvestmentProfit.toFixed(2))}</td>
+                                    <td>${formatCurrencyFn(investment.amount)}</td>
+                                    <td>${formatDateFn(investment.date)}</td>
+                                    <td>${formatCurrencyFn(monthlyProfit.toFixed(2))}</td>
+                                    <td>${formatCurrencyFn(totalInvestmentProfit.toFixed(2))}</td>
                                 </tr>
                                 `;
                             }).join('')}
@@ -1041,7 +1172,14 @@ function viewCardDetails(cardId) {
     }
     
     // Open modal
-    openModal('cardDetailsModal');
+    if (typeof openModal === 'function') {
+        openModal('cardDetailsModal');
+    } else {
+        const modalElement = document.getElementById('cardDetailsModal');
+        if (modalElement) {
+            modalElement.classList.add('active');
+        }
+    }
 }
 
 /**
@@ -1056,16 +1194,31 @@ function deleteCard() {
         // Delete card
         if (deleteInvestorCard(cardId)) {
             // Close modal
-            closeModal('cardDetailsModal');
+            if (typeof closeModal === 'function') {
+                closeModal('cardDetailsModal');
+            } else {
+                const modalElement = document.getElementById('cardDetailsModal');
+                if (modalElement) {
+                    modalElement.classList.remove('active');
+                }
+            }
             
             // Refresh cards
             loadInvestorCards();
             
             // Show success notification
-            createNotification('نجاح', 'تم حذف البطاقة بنجاح', 'success');
+            if (typeof createNotification === 'function') {
+                createNotification('نجاح', 'تم حذف البطاقة بنجاح', 'success');
+            } else {
+                alert('تم حذف البطاقة بنجاح');
+            }
         } else {
             // Show error notification
-            createNotification('خطأ', 'فشل حذف البطاقة', 'danger');
+            if (typeof createNotification === 'function') {
+                createNotification('خطأ', 'فشل حذف البطاقة', 'danger');
+            } else {
+                alert('فشل حذف البطاقة');
+            }
         }
     }
 }
@@ -1080,7 +1233,14 @@ function toggleCardStatus() {
     // Toggle status
     if (toggleCardStatus(cardId)) {
         // Close modal
-        closeModal('cardDetailsModal');
+        if (typeof closeModal === 'function') {
+            closeModal('cardDetailsModal');
+        } else {
+            const modalElement = document.getElementById('cardDetailsModal');
+            if (modalElement) {
+                modalElement.classList.remove('active');
+            }
+        }
         
         // Refresh cards
         loadInvestorCards();
@@ -1090,14 +1250,22 @@ function toggleCardStatus() {
         const status = card ? card.status : 'unknown';
         
         // Show success notification
-        createNotification(
-            'نجاح', 
-            `تم ${status === 'active' ? 'تفعيل' : 'إيقاف'} البطاقة بنجاح`, 
-            'success'
-        );
+        if (typeof createNotification === 'function') {
+            createNotification(
+                'نجاح', 
+                `تم ${status === 'active' ? 'تفعيل' : 'إيقاف'} البطاقة بنجاح`, 
+                'success'
+            );
+        } else {
+            alert(`تم ${status === 'active' ? 'تفعيل' : 'إيقاف'} البطاقة بنجاح`);
+        }
     } else {
         // Show error notification
-        createNotification('خطأ', 'فشل تغيير حالة البطاقة', 'danger');
+        if (typeof createNotification === 'function') {
+            createNotification('خطأ', 'فشل تغيير حالة البطاقة', 'danger');
+        } else {
+            alert('فشل تغيير حالة البطاقة');
+        }
     }
 }
 
@@ -1142,7 +1310,14 @@ function scanBarcode() {
         }
         
         // Open modal
-        openModal('scannerModal');
+        if (typeof openModal === 'function') {
+            openModal('scannerModal');
+        } else {
+            const modalElement = document.getElementById('scannerModal');
+            if (modalElement) {
+                modalElement.classList.add('active');
+            }
+        }
         
         // Initialize camera
         const video = document.getElementById('scanner-video');
@@ -1166,11 +1341,27 @@ function scanBarcode() {
             })
             .catch(function(err) {
                 console.error('Error accessing camera:', err);
-                closeModal('scannerModal');
-                createNotification('خطأ', 'فشل الوصول إلى الكاميرا. يرجى التحقق من إذن الكاميرا.', 'danger');
+                if (typeof closeModal === 'function') {
+                    closeModal('scannerModal');
+                } else {
+                    const modalElement = document.getElementById('scannerModal');
+                    if (modalElement) {
+                        modalElement.classList.remove('active');
+                    }
+                }
+                
+                if (typeof createNotification === 'function') {
+                    createNotification('خطأ', 'فشل الوصول إلى الكاميرا. يرجى التحقق من إذن الكاميرا.', 'danger');
+                } else {
+                    alert('فشل الوصول إلى الكاميرا. يرجى التحقق من إذن الكاميرا.');
+                }
             });
     } else {
-        createNotification('خطأ', 'جهازك لا يدعم الوصول إلى الكاميرا.', 'danger');
+        if (typeof createNotification === 'function') {
+            createNotification('خطأ', 'جهازك لا يدعم الوصول إلى الكاميرا.', 'danger');
+        } else {
+            alert('جهازك لا يدعم الوصول إلى الكاميرا.');
+        }
     }
 }
 
@@ -1205,7 +1396,14 @@ function startScanning() {
                 video.srcObject.getTracks().forEach(track => track.stop());
                 
                 // Close modal
-                closeModal('scannerModal');
+                if (typeof closeModal === 'function') {
+                    closeModal('scannerModal');
+                } else {
+                    const modalElement = document.getElementById('scannerModal');
+                    if (modalElement) {
+                        modalElement.classList.remove('active');
+                    }
+                }
                 
                 // Process the code
                 processScannedCode(code.data);
@@ -1253,13 +1451,25 @@ function processScannedCode(data) {
                 if (card) {
                     viewCardDetails(json.id);
                 } else {
-                    createNotification('خطأ', 'البطاقة غير موجودة', 'danger');
+                    if (typeof createNotification === 'function') {
+                        createNotification('خطأ', 'البطاقة غير موجودة', 'danger');
+                    } else {
+                        alert('البطاقة غير موجودة');
+                    }
                 }
             } else {
-                createNotification('خطأ', 'رمز QR غير صالح', 'danger');
+                if (typeof createNotification === 'function') {
+                    createNotification('خطأ', 'رمز QR غير صالح', 'danger');
+                } else {
+                    alert('رمز QR غير صالح');
+                }
             }
         } catch (e) {
-            createNotification('خطأ', 'رمز QR غير صالح', 'danger');
+            if (typeof createNotification === 'function') {
+                createNotification('خطأ', 'رمز QR غير صالح', 'danger');
+            } else {
+                alert('رمز QR غير صالح');
+            }
         }
     }
 }
@@ -1274,6 +1484,7 @@ function addCardTransaction(cardId, operationId) {
     const card = getInvestorCardById(cardId);
     if (!card) return false;
     
+    const operations = window.operations || [];
     const operation = operations.find(op => op.id === operationId);
     if (!operation) return false;
     
@@ -1301,7 +1512,12 @@ function addCardTransaction(cardId, operationId) {
  * CSS for the card system
  */
 function addCardSystemStyles() {
+    // Check if styles already exist
+    if (document.getElementById('card-system-styles')) return;
+    
     const style = document.createElement('style');
+    style.id = 'card-system-styles';
+    
     style.textContent = `
         /* Investor Card System Styles */
         .cards-container {
@@ -1783,6 +1999,24 @@ function addCardSystemStyles() {
             font-weight: 500;
         }
         
+        /* Card Modal Specific Styles */
+        .card-modal-body {
+            display: flex;
+            flex-direction: row;
+            gap: 20px;
+        }
+        
+        .card-form-container {
+            flex: 1;
+        }
+        
+        .card-preview-container {
+            width: 320px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
         /* Media Queries for Responsiveness */
         @media (max-width: 768px) {
             .cards-grid {
@@ -1801,14 +2035,37 @@ function addCardSystemStyles() {
             .card-type-options {
                 grid-template-columns: 1fr;
             }
+            
+            .card-modal-body {
+                flex-direction: column;
+            }
+            
+            .card-preview-container {
+                width: 100%;
+            }
         }
     `;
     
     document.head.appendChild(style);
+    console.log('Card system styles added');
+}
+
+/**
+ * Helper function to generate IDs if the global function is not available
+ */
+function generateId() {
+    if (typeof window.generateId === 'function') {
+        return window.generateId();
+    }
+    
+    // Fallback implementation
+    return Date.now().toString(36) + Math.random().toString(36).substring(2);
 }
 
 // Initialize card system when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOMContentLoaded event fired');
+    
     // Add card system styles
     addCardSystemStyles();
     
@@ -1819,12 +2076,31 @@ document.addEventListener('DOMContentLoaded', function() {
     setupCardsPage();
 });
 
+// Also initialize when the script is loaded if DOM is already ready
+if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    console.log('Document already loaded, initializing immediately');
+    
+    // Add card system styles
+    addCardSystemStyles();
+    
+    // Initialize investor card system
+    initInvestorCardSystem();
+    
+    // Setup cards page
+    setupCardsPage();
+}
+
 /**
  * Setup the investor cards page
  */
 function setupCardsPage() {
     const investorCardsPage = document.getElementById('investorCards');
-    if (!investorCardsPage) return;
+    if (!investorCardsPage) {
+        console.error('Cannot find investorCards page element');
+        return;
+    }
+    
+    console.log('Setting up cards page');
     
     // Load cards when page is shown
     const observer = new MutationObserver(mutations => {
@@ -1836,11 +2112,16 @@ function setupCardsPage() {
     });
     
     observer.observe(investorCardsPage, { attributes: true });
+    
+    // If the page is already active, load cards immediately
+    if (investorCardsPage.classList.contains('active')) {
+        loadInvestorCards();
+    }
 }
 
 // Add card system to any operation creation
-const originalCreateOperation = window.createOperation;
-if (typeof originalCreateOperation === 'function') {
+if (typeof window.createOperation === 'function') {
+    const originalCreateOperation = window.createOperation;
     window.createOperation = function(data) {
         // Call original function
         const result = originalCreateOperation(data);
@@ -1860,47 +2141,5 @@ if (typeof originalCreateOperation === 'function') {
     };
 }
 
-
-
-
-// Ensure openCreateCardModal is available globally with enhanced error handling
-window.openCreateCardModal = function() {
-    console.log('Opening create card modal');
-    
-    // Reset form
-    const createCardForm = document.getElementById('createCardForm');
-    if (createCardForm) createCardForm.reset();
-    
-    // Set default expiry date to 3 years from now
-    const expiryInput = document.getElementById('cardExpiry');
-    if (expiryInput) {
-        const now = new Date();
-        const futureDate = new Date(now.getFullYear() + 3, now.getMonth());
-        expiryInput.value = futureDate.toISOString().slice(0, 7);
-    }
-    
-    // Populate investor select
-    populateCardInvestorSelect();
-    
-    // Update card preview
-    updateCardPreview();
-    
-    // Try to open modal using different methods
-    try {
-        // First try the standard openModal function
-        if (typeof openModal === 'function') {
-            openModal('createCardModal');
-        } else {
-            // Fallback to adding the active class directly
-            document.getElementById('createCardModal').classList.add('active');
-        }
-    } catch (e) {
-        console.error('Error opening modal:', e);
-        // Last resort fallback
-        const modal = document.getElementById('createCardModal');
-        if (modal) modal.classList.add('active');
-    }
-};
-
-// Make openCreateCardModal available globally
+// CORRECTION: Make sure the openCreateCardModal function is globally available
 window.openCreateCardModal = openCreateCardModal;
