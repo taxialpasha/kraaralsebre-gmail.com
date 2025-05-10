@@ -7,7 +7,6 @@ let currentEmployeeId = null;
 
 // تهيئة النظام عند تحميل الصفحة
 window.addEventListener('DOMContentLoaded', initEmployeeSystem);
-
 function initEmployeeSystem() {
     // إضافة قسم الموظفين إلى القائمة الجانبية
     addEmployeesToSidebar();
@@ -20,8 +19,13 @@ function initEmployeeSystem() {
     
     // إضافة الأحداث
     setupEmployeeEvents();
+    
+    // تحميل البيانات الأولية
+    setTimeout(() => {
+        loadEmployees();
+        loadSalaries();
+    }, 100);
 }
-
 // إضافة قسم الموظفين إلى القائمة الجانبية
 function addEmployeesToSidebar() {
     const sidebarMenu = document.querySelector('.sidebar-menu');
@@ -844,13 +848,20 @@ function printSalaryReceipt() {
         </html>
     `);
 }
-
-// وظائف التحميل والعرض
 function loadEmployees() {
     const tbody = document.getElementById('employeesTableBody');
-    if (!tbody) return;
+    if (!tbody) {
+        console.error('عنصر جدول الموظفين غير موجود');
+        return;
+    }
     
     tbody.innerHTML = '';
+    
+    // التحقق من وجود موظفين
+    if (!employees || employees.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align: center;">لا يوجد موظفين مسجلين</td></tr>';
+        return;
+    }
     
     employees.forEach((emp, index) => {
         const row = document.createElement('tr');
@@ -892,7 +903,6 @@ function loadEmployees() {
         tbody.appendChild(row);
     });
 }
-
 function loadSalaries() {
     const tbody = document.getElementById('salariesTableBody');
     if (!tbody) return;
@@ -1047,8 +1057,6 @@ function loadPerformanceChart() {
         }
     });
 }
-
-// وظائف التبويبات
 function switchEmployeeTab(tabId) {
     // إخفاء جميع التبويبات
     document.querySelectorAll('#employees .tab-content').forEach(content => {
@@ -1060,9 +1068,33 @@ function switchEmployeeTab(tabId) {
         tab.classList.remove('active');
     });
     
-    // تفعيل التبويب المحدد
-    document.getElementById(`${tabId}Tab`).classList.add('active');
-    document.querySelector(`#employees .tab[onclick="switchEmployeeTab('${tabId}')"]`).classList.add('active');
+    // تحديد اسم التبويب الصحيح
+    let tabElementId;
+    switch(tabId) {
+        case 'list':
+            tabElementId = 'employeeListTab';
+            break;
+        case 'salary':
+            tabElementId = 'salaryTab';
+            break;
+        case 'reports':
+            tabElementId = 'reportsTab';
+            break;
+        default:
+            tabElementId = tabId + 'Tab';
+    }
+    
+    // تفعيل التبويب المحدد مع التحقق من وجوده
+    const tabContent = document.getElementById(tabElementId);
+    if (tabContent) {
+        tabContent.classList.add('active');
+    }
+    
+    // تفعيل زر التبويب مع التحقق من وجوده
+    const tabButton = document.querySelector(`#employees .tab[onclick="switchEmployeeTab('${tabId}')"]`);
+    if (tabButton) {
+        tabButton.classList.add('active');
+    }
     
     // تحميل المحتوى المناسب
     switch(tabId) {
@@ -1073,7 +1105,10 @@ function switchEmployeeTab(tabId) {
             loadSalaries();
             break;
         case 'reports':
-            loadEmployeeCharts();
+            // تأجيل تحميل المخططات قليلاً للتأكد من ظهور العناصر
+            setTimeout(() => {
+                loadEmployeeCharts();
+            }, 100);
             break;
     }
 }

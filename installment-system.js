@@ -4917,6 +4917,18 @@ if (typeof window.showPage === 'function' && typeof investors !== 'undefined') {
     });
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
 // تصدير الدوال التي قد تحتاجها النظم الأخرى
 window.installmentFunctions = {
     initInstallmentSystem,
