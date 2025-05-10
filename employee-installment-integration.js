@@ -1,646 +1,516 @@
+// ==================== ملف ربط الموظفين بالأقساط ====================
 // employee-installment-integration.js
-// ملف الربط بين نظام الموظفين ونظام الأقساط
 
 // المتغيرات العامة
 let employeeInstallmentIntegrationInitialized = false;
 
-// تهيئة نظام الربط
+// تهيئة نظام ربط الموظفين بالأقساط
 function initEmployeeInstallmentIntegration() {
-    if (employeeInstallmentIntegrationInitialized) return;
-    
-    console.log('تهيئة نظام الربط بين الموظفين والأقساط...');
-    
-    // التحقق من وجود كلا النظامين
-    if (typeof employees === 'undefined' || typeof installments === 'undefined') {
-        console.warn('أحد النظامين أو كلاهما غير متوفر');
+    if (employeeInstallmentIntegrationInitialized) {
+        console.log('نظام ربط الموظفين بالأقساط مهيأ مسبقاً');
         return;
     }
+
+    console.log('جاري تهيئة نظام ربط الموظفين بالأقساط...');
     
-    // تعديل شاشة دفع الراتب لإضافة معلومات الأقساط
-    modifyPaySalaryModal();
+    // تعديل واجهة صفحة الموظفين
+    enhanceEmployeeInterface();
     
-    // إضافة مستمع لحساب الاستقطاعات التلقائية
-    setupAutomaticDeductionListener();
+    // تعديل نافذة صرف الراتب
+    enhancePaySalaryModal();
     
-    // تعديل دالة حفظ الراتب لتحديث الأقساط
-    modifySaveSalaryFunction();
+    // إضافة معالج الأحداث
+    addEmployeeInstallmentEventHandlers();
     
-    // إضافة علامة تبويب الأقساط في ملف الموظف
-    integrateInstallmentsInEmployeeProfile();
+    // إضافة الحقول المخصصة لإعدادات الاستقطاع
+    addInstallmentDeductionSettings();
     
-    console.log('تم تهيئة نظام الربط بنجاح');
     employeeInstallmentIntegrationInitialized = true;
+    console.log('تم تهيئة نظام ربط الموظفين بالأقساط بنجاح');
 }
 
-// التحقق من الأقساط المستحقة على الموظف
-function getEmployeeInstallments(employeeId) {
-    if (!employeeId) return [];
+// الحصول على أقساط الموظف النشطة
+function getEmployeeActiveInstallments(employeeId) {
+    if (typeof installments === 'undefined' || typeof installmentPayments === 'undefined') {
+        console.warn('نظام الأقساط غير متوفر');
+        return [];
+    }
     
     // البحث عن القروض المرتبطة بالموظف
     const employeeInstallments = installments.filter(inst => 
         inst.borrowerType === 'employee' && 
-        inst.borrowerId === employeeId &&
+        inst.borrowerId === employeeId && 
         inst.status === 'active'
     );
     
-    const activeInstallments = [];
+    const activePayments = [];
     
     employeeInstallments.forEach(installment => {
-        // البحث عن القسط المستحق للشهر الحالي
-        const currentMonth = document.getElementById('salaryMonth')?.value || new Date().toISOString().slice(0, 7);
-        
+        // الحصول على الأقساط المستحقة
         const duePayments = installmentPayments.filter(payment => 
-            payment.installmentId === installment.id &&
-            payment.status !== 'paid' &&
-            payment.dueDate.slice(0, 7) <= currentMonth
+            payment.installmentId === installment.id && 
+            (payment.status === 'pending' || payment.status === 'late') &&
+            !payment.isPartial
         );
         
-        if (duePayments.length > 0) {
-            activeInstallments.push({
-                installment,
-                payments: duePayments,
-                totalDue: duePayments.reduce((sum, payment) => sum + payment.amount, 0)
+        duePayments.forEach(payment => {
+            activePayments.push({
+                installmentId: installment.id,
+                paymentId: payment.id,
+                paymentNumber: payment.number,
+                amount: payment.amount,
+                dueDate: payment.dueDate,
+                status: payment.status,
+                borrowerName: installment.borrowerName || 'موظف'
             });
-        }
+        });
     });
     
-    return activeInstallments;
+    // ترتيب الأقساط حسب تاريخ الاستحقاق
+    activePayments.sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+    
+    return activePayments;
 }
 
-// تعديل شاشة دفع الراتب
-function modifyPaySalaryModal() {
-    // حفظ الدالة الأصلية
+// حساب إجمالي الأقساط المستحقة للموظف
+function calculateEmployeeTotalDueInstallments(employeeId) {
+    const activeInstallments = getEmployeeActiveInstallments(employeeId);
+    return activeInstallments.reduce((total, payment) => total + payment.amount, 0);
+}
+
+// تحسين واجهة صفحة الموظفين
+function enhanceEmployeeInterface() {
+    // إضافة عمود الأقساط في جدول الموظفين
+    const employeesTable = document.getElementById('employeesTable');
+    if (!employeesTable) return;
+    
+    // تعديل رأس الجدول
+    const thead = employeesTable.querySelector('thead tr');
+    if (thead) {
+        const installmentHeader = document.createElement('th');
+        installmentHeader.textContent = 'الأقساط';
+        thead.insertBefore(installmentHeader, thead.cells[8]); // قبل عمود الإجراءات
+    }
+    
+    // تحديث بيانات الجدول
+    updateEmployeeTableWithInstallments();
+}
+
+// تحديث جدول الموظفين بمعلومات الأقساط
+function updateEmployeeTableWithInstallments() {
+    const tbody = document.getElementById('employeesTableBody');
+    if (!tbody) return;
+    
+    const rows = tbody.querySelectorAll('tr');
+    rows.forEach((row, index) => {
+        const employee = employees[index];
+        if (!employee) return;
+        
+        // حساب إجمالي الأقساط المستحقة
+        const totalDue = calculateEmployeeTotalDueInstallments(employee.id);
+        const activeInstallments = getEmployeeActiveInstallments(employee.id);
+        
+        // إنشاء خلية الأقساط
+        const installmentCell = document.createElement('td');
+        
+        if (activeInstallments.length > 0) {
+            installmentCell.innerHTML = `
+                <div class="installment-badge" title="${activeInstallments.length} قسط مستحق">
+                    <span class="badge ${totalDue > 0 ? 'badge-warning' : 'badge-info'}">
+                        ${activeInstallments.length} أقساط
+                    </span>
+                    <div class="installment-amount">
+                        ${formatCurrency(totalDue)}
+                    </div>
+                </div>
+            `;
+        } else {
+            installmentCell.innerHTML = '<span class="text-muted">لا يوجد</span>';
+        }
+        
+        // إضافة الخلية قبل خلية الإجراءات
+        row.insertBefore(installmentCell, row.cells[8]);
+    });
+}
+
+// تحسين نافذة صرف الراتب
+function enhancePaySalaryModal() {
+    // تعديل دالة paySalary الأصلية
     const originalPaySalary = window.paySalary;
     
-    // استبدال الدالة بنسخة معدلة
     window.paySalary = function(employeeId) {
         // استدعاء الدالة الأصلية
         originalPaySalary(employeeId);
         
-        // تأخير قصير للتأكد من إنشاء النافذة
+        // إضافة معلومات الأقساط إلى النافذة
         setTimeout(() => {
-            // إضافة قسم الأقساط
-            addInstallmentsSectionToPaySalaryModal(employeeId);
+            addInstallmentInfoToSalaryModal(employeeId);
         }, 100);
     };
 }
 
-// إضافة قسم الأقساط في نافذة دفع الراتب
-function addInstallmentsSectionToPaySalaryModal(employeeId) {
-    const modalBody = document.querySelector('#paySalaryModal .modal-body form');
-    if (!modalBody) return;
+// إضافة معلومات الأقساط إلى نافذة صرف الراتب
+function addInstallmentInfoToSalaryModal(employeeId) {
+    const modal = document.getElementById('paySalaryModal');
+    if (!modal) return;
     
-    // التحقق من وجود قسم الأقساط مسبقاً
-    if (document.getElementById('installmentsSection')) return;
+    const activeInstallments = getEmployeeActiveInstallments(employeeId);
+    const totalDue = calculateEmployeeTotalDueInstallments(employeeId);
     
-    // الحصول على الأقساط المستحقة
-    const employeeInstallments = getEmployeeInstallments(employeeId);
-    
-    // إنشاء قسم الأقساط
-    const installmentsSection = document.createElement('div');
-    installmentsSection.id = 'installmentsSection';
-    installmentsSection.style.marginTop = '20px';
-    installmentsSection.style.borderTop = '2px solid #dee2e6';
-    installmentsSection.style.paddingTop = '20px';
-    
-    if (employeeInstallments.length === 0) {
-        installmentsSection.innerHTML = `
-            <div class="form-group">
-                <h4 style="color: #3498db;">معلومات الأقساط</h4>
-                <div class="alert alert-info" style="margin-top: 10px;">
-                    <div class="alert-icon">
-                        <i class="fas fa-info-circle"></i>
-                    </div>
-                    <div class="alert-content">
-                        <div class="alert-text">لا توجد أقساط مستحقة على هذا الموظف</div>
+    // إنشاء قسم الأقساط في النافذة
+    const installmentSection = document.createElement('div');
+    installmentSection.className = 'installment-section';
+    installmentSection.innerHTML = `
+        <div class="form-group">
+            <h4>الأقساط المستحقة</h4>
+        </div>
+        ${activeInstallments.length > 0 ? `
+            <div class="alert alert-warning">
+                <div class="alert-icon">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <div class="alert-content">
+                    <div class="alert-title">أقساط مستحقة</div>
+                    <div class="alert-text">
+                        يوجد ${activeInstallments.length} قسط مستحق بإجمالي ${formatCurrency(totalDue)}
                     </div>
                 </div>
             </div>
-        `;
-    } else {
-        let totalInstallments = 0;
-        let installmentsHTML = employeeInstallments.map((item, index) => {
-            totalInstallments += item.totalDue;
             
-            return `
-                <div class="installment-item" style="margin-bottom: 15px; padding: 10px; background: #f8f9fa; border-radius: 5px;">
-                    <div class="form-row">
-                        <div class="form-group" style="flex: 2;">
-                            <label class="form-label">رقم القرض: ${item.installment.id.slice(-6)}</label>
-                            <div>عدد الأقساط المستحقة: ${item.payments.length}</div>
-                        </div>
-                        <div class="form-group" style="flex: 1;">
-                            <label class="form-label">المبلغ المستحق</label>
-                            <input type="text" class="form-control" value="${formatCurrency(item.totalDue)}" readonly>
-                        </div>
-                        <div class="form-group" style="flex: 1;">
-                            <label class="form-label">المبلغ المستقطع</label>
-                            <input type="number" class="form-control installment-deduction" 
-                                id="installmentDeduction_${index}" 
-                                value="${item.totalDue}" 
-                                max="${item.totalDue}"
-                                min="0"
-                                data-installment-id="${item.installment.id}"
-                                data-payment-ids="${item.payments.map(p => p.id).join(',')}"
-                                oninput="updateInstallmentDeduction(${index})">
-                        </div>
-                    </div>
-                    <div class="form-check" style="margin-top: 5px;">
-                        <input type="checkbox" class="form-check-input" id="includeInstallment_${index}" checked
-                            onchange="toggleInstallmentDeduction(${index})">
-                        <label class="form-check-label" for="includeInstallment_${index}">
-                            استقطاع هذا القسط
-                        </label>
-                    </div>
+            <div class="table-container" style="max-height: 200px; overflow-y: auto;">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>رقم القسط</th>
+                            <th>تاريخ الاستحقاق</th>
+                            <th>المبلغ</th>
+                            <th>الحالة</th>
+                            <th>خصم تلقائي</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${activeInstallments.map(payment => `
+                            <tr>
+                                <td>${payment.paymentNumber}</td>
+                                <td>${formatDate(payment.dueDate)}</td>
+                                <td>${formatCurrency(payment.amount)}</td>
+                                <td>
+                                    <span class="status ${payment.status === 'late' ? 'danger' : 'pending'}">
+                                        ${payment.status === 'late' ? 'متأخر' : 'مستحق'}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="form-check">
+                                        <input type="checkbox" class="form-check-input" 
+                                               id="autoDeduct_${payment.paymentId}" 
+                                               value="${payment.paymentId}"
+                                               data-amount="${payment.amount}"
+                                               checked>
+                                        <label class="form-check-label" for="autoDeduct_${payment.paymentId}">
+                                            خصم
+                                        </label>
+                                    </div>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="form-row" style="margin-top: 10px;">
+                <div class="form-group">
+                    <label class="form-label">إجمالي القسط المخصوم</label>
+                    <input type="number" class="form-control" id="totalInstallmentDeduction" value="${totalDue}" readonly>
                 </div>
-            `;
-        }).join('');
-        
-        installmentsSection.innerHTML = `
-            <div class="form-group">
-                <h4 style="color: #3498db;">
-                    <i class="fas fa-receipt"></i> معلومات الأقساط
-                    <span class="badge badge-warning" style="margin-left: 10px;">${employeeInstallments.length}</span>
-                </h4>
-                
-                <div class="alert alert-warning" style="margin-top: 10px;">
-                    <div class="alert-icon">
-                        <i class="fas fa-exclamation-triangle"></i>
-                    </div>
-                    <div class="alert-content">
-                        <div class="alert-text">يوجد ${employeeInstallments.length} قرض مع أقساط مستحقة</div>
-                    </div>
-                </div>
-                
-                ${installmentsHTML}
-                
-                <div class="form-row" style="background: #e3f2fd; padding: 10px; border-radius: 5px; margin-top: 15px;">
-                    <div class="form-group" style="margin-bottom: 0;">
-                        <label class="form-label">إجمالي الأقساط المستحقة</label>
-                        <input type="text" class="form-control" id="totalInstallmentsDue" 
-                            value="${formatCurrency(totalInstallments)}" readonly>
-                    </div>
-                    <div class="form-group" style="margin-bottom: 0;">
-                        <label class="form-label">إجمالي الاستقطاعات</label>
-                        <input type="text" class="form-control" id="totalInstallmentsDeduction" 
-                            value="${formatCurrency(totalInstallments)}" readonly>
-                    </div>
-                </div>
-                
-                <div class="form-group" style="margin-top: 10px;">
-                    <div class="form-check">
-                        <input type="checkbox" class="form-check-input" id="autoDeductInstallments" checked>
-                        <label class="form-check-label" for="autoDeductInstallments">
-                            استقطاع الأقساط تلقائياً
-                        </label>
-                    </div>
+                <div class="form-group">
+                    <button type="button" class="btn btn-warning btn-sm" onclick="toggleAllInstallmentDeductions()">
+                        <i class="fas fa-check-double"></i> تحديد/إلغاء الكل
+                    </button>
                 </div>
             </div>
-        `;
-    }
+        ` : `
+            <div class="alert alert-info">
+                <div class="alert-icon">
+                    <i class="fas fa-info-circle"></i>
+                </div>
+                <div class="alert-content">
+                    <div class="alert-title">لا توجد أقساط</div>
+                    <div class="alert-text">لا توجد أقساط مستحقة على هذا الموظف</div>
+                </div>
+            </div>
+        `}
+    `;
     
-    // إدراج قسم الأقساط بعد الاستقطاعات
-    const deductionsField = document.getElementById('salaryDeductions').closest('.form-row');
-    if (deductionsField) {
-        deductionsField.insertAdjacentElement('afterend', installmentsSection);
-    } else {
-        modalBody.appendChild(installmentsSection);
-    }
+    // إضافة قسم الأقساط قبل الملاحظات
+    const notesRow = modal.querySelector('.form-group:has(#salaryNotes)').parentNode;
+    notesRow.parentNode.insertBefore(installmentSection, notesRow);
     
-    // تحديث الاستقطاعات الكلية
-    updateTotalDeductions();
-}
-
-// تحديث استقطاع قسط معين
-function updateInstallmentDeduction(index) {
-    const deductionInput = document.getElementById(`installmentDeduction_${index}`);
-    const includeCheckbox = document.getElementById(`includeInstallment_${index}`);
-    
-    if (deductionInput && includeCheckbox) {
-        // التأكد من أن المبلغ لا يتجاوز الحد الأقصى
-        const maxValue = parseFloat(deductionInput.getAttribute('max'));
-        const currentValue = parseFloat(deductionInput.value);
-        
-        if (currentValue > maxValue) {
-            deductionInput.value = maxValue;
-        }
-        
-        // تحديث إجمالي الاستقطاعات
-        updateTotalInstallmentDeductions();
+    // إضافة معالجات الأحداث للخانات
+    if (activeInstallments.length > 0) {
+        addInstallmentCheckboxHandlers();
+        updateTotalSalaryWithDeductions();
     }
 }
 
-// تبديل استقطاع قسط معين
-function toggleInstallmentDeduction(index) {
-    const deductionInput = document.getElementById(`installmentDeduction_${index}`);
-    const includeCheckbox = document.getElementById(`includeInstallment_${index}`);
+// إضافة معالجات أحداث خانات الاختيار للأقساط
+function addInstallmentCheckboxHandlers() {
+    const checkboxes = document.querySelectorAll('[id^="autoDeduct_"]');
     
-    if (deductionInput && includeCheckbox) {
-        deductionInput.disabled = !includeCheckbox.checked;
-        
-        if (!includeCheckbox.checked) {
-            deductionInput.value = '0';
-        } else {
-            // استرجاع القيمة الأصلية
-            const maxValue = parseFloat(deductionInput.getAttribute('max'));
-            deductionInput.value = maxValue;
-        }
-        
-        updateTotalInstallmentDeductions();
-    }
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            updateInstallmentDeductionTotal();
+            updateTotalSalaryWithDeductions();
+        });
+    });
 }
 
-// تحديث إجمالي استقطاعات الأقساط
-function updateTotalInstallmentDeductions() {
-    let totalDeductions = 0;
+// تحديث إجمالي الأقساط المخصومة
+function updateInstallmentDeductionTotal() {
+    const checkboxes = document.querySelectorAll('[id^="autoDeduct_"]:checked');
+    let total = 0;
     
-    document.querySelectorAll('.installment-deduction').forEach(input => {
-        if (!input.disabled) {
-            totalDeductions += parseFloat(input.value) || 0;
-        }
+    checkboxes.forEach(checkbox => {
+        total += parseFloat(checkbox.dataset.amount) || 0;
     });
     
-    const totalDeductionsInput = document.getElementById('totalInstallmentsDeduction');
-    if (totalDeductionsInput) {
-        totalDeductionsInput.value = formatCurrency(totalDeductions);
-    }
-    
-    // تحديث الاستقطاعات الكلية في النموذج
-    updateTotalDeductions();
+    document.getElementById('totalInstallmentDeduction').value = total;
 }
 
-// تحديث إجمالي الاستقطاعات (بما في ذلك الأقساط)
-function updateTotalDeductions() {
-    const originalDeductions = parseFloat(document.getElementById('salaryDeductions').value) || 0;
-    let installmentDeductions = 0;
+// تحديث إجمالي الراتب مع الاستقطاعات
+function updateTotalSalaryWithDeductions() {
+    const basicSalary = parseFloat(document.getElementById('salaryBasicAmount').value) || 0;
+    const commission = parseFloat(document.getElementById('salaryCommission').value) || 0;
+    const allowances = parseFloat(document.getElementById('salaryAllowances').value) || 0;
+    const deductions = parseFloat(document.getElementById('salaryDeductions').value) || 0;
+    const installmentDeduction = parseFloat(document.getElementById('totalInstallmentDeduction').value) || 0;
     
-    // حساب استقطاعات الأقساط
-    document.querySelectorAll('.installment-deduction').forEach(input => {
-        if (!input.disabled) {
-            installmentDeductions += parseFloat(input.value) || 0;
-        }
+    const totalAmount = basicSalary + commission + allowances - deductions - installmentDeduction;
+    document.getElementById('salaryTotalAmount').value = totalAmount;
+}
+
+// تبديل تحديد جميع الأقساط
+function toggleAllInstallmentDeductions() {
+    const checkboxes = document.querySelectorAll('[id^="autoDeduct_"]');
+    const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+    
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = !allChecked;
     });
     
-    // تحديث حقل الاستقطاعات ليشمل الأقساط
-    const autoDeductCheckbox = document.getElementById('autoDeductInstallments');
-    
-    if (autoDeductCheckbox && autoDeductCheckbox.checked) {
-        const totalDeductions = originalDeductions + installmentDeductions;
-        document.getElementById('salaryDeductions').value = totalDeductions;
-        
-        // إطلاق حدث لإعادة حساب الراتب النهائي
-        calculateTotalSalary();
-    }
+    updateInstallmentDeductionTotal();
+    updateTotalSalaryWithDeductions();
 }
 
-// إعداد مستمع الاستقطاع التلقائي
-function setupAutomaticDeductionListener() {
-    // تعديل دالة حساب الراتب الإجمالي
+// إضافة معالجات الأحداث
+function addEmployeeInstallmentEventHandlers() {
+    // تعديل دالة saveSalary الأصلية
+    const originalSaveSalary = window.saveSalary;
+    
+    window.saveSalary = function() {
+        // معالجة الأقساط المحددة للخصم
+        processInstallmentDeductions();
+        
+        // استدعاء الدالة الأصلية
+        originalSaveSalary();
+    };
+    
+    // تعديل دالة calculateTotalSalary الأصلية
     const originalCalculateTotalSalary = window.calculateTotalSalary;
     
     window.calculateTotalSalary = function() {
         // استدعاء الدالة الأصلية
         originalCalculateTotalSalary();
         
-        // تحديث الاستقطاعات لتشمل الأقساط
-        updateTotalDeductions();
-    };
-}
-
-// تعديل دالة حفظ الراتب لتحديث الأقساط
-function modifySaveSalaryFunction() {
-    // حفظ الدالة الأصلية
-    const originalSaveSalary = window.saveSalary;
-    
-    // استبدال الدالة بنسخة معدلة
-    window.saveSalary = function() {
-        // الحصول على معرف الموظف
-        const employeeId = document.getElementById('salaryEmployeeId').value;
-        
-        // جمع معلومات الأقساط المستقطعة
-        const deductedInstallments = [];
-        
-        document.querySelectorAll('.installment-deduction').forEach((input, index) => {
-            const includeCheckbox = document.getElementById(`includeInstallment_${index}`);
-            
-            if (includeCheckbox && includeCheckbox.checked && !input.disabled) {
-                const deductedAmount = parseFloat(input.value) || 0;
-                
-                if (deductedAmount > 0) {
-                    const installmentId = input.getAttribute('data-installment-id');
-                    const paymentIds = input.getAttribute('data-payment-ids').split(',');
-                    
-                    deductedInstallments.push({
-                        installmentId,
-                        paymentIds,
-                        deductedAmount
-                    });
-                }
-            }
-        });
-        
-        // استدعاء الدالة الأصلية أولاً
-        originalSaveSalary();
-        
-        // تحديث حالة الأقساط المدفوعة
-        if (deductedInstallments.length > 0) {
-            updateInstallmentPayments(deductedInstallments, employeeId);
+        // تحديث القيمة مع الأقساط
+        if (document.getElementById('totalInstallmentDeduction')) {
+            updateTotalSalaryWithDeductions();
         }
     };
 }
 
-// تحديث حالة الأقساط المدفوعة
-function updateInstallmentPayments(deductedInstallments, employeeId) {
-    const paymentDate = new Date().toISOString().split('T')[0];
-    const salaryMonth = document.getElementById('salaryMonth').value;
+// معالجة استقطاعات الأقساط
+function processInstallmentDeductions() {
+    const employeeId = document.getElementById('salaryEmployeeId').value;
+    const month = document.getElementById('salaryMonth').value;
     
-    deductedInstallments.forEach(item => {
-        let remainingAmount = item.deductedAmount;
+    // الحصول على الأقساط المحددة للخصم
+    const selectedInstallments = [];
+    const checkboxes = document.querySelectorAll('[id^="autoDeduct_"]:checked');
+    
+    checkboxes.forEach(checkbox => {
+        const paymentId = checkbox.value;
+        const amount = parseFloat(checkbox.dataset.amount);
         
-        // ترتيب الأقساط حسب تاريخ الاستحقاق
-        const sortedPaymentIds = item.paymentIds.sort((a, b) => {
-            const paymentA = installmentPayments.find(p => p.id === a);
-            const paymentB = installmentPayments.find(p => p.id === b);
-            return new Date(paymentA.dueDate) - new Date(paymentB.dueDate);
+        selectedInstallments.push({
+            paymentId,
+            amount
         });
-        
-        // تطبيق الدفع على الأقساط حسب الترتيب
-        sortedPaymentIds.forEach(paymentId => {
-            if (remainingAmount <= 0) return;
-            
-            const payment = installmentPayments.find(p => p.id === paymentId);
-            if (!payment) return;
-            
-            if (remainingAmount >= payment.amount) {
-                // دفع القسط بالكامل
-                payment.status = 'paid';
-                payment.paymentDate = paymentDate;
-                payment.paymentMethod = 'salary_deduction';
-                payment.notes = `استقطاع من راتب شهر ${formatMonth(salaryMonth)}`;
-                
-                remainingAmount -= payment.amount;
-            } else {
-                // دفع جزئي
-                const originalAmount = payment.amount;
-                payment.amount = originalAmount - remainingAmount;
-                payment.status = 'partial';
-                
-                // إنشاء سجل للدفعة الجزئية
-                const partialPayment = {
-                    id: generateInstallmentId(),
-                    installmentId: payment.installmentId,
-                    number: payment.number,
-                    dueDate: payment.dueDate,
-                    amount: remainingAmount,
-                    status: 'paid',
-                    paymentDate: paymentDate,
-                    paymentMethod: 'salary_deduction',
-                    notes: `دفعة جزئية - استقطاع من راتب شهر ${formatMonth(salaryMonth)}`,
-                    isPartial: true
-                };
-                
-                installmentPayments.push(partialPayment);
-                remainingAmount = 0;
-            }
-        });
-        
-        // التحقق من اكتمال القرض
-        const installment = installments.find(inst => inst.id === item.installmentId);
-        if (installment) {
-            const remainingPayments = installmentPayments.filter(p => 
-                p.installmentId === installment.id && 
-                p.status !== 'paid' &&
-                !p.isPartial
-            );
-            
-            if (remainingPayments.length === 0) {
-                installment.status = 'completed';
-                
-                createNotification(
-                    'قرض مكتمل',
-                    `تم استكمال دفع جميع أقساط القرض للموظف ${installment.borrowerName}`,
-                    'success',
-                    installment.id,
-                    'installment'
-                );
-            }
-        }
     });
     
-    // حفظ بيانات الأقساط
-    if (typeof saveInstallmentData === 'function') {
-        saveInstallmentData();
-    }
-    
-    // إنشاء إشعار
-    createNotification(
-        'استقطاع أقساط',
-        `تم استقطاع ${deductedInstallments.length} قسط/أقساط من راتب الموظف`,
-        'success'
-    );
-}
-
-// دمج الأقساط في ملف الموظف
-function integrateInstallmentsInEmployeeProfile() {
-    // تعديل دالة عرض الموظف
-    const originalViewEmployee = window.viewEmployee;
-    
-    window.viewEmployee = function(employeeId) {
-        // استدعاء الدالة الأصلية
-        originalViewEmployee(employeeId);
-        
-        // إضافة تبويب الأقساط بعد تحميل بيانات الموظف
-        setTimeout(() => {
-            addInstallmentsTabToEmployeeModal(employeeId);
-        }, 200);
-    };
-}
-
-// إضافة تبويب الأقساط في نافذة الموظف
-function addInstallmentsTabToEmployeeModal(employeeId) {
-    const employee = employees.find(emp => emp.id === employeeId);
-    if (!employee) return;
-    
-    const employeeModal = document.getElementById('viewEmployeeModal');
-    if (!employeeModal) return;
-    
-    // البحث عن القروض المرتبطة بالموظف
-    const employeeInstallments = installments.filter(inst => 
-        inst.borrowerType === 'employee' && inst.borrowerId === employeeId
-    );
-    
-    // إنشاء محتوى تبويب الأقساط
-    const installmentsContent = document.createElement('div');
-    installmentsContent.className = 'employee-installments-section';
-    installmentsContent.style.marginTop = '20px';
-    installmentsContent.style.borderTop = '2px solid #dee2e6';
-    installmentsContent.style.paddingTop = '20px';
-    
-    if (employeeInstallments.length === 0) {
-        installmentsContent.innerHTML = `
-            <h3 style="color: #3498db;">معلومات الأقساط</h3>
-            <div class="alert alert-info">
-                <div class="alert-icon">
-                    <i class="fas fa-info-circle"></i>
-                </div>
-                <div class="alert-content">
-                    <div class="alert-text">لا توجد أقساط لهذا الموظف</div>
-                </div>
-            </div>
-        `;
-    } else {
-        // جمع الإحصائيات
-        let totalLoans = employeeInstallments.length;
-        let activeLoans = employeeInstallments.filter(i => i.status === 'active').length;
-        let totalAmount = employeeInstallments.reduce((sum, inst) => sum + inst.totalAmount, 0);
-        let totalPaid = 0;
-        let totalRemaining = 0;
-        
-        employeeInstallments.forEach(inst => {
-            const paid = getTotalPayments(inst.id);
-            totalPaid += paid;
-            totalRemaining += (inst.totalAmount - paid);
+    // إنشاء سجل لاستقطاعات الأقساط
+    if (selectedInstallments.length > 0) {
+        selectedInstallments.forEach(item => {
+            // تحديث حالة القسط
+            const payment = installmentPayments.find(p => p.id === item.paymentId);
+            if (payment) {
+                payment.status = 'paid';
+                payment.paymentDate = new Date().toISOString().split('T')[0];
+                payment.paymentMethod = 'salary_deduction';
+                payment.notes = `تم الخصم من راتب شهر ${formatMonth(month)}`;
+            }
         });
         
-        installmentsContent.innerHTML = `
-            <h3 style="color: #3498db;">
-                <i class="fas fa-receipt"></i> معلومات الأقساط
-                <span class="badge badge-info" style="margin-left: 10px;">${totalLoans}</span>
-            </h3>
-            
-            <div class="dashboard-cards" style="margin: 15px 0;">
-                <div class="card" style="flex: 1; min-width: 200px;">
-                    <div class="card-header">
-                        <div>
-                            <div class="card-title">القروض النشطة</div>
-                            <div class="card-value">${activeLoans}</div>
-                        </div>
-                        <div class="card-icon primary">
-                            <i class="fas fa-receipt"></i>
-                        </div>
-                    </div>
-                </div>
-                <div class="card" style="flex: 1; min-width: 200px;">
-                    <div class="card-header">
-                        <div>
-                            <div class="card-title">إجمالي المبلغ</div>
-                            <div class="card-value">${formatCurrency(totalAmount)}</div>
-                        </div>
-                        <div class="card-icon warning">
-                            <i class="fas fa-money-bill-wave"></i>
-                        </div>
-                    </div>
-                </div>
-                <div class="card" style="flex: 1; min-width: 200px;">
-                    <div class="card-header">
-                        <div>
-                            <div class="card-title">المبلغ المتبقي</div>
-                            <div class="card-value">${formatCurrency(totalRemaining)}</div>
-                        </div>
-                        <div class="card-icon danger">
-                            <i class="fas fa-hand-holding-usd"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="table-container" style="margin-top: 15px;">
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>تاريخ البدء</th>
-                            <th>المبلغ الإجمالي</th>
-                            <th>المدة</th>
-                            <th>المبلغ المتبقي</th>
-                            <th>الحالة</th>
-                            <th>إجراءات</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${employeeInstallments.map((inst, index) => {
-                            const paidAmount = getTotalPayments(inst.id);
-                            const remainingAmount = inst.totalAmount - paidAmount;
-                            
-                            return `
-                                <tr>
-                                    <td>${index + 1}</td>
-                                    <td>${formatDate(inst.startDate)}</td>
-                                    <td>${formatCurrency(inst.totalAmount)}</td>
-                                    <td>${inst.durationMonths} شهر</td>
-                                    <td>${formatCurrency(remainingAmount)}</td>
-                                    <td>
-                                        <span class="status ${
-                                            inst.status === 'completed' ? 'success' : 
-                                            inst.status === 'defaulted' ? 'danger' : 'active'
-                                        }">
-                                            ${
-                                                inst.status === 'completed' ? 'مكتمل' : 
-                                                inst.status === 'defaulted' ? 'متعثر' : 'نشط'
-                                            }
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <button class="btn btn-info btn-icon action-btn" onclick="viewInstallment('${inst.id}')">
-                                            <i class="fas fa-eye"></i>
-                                        </button>
-                                    </td>
-                                </tr>
-                            `;
-                        }).join('')}
-                    </tbody>
-                </table>
-            </div>
-        `;
+        // حفظ تغييرات الأقساط
+        if (typeof saveInstallmentData === 'function') {
+            saveInstallmentData();
+        } else {
+            localStorage.setItem('installmentPayments', JSON.stringify(installmentPayments));
+        }
+        
+        // إنشاء إشعار
+        createNotification(
+            'استقطاع أقساط',
+            `تم استقطاع ${selectedInstallments.length} قسط من راتب الموظف`,
+            'success'
+        );
     }
+}
+
+// إضافة إعدادات استقطاع الأقساط
+function addInstallmentDeductionSettings() {
+    // إنشاء قسم إعدادات في صفحة الموظفين
+    const settingsSection = document.createElement('div');
+    settingsSection.className = 'settings-section';
+    settingsSection.innerHTML = `
+        <div class="form-group">
+            <h4>إعدادات استقطاع الأقساط</h4>
+        </div>
+        <div class="form-check">
+            <input type="checkbox" class="form-check-input" id="autoDeductInstallments" checked>
+            <label class="form-check-label" for="autoDeductInstallments">
+                استقطاع الأقساط تلقائياً عند صرف الراتب
+            </label>
+        </div>
+        <div class="form-check">
+            <input type="checkbox" class="form-check-input" id="notifyOnDeduction" checked>
+            <label class="form-check-label" for="notifyOnDeduction">
+                إرسال إشعار عند استقطاع الأقساط
+            </label>
+        </div>
+    `;
     
-    // إضافة المحتوى إلى النافذة
-    const modalBody = employeeModal.querySelector('.employee-details');
-    if (modalBody) {
-        modalBody.appendChild(installmentsContent);
+    // إضافة الإعدادات إلى صفحة الموظفين إذا كانت موجودة
+    const employeesPage = document.getElementById('employees');
+    if (employeesPage) {
+        const settingsTab = employeesPage.querySelector('.tabs');
+        if (settingsTab) {
+            const newTab = document.createElement('div');
+            newTab.className = 'tab';
+            newTab.textContent = 'إعدادات الأقساط';
+            newTab.onclick = function() { switchEmployeeInstallmentTab('settings'); };
+            settingsTab.appendChild(newTab);
+        }
     }
 }
 
-// دالة مساعدة لتنسيق الشهر
-function formatMonth(monthString) {
-    const date = new Date(monthString + '-01');
-    return date.toLocaleDateString('ar-IQ', { year: 'numeric', month: 'long' });
+// تبديل علامة تبويب إعدادات الأقساط
+function switchEmployeeInstallmentTab(tabId) {
+    if (tabId === 'settings') {
+        // إظهار إعدادات الأقساط
+        // يمكن إضافة المزيد من الإعدادات هنا
+    }
 }
 
-// دالة مساعدة لإنشاء معرف فريد
-function generateInstallmentId() {
-    return Date.now().toString(36) + Math.random().toString(36).substring(2);
-}
-
-// دالة مساعدة للحصول على إجمالي المدفوعات
-function getTotalPayments(installmentId) {
-    return installmentPayments
-        .filter(payment => payment.installmentId === installmentId && payment.status === 'paid')
-        .reduce((total, payment) => total + payment.amount, 0);
+// إضافة أنماط CSS مخصصة
+function addEmployeeInstallmentStyles() {
+    const style = document.createElement('style');
+    style.textContent = `
+        .installment-badge {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .installment-badge .badge {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+        }
+        
+        .installment-badge .installment-amount {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--warning-color);
+        }
+        
+        .installment-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+        }
+        
+        .installment-section h4 {
+            margin-bottom: 15px;
+            color: var(--primary-color);
+        }
+        
+        .installment-section .table-container {
+            margin-bottom: 10px;
+        }
+        
+        .installment-section .table-sm {
+            font-size: 0.85rem;
+        }
+        
+        .installment-section .form-check {
+            margin: 0;
+        }
+        
+        .installment-section .form-check-input {
+            margin-top: 0.25rem;
+        }
+        
+        .badge-warning {
+            background-color: #ffc107;
+            color: #212529;
+        }
+        
+        .badge-info {
+            background-color: #17a2b8;
+            color: white;
+        }
+    `;
+    
+    document.head.appendChild(style);
 }
 
 // تهيئة النظام عند تحميل الصفحة
 document.addEventListener('DOMContentLoaded', function() {
-    // التحقق من وجود كلا النظامين
-    if (typeof employees !== 'undefined' && typeof installments !== 'undefined') {
-        initEmployeeInstallmentIntegration();
-    } else {
-        console.log('في انتظار تحميل نظام الموظفين والأقساط...');
-        
-        // محاولة التهيئة بعد فترة قصيرة
-        setTimeout(() => {
-            if (typeof employees !== 'undefined' && typeof installments !== 'undefined') {
-                initEmployeeInstallmentIntegration();
-            }
-        }, 2000);
-    }
+    // انتظار تحميل كلا النظامين
+    const checkSystemsLoaded = setInterval(function() {
+        if (typeof employees !== 'undefined' && 
+            typeof installments !== 'undefined' && 
+            typeof installmentPayments !== 'undefined' &&
+            isInitialized && 
+            typeof isInstallmentPageInitialized !== 'undefined') {
+            
+            clearInterval(checkSystemsLoaded);
+            
+            // تهيئة نظام الربط
+            initEmployeeInstallmentIntegration();
+            
+            // إضافة الأنماط المخصصة
+            addEmployeeInstallmentStyles();
+            
+            console.log('تم تحميل نظام ربط الموظفين بالأقساط بنجاح');
+        }
+    }, 100);
 });
 
-// تصدير الدوال لاستخدامها في أماكن أخرى
+// تصدير الدوال للاستخدام الخارجي
 window.employeeInstallmentIntegration = {
-    init: initEmployeeInstallmentIntegration,
-    getEmployeeInstallments,
-    updateInstallmentPayments
+    getEmployeeActiveInstallments,
+    calculateEmployeeTotalDueInstallments,
+    processInstallmentDeductions
 };
-
-console.log('تم تحميل نظام الربط بين الموظفين والأقساط');
