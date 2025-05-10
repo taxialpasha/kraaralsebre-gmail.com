@@ -1,61 +1,59 @@
-// ==================== Employee Management System ====================
+// employee-system.js
 
-// Global variables for employee system
+// متغيرات عامة
 let employees = [];
 let salaryTransactions = [];
-let isInitialized = false;
+let currentEmployeeId = null;
 
-// Initialize employee system on page load
-document.addEventListener('DOMContentLoaded', function() {
-    if (!isInitialized) {
-        initializeEmployeeSystem();
-        isInitialized = true;
-    }
-});
+// تهيئة النظام عند تحميل الصفحة
+window.addEventListener('DOMContentLoaded', initEmployeeSystem);
 
-function initializeEmployeeSystem() {
-    // Add employee menu item to sidebar
-    addEmployeeMenuItem();
+function initEmployeeSystem() {
+    // إضافة قسم الموظفين إلى القائمة الجانبية
+    addEmployeesToSidebar();
     
-    // Create employee page
-    createEmployeePage();
+    // إنشاء صفحة الموظفين
+    createEmployeesPage();
     
-    // Load data from localStorage
+    // تحميل البيانات
     loadEmployeesData();
     
-    // Initialize event listeners
-    initializeEmployeeEventListeners();
-    
-    // Add CSS styles
-    addEmployeeStyles();
+    // إضافة الأحداث
+    setupEmployeeEvents();
 }
 
-// Add Employee menu item to sidebar
-function addEmployeeMenuItem() {
-    const menuCategory = document.querySelector('.menu-category:nth-child(3)');
+// إضافة قسم الموظفين إلى القائمة الجانبية
+function addEmployeesToSidebar() {
+    const sidebarMenu = document.querySelector('.sidebar-menu');
     
-    const employeeMenuItem = document.createElement('a');
-    employeeMenuItem.href = '#employees';
-    employeeMenuItem.className = 'menu-item';
-    employeeMenuItem.onclick = function() { showPage('employees'); };
+    // البحث عن قسم إدارة الاستثمار
+    const investmentSection = Array.from(sidebarMenu.children)
+        .find(el => el.textContent.includes('إدارة الاستثمار'));
     
-    employeeMenuItem.innerHTML = `
-        <span class="menu-icon"><i class="fas fa-user-tie"></i></span>
-        <span>الموظفين</span>
-    `;
-    
-    menuCategory.parentNode.insertBefore(employeeMenuItem, menuCategory.nextSibling);
+    if (investmentSection) {
+        // إضافة خيار الموظفين بعد قسم إدارة الاستثمار
+        const employeeMenuItem = document.createElement('a');
+        employeeMenuItem.href = '#employees';
+        employeeMenuItem.className = 'menu-item';
+        employeeMenuItem.onclick = () => showPage('employees');
+        employeeMenuItem.innerHTML = `
+            <span class="menu-icon"><i class="fas fa-user-tie"></i></span>
+            <span>الموظفين</span>
+        `;
+        
+        // إضافة العنصر بعد قسم إدارة الاستثمار
+        investmentSection.insertAdjacentElement('afterend', employeeMenuItem);
+    }
 }
 
-// Create employee page
-function createEmployeePage() {
-    const pageContainer = document.getElementById('operations').parentNode;
+// إنشاء صفحة الموظفين
+function createEmployeesPage() {
+    const content = document.querySelector('.content');
     
-    const employeePage = document.createElement('div');
-    employeePage.id = 'employees';
-    employeePage.className = 'page';
-    
-    employeePage.innerHTML = `
+    const employeesPage = document.createElement('div');
+    employeesPage.id = 'employees';
+    employeesPage.className = 'page';
+    employeesPage.innerHTML = `
         <div class="header">
             <h1 class="page-title">إدارة الموظفين</h1>
             <div class="header-actions">
@@ -78,16 +76,16 @@ function createEmployeePage() {
 
         <div class="tabs">
             <div class="tab active" onclick="switchEmployeeTab('list')">قائمة الموظفين</div>
-            <div class="tab" onclick="switchEmployeeTab('salaries')">سجل الرواتب</div>
+            <div class="tab" onclick="switchEmployeeTab('salary')">سجل الرواتب</div>
             <div class="tab" onclick="switchEmployeeTab('reports')">التقارير</div>
         </div>
 
-        <div id="employeesList" class="employee-tab-content active">
+        <div id="employeeListTab" class="tab-content active">
             <div class="table-container">
                 <div class="table-header">
                     <div class="table-title">قائمة الموظفين</div>
                     <div class="table-actions">
-                        <button class="btn btn-light" onclick="exportEmployees()">
+                        <button class="btn btn-light" onclick="exportEmployeesToCSV()">
                             <i class="fas fa-file-export"></i> تصدير
                         </button>
                         <button class="btn btn-light" onclick="printTable('employeesTable')">
@@ -101,7 +99,6 @@ function createEmployeePage() {
                             <th>#</th>
                             <th>الاسم</th>
                             <th>الوظيفة</th>
-                            <th>القسم</th>
                             <th>الراتب الأساسي</th>
                             <th>رقم الهاتف</th>
                             <th>تاريخ التعيين</th>
@@ -110,18 +107,18 @@ function createEmployeePage() {
                         </tr>
                     </thead>
                     <tbody id="employeesTableBody">
-                        <!-- Employee data will be loaded here -->
+                        <!-- سيتم ملؤها بواسطة JavaScript -->
                     </tbody>
                 </table>
             </div>
         </div>
 
-        <div id="employeeSalaries" class="employee-tab-content">
+        <div id="salaryTab" class="tab-content">
             <div class="table-container">
                 <div class="table-header">
                     <div class="table-title">سجل الرواتب</div>
                     <div class="table-actions">
-                        <button class="btn btn-light" onclick="exportSalaries()">
+                        <button class="btn btn-light" onclick="exportSalariesToCSV()">
                             <i class="fas fa-file-export"></i> تصدير
                         </button>
                         <button class="btn btn-light" onclick="printTable('salariesTable')">
@@ -145,43 +142,103 @@ function createEmployeePage() {
                         </tr>
                     </thead>
                     <tbody id="salariesTableBody">
-                        <!-- Salary data will be loaded here -->
+                        <!-- سيتم ملؤها بواسطة JavaScript -->
                     </tbody>
                 </table>
             </div>
         </div>
 
-        <div id="employeeReports" class="employee-tab-content">
+        <div id="reportsTab" class="tab-content">
             <div class="chart-container">
                 <div class="chart-header">
                     <div class="chart-title">رواتب الموظفين</div>
                 </div>
-                <canvas id="employeeSalariesChart" style="height: 300px;"></canvas>
+                <canvas id="salariesChart" height="300"></canvas>
             </div>
             <div class="chart-container" style="margin-top: 30px;">
                 <div class="chart-header">
-                    <div class="chart-title">أداء الموظفين (المبيعات)</div>
+                    <div class="chart-title">أداء الموظفين</div>
                 </div>
-                <canvas id="employeePerformanceChart" style="height: 300px;"></canvas>
+                <canvas id="performanceChart" height="300"></canvas>
             </div>
         </div>
+
+        <style>
+            .employee-photo {
+                width: 40px;
+                height: 40px;
+                border-radius: 50%;
+                object-fit: cover;
+            }
+            
+            .employee-card {
+                background: white;
+                border-radius: var(--border-radius);
+                padding: 20px;
+                box-shadow: var(--box-shadow);
+                margin-bottom: 20px;
+            }
+            
+            .tab-content {
+                display: none;
+            }
+            
+            .tab-content.active {
+                display: block;
+            }
+            
+            .salary-details {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 15px;
+                margin-top: 20px;
+            }
+            
+            .salary-item {
+                padding: 10px;
+                background: var(--gray-100);
+                border-radius: var(--border-radius);
+            }
+            
+            .salary-label {
+                font-size: 0.9rem;
+                color: var(--gray-600);
+            }
+            
+            .salary-value {
+                font-size: 1.1rem;
+                font-weight: 600;
+                margin-top: 5px;
+            }
+            
+            @media print {
+                .header-actions, .table-actions, .tabs, .btn {
+                    display: none !important;
+                }
+                
+                .modal-body {
+                    padding: 0 !important;
+                }
+                
+                .modal-header {
+                    border-bottom: 2px solid #000 !important;
+                }
+            }
+        </style>
     `;
     
-    pageContainer.appendChild(employeePage);
+    content.appendChild(employeesPage);
     
-    // Create modals
+    // إنشاء نوافذ النماذج
     createEmployeeModals();
 }
 
-// Create employee modals
+// إنشاء نوافذ النماذج
 function createEmployeeModals() {
-    const body = document.body;
-    
-    // Add/Edit Employee Modal
+    // نافذة إضافة/تعديل موظف
     const addEmployeeModal = document.createElement('div');
     addEmployeeModal.className = 'modal-overlay';
     addEmployeeModal.id = 'addEmployeeModal';
-    
     addEmployeeModal.innerHTML = `
         <div class="modal">
             <div class="modal-header">
@@ -198,36 +255,8 @@ function createEmployeeModals() {
                             <input type="text" class="form-control" id="employeeName" required>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">رقم الهاتف</label>
-                            <input type="text" class="form-control" id="employeePhone" required>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">البريد الإلكتروني</label>
-                            <input type="email" class="form-control" id="employeeEmail">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">العنوان</label>
-                            <input type="text" class="form-control" id="employeeAddress">
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
                             <label class="form-label">الوظيفة</label>
                             <input type="text" class="form-control" id="employeePosition" required>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">القسم</label>
-                            <select class="form-select" id="employeeDepartment" required>
-                                <option value="">اختر القسم</option>
-                                <option value="الإدارة">الإدارة</option>
-                                <option value="المبيعات">المبيعات</option>
-                                <option value="المحاسبة">المحاسبة</option>
-                                <option value="الموارد البشرية">الموارد البشرية</option>
-                                <option value="الدعم الفني">الدعم الفني</option>
-                                <option value="التسويق">التسويق</option>
-                            </select>
                         </div>
                     </div>
                     <div class="form-row">
@@ -236,41 +265,52 @@ function createEmployeeModals() {
                             <input type="number" class="form-control" id="employeeSalary" required>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">تاريخ التعيين</label>
-                            <input type="date" class="form-control" id="employeeJoinDate" required>
+                            <label class="form-label">نسبة العمولة (%)</label>
+                            <input type="number" class="form-control" id="employeeCommission" min="0" max="100" value="0">
                         </div>
                     </div>
                     <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">رقم الهاتف</label>
+                            <input type="tel" class="form-control" id="employeePhone" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">البريد الإلكتروني</label>
+                            <input type="email" class="form-control" id="employeeEmail">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">العنوان</label>
+                            <input type="text" class="form-control" id="employeeAddress">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">تاريخ التعيين</label>
+                            <input type="date" class="form-control" id="employeeStartDate" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">رقم البطاقة الموحدة</label>
+                            <input type="text" class="form-control" id="employeeIdCard">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">بطاقة السكن</label>
+                            <input type="text" class="form-control" id="employeeResidenceCard">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">الصورة الشخصية</label>
+                            <input type="file" class="form-control" id="employeePhoto" accept="image/*">
+                        </div>
                         <div class="form-group">
                             <label class="form-label">الحالة</label>
                             <select class="form-select" id="employeeStatus">
                                 <option value="active">نشط</option>
                                 <option value="inactive">غير نشط</option>
-                                <option value="vacation">إجازة</option>
                             </select>
                         </div>
-                        <div class="form-group">
-                            <label class="form-label">نوع العقد</label>
-                            <select class="form-select" id="employeeContractType">
-                                <option value="permanent">دائم</option>
-                                <option value="temporary">مؤقت</option>
-                                <option value="contract">عقد</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">البطاقة الموحدة</label>
-                            <input type="file" class="form-control" id="employeeIdCard" accept="image/*">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">بطاقة السكن</label>
-                            <input type="file" class="form-control" id="employeeResidenceCard" accept="image/*">
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">الصورة الشخصية</label>
-                        <input type="file" class="form-control" id="employeePhoto" accept="image/*">
                     </div>
                     <input type="hidden" id="employeeId">
                 </form>
@@ -282,11 +322,10 @@ function createEmployeeModals() {
         </div>
     `;
     
-    // Pay Salary Modal
+    // نافذة صرف الراتب
     const paySalaryModal = document.createElement('div');
     paySalaryModal.className = 'modal-overlay';
     paySalaryModal.id = 'paySalaryModal';
-    
     paySalaryModal.innerHTML = `
         <div class="modal">
             <div class="modal-header">
@@ -300,7 +339,9 @@ function createEmployeeModals() {
                     <div class="form-row">
                         <div class="form-group">
                             <label class="form-label">الموظف</label>
-                            <input type="text" class="form-control" id="salaryEmployeeName" readonly>
+                            <select class="form-select" id="salaryEmployeeId" required onchange="updateSalaryDetails()">
+                                <option value="">اختر الموظف</option>
+                            </select>
                         </div>
                         <div class="form-group">
                             <label class="form-label">الشهر</label>
@@ -310,52 +351,54 @@ function createEmployeeModals() {
                     <div class="form-row">
                         <div class="form-group">
                             <label class="form-label">الراتب الأساسي</label>
-                            <input type="number" class="form-control" id="salaryBasicAmount" readonly>
+                            <input type="number" class="form-control" id="baseSalary" readonly>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">المبيعات</label>
-                            <input type="number" class="form-control" id="salarySales" value="0" oninput="calculateTotalSalary()">
+                            <label class="form-label">إجمالي المبيعات</label>
+                            <input type="number" class="form-control" id="totalSales" min="0" value="0" onchange="calculateTotalSalary()">
                         </div>
                     </div>
                     <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">نسبة العمولة (%)</label>
+                            <input type="number" class="form-control" id="commissionRate" readonly>
+                        </div>
                         <div class="form-group">
                             <label class="form-label">العمولة</label>
-                            <input type="number" class="form-control" id="salaryCommission" value="0" oninput="calculateTotalSalary()">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">العلاوات</label>
-                            <input type="number" class="form-control" id="salaryAllowances" value="0" oninput="calculateTotalSalary()">
+                            <input type="number" class="form-control" id="commission" readonly>
                         </div>
                     </div>
                     <div class="form-row">
                         <div class="form-group">
-                            <label class="form-label">الاستقطاعات</label>
-                            <input type="number" class="form-control" id="salaryDeductions" value="0" oninput="calculateTotalSalary()">
+                            <label class="form-label">العلاوات</label>
+                            <input type="number" class="form-control" id="allowances" min="0" value="0" onchange="calculateTotalSalary()">
                         </div>
                         <div class="form-group">
-                            <label class="form-label">الراتب النهائي</label>
-                            <input type="number" class="form-control" id="salaryTotalAmount" readonly>
+                            <label class="form-label">الاستقطاعات</label>
+                            <input type="number" class="form-control" id="deductions" min="0" value="0" onchange="calculateTotalSalary()">
                         </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">الراتب النهائي</label>
+                        <input type="number" class="form-control" id="totalSalary" readonly>
                     </div>
                     <div class="form-group">
                         <label class="form-label">ملاحظات</label>
                         <textarea class="form-control" id="salaryNotes" rows="3"></textarea>
                     </div>
-                    <input type="hidden" id="salaryEmployeeId">
                 </form>
             </div>
             <div class="modal-footer">
                 <button class="btn btn-light" onclick="closeModal('paySalaryModal')">إلغاء</button>
-                <button class="btn btn-primary" onclick="saveSalary()">حفظ</button>
+                <button class="btn btn-primary" onclick="saveSalary()">صرف الراتب</button>
             </div>
         </div>
     `;
     
-    // View Employee Modal
+    // نافذة عرض تفاصيل الموظف
     const viewEmployeeModal = document.createElement('div');
     viewEmployeeModal.className = 'modal-overlay';
     viewEmployeeModal.id = 'viewEmployeeModal';
-    
     viewEmployeeModal.innerHTML = `
         <div class="modal">
             <div class="modal-header">
@@ -364,281 +407,66 @@ function createEmployeeModals() {
                     <i class="fas fa-times"></i>
                 </div>
             </div>
-            <div class="modal-body" id="employeeDetails">
-                <!-- Employee details will be loaded here -->
+            <div class="modal-body" id="employeeDetailsBody">
+                <!-- سيتم ملؤها بواسطة JavaScript -->
             </div>
             <div class="modal-footer">
                 <button class="btn btn-light" onclick="closeModal('viewEmployeeModal')">إغلاق</button>
-                <button class="btn btn-warning" onclick="editEmployeeFromView()">تعديل</button>
-                <button class="btn btn-success" onclick="payEmployeeSalaryFromView()">صرف راتب</button>
+                <button class="btn btn-warning" onclick="editEmployee(currentEmployeeId)">تعديل</button>
+                <button class="btn btn-success" onclick="openPaySalaryModal(currentEmployeeId)">صرف راتب</button>
+                <button class="btn btn-danger" onclick="deleteEmployee(currentEmployeeId)">حذف</button>
             </div>
         </div>
     `;
     
-    // View Salary Receipt Modal
+    // نافذة عرض تفاصيل الراتب
     const viewSalaryModal = document.createElement('div');
     viewSalaryModal.className = 'modal-overlay';
     viewSalaryModal.id = 'viewSalaryModal';
-    
     viewSalaryModal.innerHTML = `
         <div class="modal">
             <div class="modal-header">
-                <h2 class="modal-title">إيصال الراتب</h2>
+                <h2 class="modal-title">تفاصيل الراتب</h2>
                 <div class="modal-close" onclick="closeModal('viewSalaryModal')">
                     <i class="fas fa-times"></i>
                 </div>
             </div>
-            <div class="modal-body" id="salaryReceipt">
-                <!-- Salary receipt will be loaded here -->
+            <div class="modal-body" id="salaryDetailsBody">
+                <!-- سيتم ملؤها بواسطة JavaScript -->
             </div>
             <div class="modal-footer">
                 <button class="btn btn-light" onclick="closeModal('viewSalaryModal')">إغلاق</button>
-                <button class="btn btn-primary" onclick="printSalaryReceipt()">
-                    <i class="fas fa-print"></i> طباعة
-                </button>
+                <button class="btn btn-primary" onclick="printSalaryReceipt()">طباعة الإيصال</button>
             </div>
         </div>
     `;
     
-    body.appendChild(addEmployeeModal);
-    body.appendChild(paySalaryModal);
-    body.appendChild(viewEmployeeModal);
-    body.appendChild(viewSalaryModal);
+    document.body.appendChild(addEmployeeModal);
+    document.body.appendChild(paySalaryModal);
+    document.body.appendChild(viewEmployeeModal);
+    document.body.appendChild(viewSalaryModal);
 }
 
-// Initialize event listeners
-function initializeEmployeeEventListeners() {
-    // Add event listeners for employee-related actions
-    document.getElementById('employeeSearchInput').addEventListener('input', searchEmployees);
-    document.getElementById('salaryMonth').addEventListener('change', calculateTotalSalary);
-}
-
-// Load employees data from localStorage
-function loadEmployeesData() {
-    const storedEmployees = localStorage.getItem('employees');
-    const storedSalaries = localStorage.getItem('salaryTransactions');
-    
-    if (storedEmployees) {
-        employees = JSON.parse(storedEmployees);
-    }
-    
-    if (storedSalaries) {
-        salaryTransactions = JSON.parse(storedSalaries);
-    }
-    
-    // Load initial data
-    loadEmployees();
-    loadSalaries();
-}
-
-// Save employees data to localStorage
-function saveEmployeesData() {
-    localStorage.setItem('employees', JSON.stringify(employees));
-    localStorage.setItem('salaryTransactions', JSON.stringify(salaryTransactions));
-}
-
-// Switch employee tabs
-function switchEmployeeTab(tabId) {
-    // Remove active class from all tabs
-    document.querySelectorAll('#employees .tab').forEach(tab => {
-        tab.classList.remove('active');
-    });
-    
-    // Remove active class from all content
-    document.querySelectorAll('.employee-tab-content').forEach(content => {
-        content.classList.remove('active');
-    });
-    
-    // Add active class to selected tab
-    event.target.classList.add('active');
-    
-    // Show corresponding content
-    switch(tabId) {
-        case 'list':
-            document.getElementById('employeesList').classList.add('active');
-            loadEmployees();
-            break;
-        case 'salaries':
-            document.getElementById('employeeSalaries').classList.add('active');
-            loadSalaries();
-            break;
-        case 'reports':
-            document.getElementById('employeeReports').classList.add('active');
-            loadEmployeeCharts();
-            break;
+// إعداد الأحداث
+function setupEmployeeEvents() {
+    // إضافة أحداث للنموذج
+    const employeeAmountInput = document.getElementById('employeeSalary');
+    if (employeeAmountInput) {
+        employeeAmountInput.addEventListener('input', () => {
+            updateExpectedProfit();
+        });
     }
 }
 
-// Load employees into table
-function loadEmployees() {
-    const tbody = document.getElementById('employeesTableBody');
-    tbody.innerHTML = '';
-    
-    if (employees.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="9" style="text-align: center;">لا يوجد موظفين</td></tr>';
-        return;
-    }
-    
-    employees.forEach((employee, index) => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${index + 1}</td>
-            <td>${employee.name}</td>
-            <td>${employee.position}</td>
-            <td>${employee.department}</td>
-            <td>${formatCurrency(employee.salary)}</td>
-            <td>${employee.phone}</td>
-            <td>${formatDate(employee.joinDate)}</td>
-            <td><span class="status ${employee.status}">${getStatusName(employee.status)}</span></td>
-            <td>
-                <button class="btn btn-info btn-icon action-btn" onclick="viewEmployee('${employee.id}')">
-                    <i class="fas fa-eye"></i>
-                </button>
-                <button class="btn btn-warning btn-icon action-btn" onclick="editEmployee('${employee.id}')">
-                    <i class="fas fa-edit"></i>
-                </button>
-                <button class="btn btn-success btn-icon action-btn" onclick="paySalary('${employee.id}')">
-                    <i class="fas fa-money-bill"></i>
-                </button>
-                <button class="btn btn-danger btn-icon action-btn" onclick="deleteEmployee('${employee.id}')">
-                    <i class="fas fa-trash"></i>
-                </button>
-            </td>
-        `;
-        tbody.appendChild(row);
-    });
-}
-
-// Load salaries into table
-function loadSalaries() {
-    const tbody = document.getElementById('salariesTableBody');
-    tbody.innerHTML = '';
-    
-    if (salaryTransactions.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="10" style="text-align: center;">لا يوجد رواتب مصروفة</td></tr>';
-        return;
-    }
-    
-    salaryTransactions.forEach((salary, index) => {
-        const employee = employees.find(emp => emp.id === salary.employeeId);
-        if (employee) {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td>${index + 1}</td>
-                <td>${employee.name}</td>
-                <td>${formatMonth(salary.month)}</td>
-                <td>${formatCurrency(salary.basicSalary)}</td>
-                <td>${formatCurrency(salary.commission)}</td>
-                <td>${formatCurrency(salary.allowances)}</td>
-                <td>${formatCurrency(salary.deductions)}</td>
-                <td>${formatCurrency(salary.totalAmount)}</td>
-                <td>${formatDate(salary.dateIssued)}</td>
-                <td>
-                    <button class="btn btn-info btn-icon action-btn" onclick="viewSalaryDetails('${salary.id}')">
-                        <i class="fas fa-eye"></i>
-                    </button>
-                </td>
-            `;
-            tbody.appendChild(row);
-        }
-    });
-}
-
-// Open add employee modal
+// وظائف إدارة الموظفين
 function openAddEmployeeModal() {
     document.getElementById('employeeModalTitle').textContent = 'إضافة موظف جديد';
     document.getElementById('employeeForm').reset();
     document.getElementById('employeeId').value = '';
+    document.getElementById('employeeStartDate').valueAsDate = new Date();
     openModal('addEmployeeModal');
 }
 
-// Save employee
-function saveEmployee() {
-    const id = document.getElementById('employeeId').value;
-    const employee = {
-        id: id || generateId(),
-        name: document.getElementById('employeeName').value,
-        phone: document.getElementById('employeePhone').value,
-        email: document.getElementById('employeeEmail').value,
-        address: document.getElementById('employeeAddress').value,
-        position: document.getElementById('employeePosition').value,
-        department: document.getElementById('employeeDepartment').value,
-        salary: parseFloat(document.getElementById('employeeSalary').value),
-        joinDate: document.getElementById('employeeJoinDate').value,
-        status: document.getElementById('employeeStatus').value,
-        contractType: document.getElementById('employeeContractType').value,
-        createdAt: new Date().toISOString()
-    };
-    
-    if (id) {
-        // Edit existing employee
-        const index = employees.findIndex(emp => emp.id === id);
-        if (index !== -1) {
-            employees[index] = {...employees[index], ...employee};
-        }
-    } else {
-        // Add new employee
-        employees.push(employee);
-    }
-    
-    saveEmployeesData();
-    loadEmployees();
-    closeModal('addEmployeeModal');
-    createNotification('نجاح', id ? 'تم تحديث بيانات الموظف بنجاح' : 'تم إضافة الموظف بنجاح', 'success');
-}
-
-// View employee details
-function viewEmployee(id) {
-    const employee = employees.find(emp => emp.id === id);
-    if (!employee) return;
-    
-    const detailsElement = document.getElementById('employeeDetails');
-    detailsElement.innerHTML = `
-        <div class="employee-details-container">
-            <div class="employee-header">
-                <div class="employee-photo">
-                    <i class="fas fa-user fa-5x"></i>
-                </div>
-                <div class="employee-info">
-                    <h2>${employee.name}</h2>
-                    <p>${employee.position} - ${employee.department}</p>
-                    <span class="status ${employee.status}">${getStatusName(employee.status)}</span>
-                </div>
-            </div>
-            <div class="employee-details">
-                <div class="detail-row">
-                    <span class="detail-label">رقم الهاتف:</span>
-                    <span class="detail-value">${employee.phone}</span>
-                </div>
-                <div class="detail-row">
-                    <span class="detail-label">البريد الإلكتروني:</span>
-                    <span class="detail-value">${employee.email || '-'}</span>
-                </div>
-                <div class="detail-row">
-                    <span class="detail-label">العنوان:</span>
-                    <span class="detail-value">${employee.address || '-'}</span>
-                </div>
-                <div class="detail-row">
-                    <span class="detail-label">تاريخ التعيين:</span>
-                    <span class="detail-value">${formatDate(employee.joinDate)}</span>
-                </div>
-                <div class="detail-row">
-                    <span class="detail-label">نوع العقد:</span>
-                    <span class="detail-value">${getContractTypeName(employee.contractType)}</span>
-                </div>
-                <div class="detail-row">
-                    <span class="detail-label">الراتب الأساسي:</span>
-                    <span class="detail-value">${formatCurrency(employee.salary)}</span>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    currentEmployeeId = id;
-    openModal('viewEmployeeModal');
-}
-
-// Edit employee
 function editEmployee(id) {
     const employee = employees.find(emp => emp.id === id);
     if (!employee) return;
@@ -646,20 +474,58 @@ function editEmployee(id) {
     document.getElementById('employeeModalTitle').textContent = 'تعديل بيانات الموظف';
     document.getElementById('employeeId').value = employee.id;
     document.getElementById('employeeName').value = employee.name;
+    document.getElementById('employeePosition').value = employee.position;
+    document.getElementById('employeeSalary').value = employee.salary;
+    document.getElementById('employeeCommission').value = employee.commission || 0;
     document.getElementById('employeePhone').value = employee.phone;
     document.getElementById('employeeEmail').value = employee.email || '';
     document.getElementById('employeeAddress').value = employee.address || '';
-    document.getElementById('employeePosition').value = employee.position;
-    document.getElementById('employeeDepartment').value = employee.department;
-    document.getElementById('employeeSalary').value = employee.salary;
-    document.getElementById('employeeJoinDate').value = employee.joinDate;
+    document.getElementById('employeeStartDate').value = employee.startDate;
+    document.getElementById('employeeIdCard').value = employee.idCard || '';
+    document.getElementById('employeeResidenceCard').value = employee.residenceCard || '';
     document.getElementById('employeeStatus').value = employee.status;
-    document.getElementById('employeeContractType').value = employee.contractType;
     
     openModal('addEmployeeModal');
 }
 
-// Delete employee
+function saveEmployee() {
+    const id = document.getElementById('employeeId').value;
+    const employee = {
+        id: id || generateId(),
+        name: document.getElementById('employeeName').value,
+        position: document.getElementById('employeePosition').value,
+        salary: parseFloat(document.getElementById('employeeSalary').value),
+        commission: parseFloat(document.getElementById('employeeCommission').value) || 0,
+        phone: document.getElementById('employeePhone').value,
+        email: document.getElementById('employeeEmail').value,
+        address: document.getElementById('employeeAddress').value,
+        startDate: document.getElementById('employeeStartDate').value,
+        idCard: document.getElementById('employeeIdCard').value,
+        residenceCard: document.getElementById('employeeResidenceCard').value,
+        status: document.getElementById('employeeStatus').value,
+        photo: null, // يمكن إضافة معالجة الصور لاحقاً
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+    };
+    
+    if (id) {
+        // تعديل موظف موجود
+        const index = employees.findIndex(emp => emp.id === id);
+        if (index !== -1) {
+            employees[index] = { ...employees[index], ...employee };
+        }
+    } else {
+        // إضافة موظف جديد
+        employees.push(employee);
+    }
+    
+    saveEmployeesData();
+    loadEmployees();
+    closeModal('addEmployeeModal');
+    
+    createNotification('نجاح', id ? 'تم تحديث بيانات الموظف بنجاح' : 'تم إضافة الموظف بنجاح', 'success');
+}
+
 function deleteEmployee(id) {
     if (!confirm('هل أنت متأكد من حذف هذا الموظف؟')) return;
     
@@ -668,139 +534,263 @@ function deleteEmployee(id) {
     
     saveEmployeesData();
     loadEmployees();
+    loadSalaries();
+    closeModal('viewEmployeeModal');
+    
     createNotification('نجاح', 'تم حذف الموظف بنجاح', 'success');
 }
 
-// Pay salary
-function paySalary(id) {
+function viewEmployee(id) {
     const employee = employees.find(emp => emp.id === id);
     if (!employee) return;
     
-    document.getElementById('salaryEmployeeId').value = employee.id;
-    document.getElementById('salaryEmployeeName').value = employee.name;
-    document.getElementById('salaryBasicAmount').value = employee.salary;
-    document.getElementById('salaryMonth').value = new Date().toISOString().slice(0, 7);
+    currentEmployeeId = id;
     
-    calculateTotalSalary();
+    const detailsBody = document.getElementById('employeeDetailsBody');
+    detailsBody.innerHTML = `
+        <div class="employee-card">
+            <div style="display: flex; gap: 20px; margin-bottom: 20px;">
+                <div style="width: 120px; height: 120px; background: var(--gray-200); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                    ${employee.photo ? 
+                        `<img src="${employee.photo}" alt="${employee.name}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">` :
+                        `<i class="fas fa-user" style="font-size: 3rem; color: var(--gray-600);"></i>`
+                    }
+                </div>
+                <div style="flex: 1;">
+                    <h2>${employee.name}</h2>
+                    <p style="color: var(--gray-600); margin-bottom: 10px;">${employee.position}</p>
+                    <div style="display: flex; gap: 20px;">
+                        <div>
+                            <span style="color: var(--gray-600);">الراتب الأساسي:</span>
+                            <strong>${formatNumber(employee.salary)} د.ع</strong>
+                        </div>
+                        <div>
+                            <span style="color: var(--gray-600);">نسبة العمولة:</span>
+                            <strong>${employee.commission}%</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="salary-details">
+                <div class="salary-item">
+                    <div class="salary-label">رقم الهاتف</div>
+                    <div class="salary-value">${employee.phone}</div>
+                </div>
+                <div class="salary-item">
+                    <div class="salary-label">البريد الإلكتروني</div>
+                    <div class="salary-value">${employee.email || '-'}</div>
+                </div>
+                <div class="salary-item">
+                    <div class="salary-label">العنوان</div>
+                    <div class="salary-value">${employee.address || '-'}</div>
+                </div>
+                <div class="salary-item">
+                    <div class="salary-label">تاريخ التعيين</div>
+                    <div class="salary-value">${formatDate(employee.startDate)}</div>
+                </div>
+                <div class="salary-item">
+                    <div class="salary-label">رقم البطاقة الموحدة</div>
+                    <div class="salary-value">${employee.idCard || '-'}</div>
+                </div>
+                <div class="salary-item">
+                    <div class="salary-label">بطاقة السكن</div>
+                    <div class="salary-value">${employee.residenceCard || '-'}</div>
+                </div>
+                <div class="salary-item">
+                    <div class="salary-label">الحالة</div>
+                    <div class="salary-value">
+                        <span class="status ${employee.status === 'active' ? 'active' : 'inactive'}">
+                            ${employee.status === 'active' ? 'نشط' : 'غير نشط'}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    openModal('viewEmployeeModal');
+}
+
+// وظائف صرف الرواتب
+function openPaySalaryModal(employeeId = null) {
+    document.getElementById('salaryForm').reset();
+    
+    // ملء قائمة الموظفين
+    const select = document.getElementById('salaryEmployeeId');
+    select.innerHTML = '<option value="">اختر الموظف</option>';
+    
+    employees.filter(emp => emp.status === 'active').forEach(emp => {
+        const option = document.createElement('option');
+        option.value = emp.id;
+        option.textContent = emp.name;
+        select.appendChild(option);
+    });
+    
+    if (employeeId) {
+        select.value = employeeId;
+        updateSalaryDetails();
+    }
+    
+    // تعيين الشهر الحالي
+    const today = new Date();
+    document.getElementById('salaryMonth').value = today.toISOString().slice(0, 7);
+    
     openModal('paySalaryModal');
 }
 
-// Calculate total salary
-function calculateTotalSalary() {
-    const basicSalary = parseFloat(document.getElementById('salaryBasicAmount').value) || 0;
-    const commission = parseFloat(document.getElementById('salaryCommission').value) || 0;
-    const allowances = parseFloat(document.getElementById('salaryAllowances').value) || 0;
-    const deductions = parseFloat(document.getElementById('salaryDeductions').value) || 0;
+function updateSalaryDetails() {
+    const employeeId = document.getElementById('salaryEmployeeId').value;
+    if (!employeeId) return;
     
-    const totalAmount = basicSalary + commission + allowances - deductions;
-    document.getElementById('salaryTotalAmount').value = totalAmount;
+    const employee = employees.find(emp => emp.id === employeeId);
+    if (!employee) return;
+    
+    document.getElementById('baseSalary').value = employee.salary;
+    document.getElementById('commissionRate').value = employee.commission;
+    
+    calculateTotalSalary();
 }
 
-// Save salary transaction
+function calculateTotalSalary() {
+    const baseSalary = parseFloat(document.getElementById('baseSalary').value) || 0;
+    const totalSales = parseFloat(document.getElementById('totalSales').value) || 0;
+    const commissionRate = parseFloat(document.getElementById('commissionRate').value) || 0;
+    const allowances = parseFloat(document.getElementById('allowances').value) || 0;
+    const deductions = parseFloat(document.getElementById('deductions').value) || 0;
+    
+    const commission = (totalSales * commissionRate) / 100;
+    document.getElementById('commission').value = commission.toFixed(0);
+    
+    const totalSalary = baseSalary + commission + allowances - deductions;
+    document.getElementById('totalSalary').value = totalSalary.toFixed(0);
+}
+
 function saveSalary() {
-    const salaryTransaction = {
+    const employeeId = document.getElementById('salaryEmployeeId').value;
+    const month = document.getElementById('salaryMonth').value;
+    
+    if (!employeeId || !month) {
+        alert('يرجى اختيار الموظف والشهر');
+        return;
+    }
+    
+    // التحقق من عدم وجود راتب للموظف في نفس الشهر
+    const existingSalary = salaryTransactions.find(sal => 
+        sal.employeeId === employeeId && sal.month === month
+    );
+    
+    if (existingSalary) {
+        alert('تم صرف راتب هذا الموظف لهذا الشهر مسبقاً');
+        return;
+    }
+    
+    const salary = {
         id: generateId(),
-        employeeId: document.getElementById('salaryEmployeeId').value,
-        month: document.getElementById('salaryMonth').value,
-        basicSalary: parseFloat(document.getElementById('salaryBasicAmount').value),
-        sales: parseFloat(document.getElementById('salarySales').value) || 0,
-        commission: parseFloat(document.getElementById('salaryCommission').value) || 0,
-        allowances: parseFloat(document.getElementById('salaryAllowances').value) || 0,
-        deductions: parseFloat(document.getElementById('salaryDeductions').value) || 0,
-        totalAmount: parseFloat(document.getElementById('salaryTotalAmount').value),
+        employeeId: employeeId,
+        month: month,
+        baseSalary: parseFloat(document.getElementById('baseSalary').value),
+        totalSales: parseFloat(document.getElementById('totalSales').value) || 0,
+        commissionRate: parseFloat(document.getElementById('commissionRate').value),
+        commission: parseFloat(document.getElementById('commission').value),
+        allowances: parseFloat(document.getElementById('allowances').value) || 0,
+        deductions: parseFloat(document.getElementById('deductions').value) || 0,
+        totalSalary: parseFloat(document.getElementById('totalSalary').value),
         notes: document.getElementById('salaryNotes').value,
-        dateIssued: new Date().toISOString()
+        paymentDate: new Date().toISOString(),
+        createdAt: new Date().toISOString()
     };
     
-    salaryTransactions.push(salaryTransaction);
+    salaryTransactions.push(salary);
     saveEmployeesData();
     loadSalaries();
-    
     closeModal('paySalaryModal');
+    
     createNotification('نجاح', 'تم صرف الراتب بنجاح', 'success');
 }
 
-// View salary details
-function viewSalaryDetails(id) {
+function viewSalary(id) {
     const salary = salaryTransactions.find(sal => sal.id === id);
     if (!salary) return;
     
     const employee = employees.find(emp => emp.id === salary.employeeId);
     if (!employee) return;
     
-    const receiptElement = document.getElementById('salaryReceipt');
-    receiptElement.innerHTML = `
-        <div class="salary-receipt" id="receiptContent">
-            <div class="receipt-header">
-                <h3 class="company-name">${settings.companyName || 'شركة الاستثمار العراقية'}</h3>
-                <h4>إيصال صرف راتب</h4>
-                <p>التاريخ: ${formatDate(salary.dateIssued)}</p>
+    const detailsBody = document.getElementById('salaryDetailsBody');
+    detailsBody.innerHTML = `
+        <div class="salary-receipt" id="salaryReceipt">
+            <div style="text-align: center; margin-bottom: 20px;">
+                <h2 style="margin: 0;">${settings.companyName}</h2>
+                <p style="margin: 5px 0;">إيصال صرف راتب</p>
             </div>
             
-            <div class="receipt-info">
-                <div class="info-row">
-                    <span>اسم الموظف:</span>
-                    <span>${employee.name}</span>
+            <div style="border-bottom: 1px solid #ddd; padding-bottom: 10px; margin-bottom: 10px;">
+                <div style="display: flex; justify-content: space-between;">
+                    <div>
+                        <strong>الموظف:</strong> ${employee.name}
+                    </div>
+                    <div>
+                        <strong>الوظيفة:</strong> ${employee.position}
+                    </div>
                 </div>
-                <div class="info-row">
-                    <span>الوظيفة:</span>
-                    <span>${employee.position}</span>
-                </div>
-                <div class="info-row">
-                    <span>القسم:</span>
-                    <span>${employee.department}</span>
-                </div>
-                <div class="info-row">
-                    <span>الشهر:</span>
-                    <span>${formatMonth(salary.month)}</span>
+                <div style="display: flex; justify-content: space-between; margin-top: 5px;">
+                    <div>
+                        <strong>الشهر:</strong> ${salary.month}
+                    </div>
+                    <div>
+                        <strong>تاريخ الصرف:</strong> ${formatDate(salary.paymentDate)}
+                    </div>
                 </div>
             </div>
             
-            <div class="receipt-details">
-                <table class="receipt-table">
-                    <tr>
-                        <td>الراتب الأساسي</td>
-                        <td>${formatCurrency(salary.basicSalary)}</td>
-                    </tr>
-                    ${salary.commission ? `
-                    <tr>
-                        <td>العمولة</td>
-                        <td>${formatCurrency(salary.commission)}</td>
-                    </tr>
-                    ` : ''}
-                    ${salary.allowances ? `
-                    <tr>
-                        <td>العلاوات</td>
-                        <td>${formatCurrency(salary.allowances)}</td>
-                    </tr>
-                    ` : ''}
-                    ${salary.deductions ? `
-                    <tr>
-                        <td>الاستقطاعات</td>
-                        <td class="deduction">-${formatCurrency(salary.deductions)}</td>
-                    </tr>
-                    ` : ''}
-                    <tr class="total-row">
-                        <td>المجموع الكلي</td>
-                        <td>${formatCurrency(salary.totalAmount)}</td>
-                    </tr>
-                </table>
+            <div class="salary-details">
+                <div class="salary-item">
+                    <div class="salary-label">الراتب الأساسي</div>
+                    <div class="salary-value">${formatNumber(salary.baseSalary)} د.ع</div>
+                </div>
+                <div class="salary-item">
+                    <div class="salary-label">إجمالي المبيعات</div>
+                    <div class="salary-value">${formatNumber(salary.totalSales)} د.ع</div>
+                </div>
+                <div class="salary-item">
+                    <div class="salary-label">نسبة العمولة</div>
+                    <div class="salary-value">${salary.commissionRate}%</div>
+                </div>
+                <div class="salary-item">
+                    <div class="salary-label">العمولة</div>
+                    <div class="salary-value">${formatNumber(salary.commission)} د.ع</div>
+                </div>
+                <div class="salary-item">
+                    <div class="salary-label">العلاوات</div>
+                    <div class="salary-value">${formatNumber(salary.allowances)} د.ع</div>
+                </div>
+                <div class="salary-item">
+                    <div class="salary-label">الاستقطاعات</div>
+                    <div class="salary-value">${formatNumber(salary.deductions)} د.ع</div>
+                </div>
+            </div>
+            
+            <div style="border-top: 2px solid #ddd; margin-top: 20px; padding-top: 10px;">
+                <div style="display: flex; justify-content: space-between; font-size: 1.2rem; font-weight: bold;">
+                    <div>الراتب النهائي:</div>
+                    <div>${formatNumber(salary.totalSalary)} د.ع</div>
+                </div>
             </div>
             
             ${salary.notes ? `
-            <div class="receipt-notes">
-                <p><strong>ملاحظات:</strong> ${salary.notes}</p>
-            </div>
+                <div style="margin-top: 20px;">
+                    <strong>ملاحظات:</strong> ${salary.notes}
+                </div>
             ` : ''}
             
-            <div class="receipt-footer">
-                <div class="signature-box">
-                    <p>توقيع الموظف</p>
-                    <div class="signature-line"></div>
+            <div style="margin-top: 30px; display: flex; justify-content: space-between;">
+                <div style="text-align: center;">
+                    <div style="border-top: 1px solid #000; width: 150px; margin-top: 50px;"></div>
+                    <div>توقيع الموظف</div>
                 </div>
-                <div class="signature-box">
-                    <p>توقيع المحاسب</p>
-                    <div class="signature-line"></div>
+                <div style="text-align: center;">
+                    <div style="border-top: 1px solid #000; width: 150px; margin-top: 50px;"></div>
+                    <div>توقيع المحاسب</div>
                 </div>
             </div>
         </div>
@@ -809,181 +799,247 @@ function viewSalaryDetails(id) {
     openModal('viewSalaryModal');
 }
 
-// Print salary receipt
 function printSalaryReceipt() {
-    const content = document.getElementById('receiptContent').innerHTML;
+    const content = document.getElementById('salaryReceipt').innerHTML;
     const printWindow = window.open('', '_blank');
-    
     printWindow.document.write(`
         <html dir="rtl">
         <head>
-            <title>إيصال راتب</title>
+            <title>إيصال صرف راتب</title>
             <style>
                 body {
-                    font-family: 'Arial', sans-serif;
+                    font-family: Arial, sans-serif;
                     direction: rtl;
                     padding: 20px;
                 }
-                .salary-receipt {
-                    max-width: 800px;
-                    margin: 0 auto;
-                    padding: 20px;
-                    border: 2px solid #333;
+                .salary-details {
+                    display: grid;
+                    grid-template-columns: repeat(3, 1fr);
+                    gap: 15px;
+                    margin-top: 20px;
                 }
-                .receipt-header {
-                    text-align: center;
-                    margin-bottom: 30px;
-                }
-                .receipt-info {
-                    margin-bottom: 20px;
-                }
-                .info-row {
-                    display: flex;
-                    justify-content: space-between;
-                    margin-bottom: 10px;
-                    padding: 5px 0;
-                    border-bottom: 1px solid #ddd;
-                }
-                .receipt-table {
-                    width: 100%;
-                    border-collapse: collapse;
-                    margin: 20px 0;
-                }
-                .receipt-table td {
+                .salary-item {
                     padding: 10px;
-                    border: 1px solid #ddd;
-                }
-                .receipt-table .total-row {
                     background: #f5f5f5;
-                    font-weight: bold;
+                    border-radius: 5px;
                 }
-                .deduction {
-                    color: red;
+                .salary-label {
+                    font-size: 0.9rem;
+                    color: #666;
                 }
-                .signature-box {
-                    display: inline-block;
-                    width: 40%;
-                    text-align: center;
-                    margin-top: 50px;
-                }
-                .signature-line {
-                    height: 2px;
-                    background: #333;
-                    margin-top: 60px;
-                }
-                @media print {
-                    body {
-                        margin: 0;
-                        padding: 0;
-                    }
+                .salary-value {
+                    font-size: 1.1rem;
+                    font-weight: 600;
+                    margin-top: 5px;
                 }
             </style>
         </head>
         <body>
             ${content}
+            <script>
+                window.print();
+                window.close();
+            </script>
         </body>
         </html>
     `);
-    
-    printWindow.document.close();
-    printWindow.print();
 }
 
-// Search employees
-function searchEmployees() {
-    const searchTerm = document.getElementById('employeeSearchInput').value.toLowerCase();
+// وظائف التحميل والعرض
+function loadEmployees() {
     const tbody = document.getElementById('employeesTableBody');
-    const rows = tbody.getElementsByTagName('tr');
+    if (!tbody) return;
     
-    for (let i = 0; i < rows.length; i++) {
-        const row = rows[i];
-        const name = row.cells[1].textContent.toLowerCase();
-        const position = row.cells[2].textContent.toLowerCase();
-        const department = row.cells[3].textContent.toLowerCase();
-        
-        if (name.includes(searchTerm) || position.includes(searchTerm) || department.includes(searchTerm)) {
-            row.style.display = '';
-        } else {
-            row.style.display = 'none';
-        }
-    }
+    tbody.innerHTML = '';
+    
+    employees.forEach((emp, index) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${index + 1}</td>
+            <td>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    ${emp.photo ? 
+                        `<img src="${emp.photo}" alt="${emp.name}" class="employee-photo">` :
+                        `<i class="fas fa-user" style="font-size: 1.5rem; color: var(--gray-600);"></i>`
+                    }
+                    ${emp.name}
+                </div>
+            </td>
+            <td>${emp.position}</td>
+            <td>${formatNumber(emp.salary)} د.ع</td>
+            <td>${emp.phone}</td>
+            <td>${formatDate(emp.startDate)}</td>
+            <td>
+                <span class="status ${emp.status === 'active' ? 'active' : 'inactive'}">
+                    ${emp.status === 'active' ? 'نشط' : 'غير نشط'}
+                </span>
+            </td>
+            <td>
+                <button class="btn btn-info btn-icon" onclick="viewEmployee('${emp.id}')">
+                    <i class="fas fa-eye"></i>
+                </button>
+                <button class="btn btn-warning btn-icon" onclick="editEmployee('${emp.id}')">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button class="btn btn-success btn-icon" onclick="openPaySalaryModal('${emp.id}')">
+                    <i class="fas fa-money-bill"></i>
+                </button>
+                <button class="btn btn-danger btn-icon" onclick="deleteEmployee('${emp.id}')">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
 }
 
-// Load employee charts
+function loadSalaries() {
+    const tbody = document.getElementById('salariesTableBody');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+    
+    // ترتيب الرواتب حسب التاريخ (الأحدث أولاً)
+    const sortedSalaries = [...salaryTransactions].sort((a, b) => 
+        new Date(b.paymentDate) - new Date(a.paymentDate)
+    );
+    
+    sortedSalaries.forEach((sal, index) => {
+        const employee = employees.find(emp => emp.id === sal.employeeId);
+        if (!employee) return;
+        
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${index + 1}</td>
+            <td>${employee.name}</td>
+            <td>${sal.month}</td>
+            <td>${formatNumber(sal.baseSalary)} د.ع</td>
+            <td>${formatNumber(sal.commission)} د.ع</td>
+            <td>${formatNumber(sal.allowances)} د.ع</td>
+            <td>${formatNumber(sal.deductions)} د.ع</td>
+            <td>${formatNumber(sal.totalSalary)} د.ع</td>
+            <td>${formatDate(sal.paymentDate)}</td>
+            <td>
+                <button class="btn btn-info btn-icon" onclick="viewSalary('${sal.id}')">
+                    <i class="fas fa-eye"></i>
+                </button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+// وظائف المخططات
 function loadEmployeeCharts() {
-    // Salary chart
-    const salaryCtx = document.getElementById('employeeSalariesChart').getContext('2d');
-    new Chart(salaryCtx, {
+    loadSalariesChart();
+    loadPerformanceChart();
+}
+
+function loadSalariesChart() {
+    const ctx = document.getElementById('salariesChart');
+    if (!ctx) return;
+    
+    const employeeNames = employees.map(emp => emp.name);
+    const baseSalaries = employees.map(emp => emp.salary);
+    const commissions = employees.map(emp => {
+        const empSalaries = salaryTransactions.filter(sal => sal.employeeId === emp.id);
+        const totalCommission = empSalaries.reduce((sum, sal) => sum + sal.commission, 0);
+        return totalCommission;
+    });
+    
+    new Chart(ctx, {
         type: 'bar',
         data: {
-            labels: employees.map(emp => emp.name),
+            labels: employeeNames,
             datasets: [
                 {
                     label: 'الراتب الأساسي',
-                    data: employees.map(emp => emp.salary),
-                    backgroundColor: 'rgba(52, 152, 219, 0.8)',
-                    borderColor: 'rgba(52, 152, 219, 1)',
+                    data: baseSalaries,
+                    backgroundColor: '#3498db',
+                    borderColor: '#2980b9',
                     borderWidth: 1
                 },
                 {
-                    label: 'العمولة',
-                    data: employees.map(emp => {
-                        const salaries = salaryTransactions.filter(sal => sal.employeeId === emp.id);
-                        const totalCommission = salaries.reduce((sum, sal) => sum + sal.commission, 0);
-                        return salaries.length > 0 ? totalCommission / salaries.length : 0;
-                    }),
-                    backgroundColor: 'rgba(46, 204, 113, 0.8)',
-                    borderColor: 'rgba(46, 204, 113, 1)',
+                    label: 'العمولات',
+                    data: commissions,
+                    backgroundColor: '#2ecc71',
+                    borderColor: '#27ae60',
                     borderWidth: 1
                 }
             ]
         },
         options: {
             responsive: true,
+            maintainAspectRatio: false,
             scales: {
                 y: {
                     beginAtZero: true,
                     ticks: {
                         callback: function(value) {
-                            return formatNumber(value);
+                            return formatNumber(value) + ' د.ع';
                         }
                     }
+                }
+            },
+            plugins: {
+                legend: {
+                    position: 'top',
+                },
+                title: {
+                    display: true,
+                    text: 'الرواتب والعمولات حسب الموظف'
                 }
             }
         }
     });
+}
+
+function loadPerformanceChart() {
+    const ctx = document.getElementById('performanceChart');
+    if (!ctx) return;
     
-    // Performance chart
-    const performanceCtx = document.getElementById('employeePerformanceChart').getContext('2d');
-    new Chart(performanceCtx, {
-        type: 'pie',
+    const employeeNames = employees.map(emp => emp.name);
+    const totalSales = employees.map(emp => {
+        const empSalaries = salaryTransactions.filter(sal => sal.employeeId === emp.id);
+        return empSalaries.reduce((sum, sal) => sum + sal.totalSales, 0);
+    });
+    
+    new Chart(ctx, {
+        type: 'doughnut',
         data: {
-            labels: employees.map(emp => emp.name),
+            labels: employeeNames,
             datasets: [{
-                data: employees.map(emp => {
-                    const salaries = salaryTransactions.filter(sal => sal.employeeId === emp.id);
-                    return salaries.reduce((sum, sal) => sum + sal.sales, 0);
-                }),
+                label: 'إجمالي المبيعات',
+                data: totalSales,
                 backgroundColor: [
-                    'rgba(255, 99, 132, 0.8)',
-                    'rgba(54, 162, 235, 0.8)',
-                    'rgba(255, 206, 86, 0.8)',
-                    'rgba(75, 192, 192, 0.8)',
-                    'rgba(153, 102, 255, 0.8)',
-                    'rgba(255, 159, 64, 0.8)'
-                ]
+                    '#3498db',
+                    '#2ecc71',
+                    '#e74c3c',
+                    '#f39c12',
+                    '#9b59b6',
+                    '#34495e',
+                    '#1abc9c',
+                    '#e67e22'
+                ],
+                borderColor: '#fff',
+                borderWidth: 2
             }]
         },
         options: {
             responsive: true,
+            maintainAspectRatio: false,
             plugins: {
                 legend: {
-                    position: 'bottom'
+                    position: 'right',
+                },
+                title: {
+                    display: true,
+                    text: 'أداء الموظفين (حسب المبيعات)'
                 },
                 tooltip: {
                     callbacks: {
                         label: function(context) {
-                            return context.label + ': ' + formatCurrency(context.raw);
+                            return context.label + ': ' + formatNumber(context.raw) + ' د.ع';
                         }
                     }
                 }
@@ -992,289 +1048,125 @@ function loadEmployeeCharts() {
     });
 }
 
-// Export employees to CSV
-function exportEmployees() {
-    let csv = 'الاسم,الوظيفة,القسم,الراتب الأساسي,رقم الهاتف,تاريخ التعيين,الحالة\n';
+// وظائف التبويبات
+function switchEmployeeTab(tabId) {
+    // إخفاء جميع التبويبات
+    document.querySelectorAll('#employees .tab-content').forEach(content => {
+        content.classList.remove('active');
+    });
     
-    employees.forEach(employee => {
-        csv += `${employee.name},${employee.position},${employee.department},${employee.salary},${employee.phone},${employee.joinDate},${getStatusName(employee.status)}\n`;
+    // إزالة active من جميع التبويبات
+    document.querySelectorAll('#employees .tab').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    
+    // تفعيل التبويب المحدد
+    document.getElementById(`${tabId}Tab`).classList.add('active');
+    document.querySelector(`#employees .tab[onclick="switchEmployeeTab('${tabId}')"]`).classList.add('active');
+    
+    // تحميل المحتوى المناسب
+    switch(tabId) {
+        case 'list':
+            loadEmployees();
+            break;
+        case 'salary':
+            loadSalaries();
+            break;
+        case 'reports':
+            loadEmployeeCharts();
+            break;
+    }
+}
+
+// البحث عن الموظفين
+function searchEmployees() {
+    const searchTerm = document.getElementById('employeeSearchInput').value.toLowerCase();
+    const rows = document.querySelectorAll('#employeesTableBody tr');
+    
+    rows.forEach(row => {
+        const name = row.cells[1].textContent.toLowerCase();
+        const position = row.cells[2].textContent.toLowerCase();
+        const phone = row.cells[4].textContent.toLowerCase();
+        
+        if (name.includes(searchTerm) || position.includes(searchTerm) || phone.includes(searchTerm)) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+}
+
+// تصدير البيانات
+function exportEmployeesToCSV() {
+    let csv = '\ufeff'; // BOM for Excel to recognize UTF-8
+    csv += 'الاسم,الوظيفة,الراتب الأساسي,رقم الهاتف,البريد الإلكتروني,العنوان,تاريخ التعيين,الحالة\n';
+    
+    employees.forEach(emp => {
+        csv += `${emp.name},${emp.position},${emp.salary},${emp.phone},${emp.email || ''},${emp.address || ''},${emp.startDate},${emp.status === 'active' ? 'نشط' : 'غير نشط'}\n`;
     });
     
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = 'employees.csv';
+    link.download = `employees_${new Date().toISOString().split('T')[0]}.csv`;
     link.click();
 }
 
-// Export salaries to CSV
-function exportSalaries() {
-    let csv = 'الموظف,الشهر,الراتب الأساسي,العمولة,العلاوات,الاستقطاعات,الراتب النهائي,تاريخ الصرف\n';
+function exportSalariesToCSV() {
+    let csv = '\ufeff'; // BOM for Excel to recognize UTF-8
+    csv += 'الموظف,الشهر,الراتب الأساسي,المبيعات,العمولة,العلاوات,الاستقطاعات,الراتب النهائي,تاريخ الصرف\n';
     
-    salaryTransactions.forEach(salary => {
-        const employee = employees.find(emp => emp.id === salary.employeeId);
+    salaryTransactions.forEach(sal => {
+        const employee = employees.find(emp => emp.id === sal.employeeId);
         if (employee) {
-            csv += `${employee.name},${formatMonth(salary.month)},${salary.basicSalary},${salary.commission},${salary.allowances},${salary.deductions},${salary.totalAmount},${formatDate(salary.dateIssued)}\n`;
+            csv += `${employee.name},${sal.month},${sal.baseSalary},${sal.totalSales},${sal.commission},${sal.allowances},${sal.deductions},${sal.totalSalary},${sal.paymentDate}\n`;
         }
     });
     
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = 'salaries.csv';
+    link.download = `salaries_${new Date().toISOString().split('T')[0]}.csv`;
     link.click();
 }
 
-// Helper functions
-function getStatusName(status) {
-    const statusNames = {
-        'active': 'نشط',
-        'inactive': 'غير نشط',
-        'vacation': 'إجازة'
-    };
-    return statusNames[status] || status;
-}
-
-function getContractTypeName(type) {
-    const contractTypes = {
-        'permanent': 'دائم',
-        'temporary': 'مؤقت',
-        'contract': 'عقد'
-    };
-    return contractTypes[type] || type;
-}
-
-function formatMonth(monthString) {
-    const date = new Date(monthString + '-01');
-    return date.toLocaleDateString('ar-IQ', { year: 'numeric', month: 'long' });
-}
-
-// Edit employee from view modal
-function editEmployeeFromView() {
-    closeModal('viewEmployeeModal');
-    editEmployee(currentEmployeeId);
-}
-
-// Pay salary from view modal
-function payEmployeeSalaryFromView() {
-    closeModal('viewEmployeeModal');
-    paySalary(currentEmployeeId);
-}
-
-// Add employee styles
-function addEmployeeStyles() {
-    const style = document.createElement('style');
-    style.textContent = `
-        .employee-tab-content {
-            display: none;
-        }
-        
-        .employee-tab-content.active {
-            display: block;
-        }
-        
-        .employee-details-container {
-            padding: 20px;
-        }
-        
-        .employee-header {
-            display: flex;
-            align-items: center;
-            margin-bottom: 30px;
-            padding-bottom: 20px;
-            border-bottom: 2px solid var(--gray-200);
-        }
-        
-        .employee-photo {
-            width: 120px;
-            height: 120px;
-            background: var(--gray-100);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-left: 20px;
-            overflow: hidden;
-        }
-        
-        .employee-photo img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        
-        .employee-info h2 {
-            margin-bottom: 5px;
-            color: var(--gray-800);
-        }
-        
-        .employee-info p {
-            margin-bottom: 10px;
-            color: var(--gray-600);
-        }
-        
-        .employee-details {
-            margin-top: 20px;
-        }
-        
-        .detail-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 10px 0;
-            border-bottom: 1px solid var(--gray-100);
-        }
-        
-        .detail-label {
-            font-weight: 600;
-            color: var(--gray-600);
-        }
-        
-        .detail-value {
-            color: var(--gray-800);
-        }
-        
-        .salary-receipt {
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        
-        .receipt-header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        
-        .company-name {
-            font-size: 1.5rem;
-            margin-bottom: 10px;
-            color: var(--primary-color);
-        }
-        
-        .receipt-info {
-            margin-bottom: 20px;
-        }
-        
-        .info-row {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 10px;
-            padding: 5px 0;
-            border-bottom: 1px solid #ddd;
-        }
-        
-        .receipt-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 20px 0;
-        }
-        
-        .receipt-table td {
-            padding: 10px;
-            border: 1px solid #ddd;
-            text-align: right;
-        }
-        
-        .receipt-table td:last-child {
-            text-align: left;
-        }
-        
-        .receipt-table .total-row {
-            background: #f5f5f5;
-            font-weight: bold;
-        }
-        
-        .deduction {
-            color: red;
-        }
-        
-        .receipt-notes {
-            margin-top: 20px;
-            padding: 10px;
-            background: #f9f9f9;
-            border-radius: 5px;
-        }
-        
-        .receipt-footer {
-            margin-top: 50px;
-            display: flex;
-            justify-content: space-between;
-        }
-        
-        .signature-box {
-            text-align: center;
-            width: 40%;
-        }
-        
-        .signature-line {
-            height: 2px;
-            background: #333;
-            margin-top: 60px;
-        }
-        
-        .action-btn {
-            padding: 6px;
-            font-size: 14px;
-            margin: 0 2px;
-        }
-        
-        .status {
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 0.85rem;
-            font-weight: 600;
-        }
-        
-        .status.active {
-            background: #d4edda;
-            color: #155724;
-        }
-        
-        .status.inactive {
-            background: #f8d7da;
-            color: #721c24;
-        }
-        
-        .status.vacation {
-            background: #fff3cd;
-            color: #856404;
-        }
-        
-        @media print {
-            .modal-header,
-            .modal-footer {
-                display: none !important;
-            }
-            
-            .salary-receipt {
-                border: 2px solid #333;
-                max-width: 100%;
-            }
-        }
-    `;
-    
-    document.head.appendChild(style);
-}
-
-// Add global styles for employee system
-const globalStyles = `
-    .employee-system-icon {
-        color: var(--primary-color);
+// تحميل وحفظ البيانات
+function loadEmployeesData() {
+    // تحميل الموظفين
+    const storedEmployees = localStorage.getItem('employees');
+    if (storedEmployees) {
+        employees = JSON.parse(storedEmployees);
     }
     
-    .employee-charts {
-        margin-top: 20px;
+    // تحميل الرواتب
+    const storedSalaries = localStorage.getItem('salaryTransactions');
+    if (storedSalaries) {
+        salaryTransactions = JSON.parse(storedSalaries);
     }
     
-    .employee-chart {
-        height: 300px;
-        margin-bottom: 30px;
-    }
-`;
+    // تحميل البيانات في الجداول والمخططات
+    loadEmployees();
+    loadSalaries();
+}
 
-// Add global styles to document
-const globalStyleElement = document.createElement('style');
-globalStyleElement.textContent = globalStyles;
-document.head.appendChild(globalStyleElement);
+function saveEmployeesData() {
+    localStorage.setItem('employees', JSON.stringify(employees));
+    localStorage.setItem('salaryTransactions', JSON.stringify(salaryTransactions));
+}
 
-// Current employee ID for operations
-let currentEmployeeId = null;
+// دالة مساعدة لتوليد معرف فريد
+function generateId() {
+    return Date.now().toString(36) + Math.random().toString(36).substring(2);
+}
+
+// دالة مساعدة لتنسيق الأرقام
+function formatNumber(num) {
+    return new Intl.NumberFormat('ar-IQ').format(num);
+}
+
+// دالة مساعدة لتنسيق التاريخ
+function formatDate(dateString) {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('ar-IQ');
+}
