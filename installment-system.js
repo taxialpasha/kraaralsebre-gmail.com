@@ -1,14 +1,28 @@
 /**
- * نظام إدارة الأقساط
+ * نظام إدارة الأقساط المحسن - الإصدار 2.0
  * 
  * هذا الملف يحتوي على وظائف إدارة الأقساط للتكامل مع نظام إدارة الاستثمار
+ * تم تحسين الكود لمعالجة مشاكل العرض والتخزين وإضافة ميزات جديدة
  */
 
-// المتغيرات العالمية لنظام الأقساط
+// ============ المتغيرات العالمية لنظام الأقساط ============
 let installments = [];
 let installmentItems = [];
 let installmentPayments = [];
-let borrowerCategories = [
+let installmentSettings = {
+    defaultInterestRate: 4, // معدل الفائدة الافتراضي
+    defaultDurationMonths: 12, // مدة القرض الافتراضية بالأشهر
+    lateFeePercentage: 0.5, // نسبة غرامة التأخير
+    maxInstallmentAmount: 0, // الحد الأقصى لمبلغ القسط (0 = غير محدود)
+    minInstallmentAmount: 50000, // الحد الأدنى لمبلغ القسط
+    enableNotifications: true, // تفعيل الإشعارات
+    notificationDaysBeforeDue: 3, // عدد أيام التذكير قبل موعد الاستحقاق
+    allowPartialPayments: true, // السماح بالدفع الجزئي
+    showInInvestorProfile: true, // إظهار الأقساط في ملف المستثمر
+};
+
+// فئات المقترضين
+const borrowerCategories = [
     { id: 'investor', name: 'مستثمر' },
     { id: 'public', name: 'حشد شعبي' },
     { id: 'welfare', name: 'رعاية اجتماعية' },
@@ -18,61 +32,649 @@ let borrowerCategories = [
     { id: 'other', name: 'أخرى' }
 ];
 
+// متغيرات الحالة
 let currentInstallmentId = null;
 let currentInstallmentItemId = null;
 let currentInstallmentPaymentId = null;
+let tempInstallmentItems = []; // قائمة مؤقتة للعناصر أثناء التعديل/الإضافة
+let isInstallmentPageInitialized = false; // للتحقق مما إذا كانت صفحة الأقساط قد تم تهيئتها
 
-// ============ بنية البيانات ============
-
-/**
- * هيكل بيانات القرض بالأقساط:
- * {
- *   id: string,
- *   borrowerType: string, // نوع المقترض: 'investor', 'public', 'welfare', etc.
- *   borrowerId: string, // معرف المستثمر (إذا كان مستثمر)
- *   borrowerName: string, // اسم المقترض (إذا لم يكن مستثمر)
- *   borrowerPhone: string, // رقم هاتف المقترض (إذا لم يكن مستثمر)
- *   borrowerAddress: string, // عنوان المقترض (إذا لم يكن مستثمر)
- *   borrowerIdCard: string, // رقم البطاقة الشخصية للمقترض (إذا لم يكن مستثمر)
- *   totalAmount: number, // المبلغ الإجمالي مع الفائدة
- *   interestRate: number, // معدل الفائدة السنوية
- *   startDate: string, // تاريخ بدء القرض
- *   durationMonths: number, // مدة القرض بالأشهر
- *   status: string, // حالة القرض: 'active', 'completed', 'defaulted'
- *   notes: string, // ملاحظات
- *   createdAt: string, // تاريخ الإنشاء
- *   updatedAt: string // تاريخ التحديث
- * }
- */
+// ============ وظائف التحميل والتهيئة ============
 
 /**
- * هيكل بيانات عنصر القرض:
- * {
- *   id: string,
- *   installmentId: string, // معرف القرض بالأقساط
- *   name: string, // اسم العنصر
- *   price: number, // سعر العنصر الأصلي
- *   quantity: number, // الكمية
- *   totalPrice: number, // السعر الإجمالي (السعر * الكمية)
- *   createdAt: string // تاريخ الإنشاء
- * }
+ * تهيئة نظام الأقساط
  */
+function initInstallmentSystem() {
+    console.log('جاري تهيئة نظام الأقساط...');
+    
+    // تحميل البيانات من التخزين المحلي
+    loadInstallmentData();
+    
+    // تحميل إعدادات الأقساط
+    loadInstallmentSettings();
+    
+    // إنشاء صفحة الأقساط إذا لم تكن موجودة
+    if (!document.getElementById('installments')) {
+        createInstallmentsPage();
+    }
+    
+    // إضافة رابط الأقساط في القائمة الجانبية
+    addInstallmentsMenuLink();
+    
+    // التحقق من تواريخ استحقاق الأقساط
+    checkDueDates();
+    
+    // تحديث شارة الأقساط
+    updateInstallmentsBadge();
+    
+    // إضافة مستمع أحداث للتنقل بين الصفحات
+    addPageNavigationListener();
+    
+    // تسجيل دالة عرض صفحة الأقساط في النظام الرئيسي
+    registerInstallmentPageHandler();
+    
+    // جدولة التحقق التلقائي من الأقساط
+    scheduleAutomaticChecks();
+    
+    // دمج الأقساط مع ملفات المستثمرين
+    integrateWithInvestorProfiles();
+    
+    // تسجيل الإشعارات
+    registerInstallmentNotifications();
+    
+    console.log('تم تهيئة نظام الأقساط بنجاح');
+    isInstallmentPageInitialized = true;
+}
 
 /**
- * هيكل بيانات جدول الأقساط:
- * {
- *   id: string,
- *   installmentId: string, // معرف القرض بالأقساط
- *   number: number, // رقم القسط
- *   dueDate: string, // تاريخ استحقاق القسط
- *   amount: number, // مبلغ القسط
- *   status: string, // حالة القسط: 'pending', 'paid', 'late'
- *   paymentDate: string, // تاريخ الدفع (إذا تم الدفع)
- *   notes: string // ملاحظات
- * }
+ * تحميل بيانات الأقساط من التخزين المحلي
  */
+function loadInstallmentData() {
+    try {
+        const storedInstallments = localStorage.getItem('installments');
+        const storedInstallmentItems = localStorage.getItem('installmentItems');
+        const storedInstallmentPayments = localStorage.getItem('installmentPayments');
+        
+        if (storedInstallments) {
+            installments = JSON.parse(storedInstallments);
+        }
+        
+        if (storedInstallmentItems) {
+            installmentItems = JSON.parse(storedInstallmentItems);
+        }
+        
+        if (storedInstallmentPayments) {
+            installmentPayments = JSON.parse(storedInstallmentPayments);
+        }
+        
+        console.log(`تم تحميل ${installments.length} قرض و ${installmentItems.length} عنصر و ${installmentPayments.length} قسط`);
+    } catch (error) {
+        console.error('خطأ في تحميل بيانات الأقساط:', error);
+        
+        // إنشاء نسخة احتياطية من البيانات إذا كانت موجودة
+        if (installments.length > 0 || installmentItems.length > 0 || installmentPayments.length > 0) {
+            createBackup('error_recovery');
+        }
+        
+        // إعادة تعيين البيانات
+        installments = [];
+        installmentItems = [];
+        installmentPayments = [];
+        
+        createNotification('خطأ', 'حدث خطأ أثناء تحميل بيانات الأقساط. تم إعادة تعيين البيانات.', 'danger');
+    }
+}
 
-// ============ وظائف المساعدة ============
+/**
+ * تحميل إعدادات الأقساط
+ */
+function loadInstallmentSettings() {
+    try {
+        const storedSettings = localStorage.getItem('installmentSettings');
+        
+        if (storedSettings) {
+            // دمج الإعدادات المخزنة مع الإعدادات الافتراضية
+            installmentSettings = {...installmentSettings, ...JSON.parse(storedSettings)};
+        }
+        
+        console.log('تم تحميل إعدادات الأقساط:', installmentSettings);
+    } catch (error) {
+        console.error('خطأ في تحميل إعدادات الأقساط:', error);
+        // استخدام الإعدادات الافتراضية
+    }
+}
+
+/**
+ * حفظ إعدادات الأقساط
+ */
+function saveInstallmentSettings() {
+    try {
+        localStorage.setItem('installmentSettings', JSON.stringify(installmentSettings));
+        console.log('تم حفظ إعدادات الأقساط');
+        
+        // تحديث الإجراءات المرتبطة بالإعدادات
+        if (installmentSettings.showInInvestorProfile) {
+            integrateWithInvestorProfiles();
+        }
+        
+        return true;
+    } catch (error) {
+        console.error('خطأ في حفظ إعدادات الأقساط:', error);
+        createNotification('خطأ', 'حدث خطأ أثناء حفظ إعدادات الأقساط', 'danger');
+        return false;
+    }
+}
+
+/**
+ * حفظ بيانات الأقساط في التخزين المحلي
+ */
+function saveInstallmentData() {
+    try {
+        localStorage.setItem('installments', JSON.stringify(installments));
+        localStorage.setItem('installmentItems', JSON.stringify(installmentItems));
+        localStorage.setItem('installmentPayments', JSON.stringify(installmentPayments));
+        
+        // إذا كانت المزامنة نشطة، قم بمزامنة البيانات مع Firebase
+        if (typeof syncActive !== 'undefined' && syncActive) {
+            syncInstallmentData();
+        }
+        
+        return true;
+    } catch (error) {
+        console.error('خطأ في حفظ بيانات الأقساط:', error);
+        createNotification('خطأ', 'حدث خطأ أثناء حفظ بيانات الأقساط', 'danger');
+        
+        // إنشاء نسخة احتياطية تلقائية في حالة الخطأ
+        createBackup('auto_error');
+        
+        return false;
+    }
+}
+
+/**
+ * إضافة مستمع لأحداث التنقل بين الصفحات
+ */
+function addPageNavigationListener() {
+    // تعديل لتجنب الإضافة المتكررة
+    if (window.installmentPageListenerAdded) return;
+    
+    // استمع إلى أحداث تغيير الهاش (عند التنقل بين الصفحات)
+    window.addEventListener('hashchange', function() {
+        const pageId = window.location.hash.substring(1);
+        
+        // حفظ بيانات الأقساط قبل مغادرة الصفحة
+        if (pageId !== 'installments' && document.getElementById('installments') && document.getElementById('installments').classList.contains('active')) {
+            console.log('مغادرة صفحة الأقساط - حفظ البيانات');
+            saveInstallmentData();
+        }
+        
+        // تحميل البيانات عند الدخول إلى صفحة الأقساط
+        if (pageId === 'installments') {
+            console.log('الدخول إلى صفحة الأقساط');
+            // تأكد من تهيئة الصفحة
+            if (!isInstallmentPageInitialized) {
+                createInstallmentsPage();
+                isInstallmentPageInitialized = true;
+            }
+            
+            // تأخير قصير للتأكد من ظهور الصفحة
+            setTimeout(() => {
+                loadInstallmentsPage();
+            }, 100);
+        }
+    });
+    
+    // تعديل الروابط في القائمة الجانبية
+    document.querySelectorAll('.menu-item').forEach(menuItem => {
+        menuItem.addEventListener('click', function(e) {
+            // التحقق مما إذا كان هذا هو رابط صفحة الأقساط
+            if (this.getAttribute('href') === '#installments') {
+                // تأكد من تهيئة الصفحة
+                if (!isInstallmentPageInitialized) {
+                    createInstallmentsPage();
+                    isInstallmentPageInitialized = true;
+                }
+                
+                // تأخير قصير للتأكد من ظهور الصفحة
+                setTimeout(() => {
+                    loadInstallmentsPage();
+                }, 100);
+            }
+        });
+    });
+    
+    window.installmentPageListenerAdded = true;
+}
+
+/**
+ * تسجيل دالة عرض صفحة الأقساط في النظام الرئيسي
+ */
+function registerInstallmentPageHandler() {
+    // التأكد من وجود دالة showPage في النظام الرئيسي
+    if (typeof window.showPage === 'function') {
+        // حفظ الدالة الأصلية
+        const originalShowPage = window.showPage;
+        
+        // استبدال الدالة بنسخة معدلة
+        window.showPage = function(pageId) {
+            // استدعاء الدالة الأصلية أولاً
+            originalShowPage(pageId);
+            
+            // إذا كانت الصفحة المطلوبة هي صفحة الأقساط
+            if (pageId === 'installments') {
+                console.log('تم طلب عرض صفحة الأقساط');
+                // تأكد من تهيئة الصفحة
+                if (!isInstallmentPageInitialized) {
+                    createInstallmentsPage();
+                    isInstallmentPageInitialized = true;
+                }
+                
+                // تأخير قصير للتأكد من ظهور الصفحة
+                setTimeout(() => {
+                    loadInstallmentsPage();
+                }, 100);
+            }
+        };
+        
+        console.log('تم تسجيل معالج صفحة الأقساط بنجاح');
+    } else {
+        console.warn('وظيفة showPage غير متوفرة في النظام الرئيسي');
+    }
+}
+
+/**
+ * جدولة التحقق التلقائي من الأقساط
+ */
+function scheduleAutomaticChecks() {
+    // التحقق من تواريخ الاستحقاق عند بدء التشغيل
+    checkDueDates();
+    
+    // التحقق من الأقساط المستحقة قريبًا كل 12 ساعة
+    const HALF_DAY = 12 * 60 * 60 * 1000;
+    setInterval(() => {
+        checkDueDates();
+        checkUpcomingInstallments();
+    }, HALF_DAY);
+    
+    console.log('تم جدولة التحقق التلقائي من الأقساط');
+}
+
+// ============ وظائف التكامل مع نظام المستثمرين ============
+
+/**
+ * دمج الأقساط مع ملفات المستثمرين
+ */
+function integrateWithInvestorProfiles() {
+    if (!installmentSettings.showInInvestorProfile) {
+        console.log('تم تعطيل دمج الأقساط مع ملفات المستثمرين');
+        return;
+    }
+    
+    // تعديل دالة عرض المستثمر لإضافة تبويب الأقساط
+    if (typeof window.viewInvestor === 'function') {
+        const originalViewInvestor = window.viewInvestor;
+        
+        window.viewInvestor = function(investorId) {
+            // استدعاء الدالة الأصلية أولاً
+            originalViewInvestor(investorId);
+            
+            // إضافة تبويب الأقساط بعد تحميل بيانات المستثمر
+            setTimeout(() => {
+                addInstallmentsTabToInvestorModal(investorId);
+            }, 200);
+        };
+        
+        console.log('تم دمج الأقساط مع ملفات المستثمرين');
+    } else {
+        console.warn('وظيفة viewInvestor غير متوفرة في النظام الرئيسي');
+    }
+}
+
+/**
+ * إضافة تبويب الأقساط إلى نافذة المستثمر
+ */
+function addInstallmentsTabToInvestorModal(investorId) {
+    // التحقق من وجود المستثمر
+    const investor = investors.find(inv => inv.id === investorId);
+    if (!investor) return;
+    
+    // التحقق من وجود نافذة المستثمر
+    const investorModal = document.getElementById('viewInvestorModal');
+    if (!investorModal) return;
+    
+    // التحقق من وجود شريط التبويبات
+    const tabsList = investorModal.querySelector('.modal-tabs');
+    if (!tabsList) return;
+    
+    // التحقق مما إذا كان تبويب الأقساط موجودًا بالفعل
+    if (investorModal.querySelector('.modal-tab[data-tab="investorInstallments"]')) return;
+    
+    // إنشاء تبويب جديد للأقساط
+    const installmentsTab = document.createElement('div');
+    installmentsTab.className = 'modal-tab';
+    installmentsTab.setAttribute('data-tab', 'investorInstallments');
+    installmentsTab.textContent = 'الأقساط';
+    installmentsTab.onclick = function() {
+        switchModalTab('investorInstallments', 'viewInvestorModal');
+    };
+    
+    // إضافة التبويب إلى شريط التبويبات
+    tabsList.appendChild(installmentsTab);
+    
+    // إنشاء محتوى تبويب الأقساط
+    const installmentsTabContent = document.createElement('div');
+    installmentsTabContent.className = 'modal-tab-content';
+    installmentsTabContent.id = 'investorInstallments';
+    
+    // البحث عن القروض المرتبطة بالمستثمر
+    const investorInstallments = installments.filter(inst => 
+        inst.borrowerType === 'investor' && inst.borrowerId === investorId
+    );
+    
+    // إنشاء محتوى تبويب الأقساط
+    if (investorInstallments.length === 0) {
+        installmentsTabContent.innerHTML = `
+            <div class="alert alert-info">
+                <div class="alert-icon">
+                    <i class="fas fa-info"></i>
+                </div>
+                <div class="alert-content">
+                    <div class="alert-title">لا توجد أقساط</div>
+                    <div class="alert-text">لا توجد أقساط لهذا المستثمر.</div>
+                </div>
+            </div>
+            <div style="text-align: center; margin-top: 15px;">
+                <button class="btn btn-primary" onclick="openAddInstallmentModal('${investorId}')">
+                    <i class="fas fa-plus"></i> إضافة قرض جديد
+                </button>
+            </div>
+        `;
+    } else {
+        // جمع بيانات الأقساط المستحقة والمتأخرة
+        let totalAmount = 0;
+        let totalPaid = 0;
+        let totalRemaining = 0;
+        let latePaymentsCount = 0;
+        let upcomingPaymentsCount = 0;
+        
+        investorInstallments.forEach(inst => {
+            totalAmount += inst.totalAmount;
+            
+            // حساب المبالغ المدفوعة
+            const paidPayments = installmentPayments
+                .filter(payment => payment.installmentId === inst.id && payment.status === 'paid')
+                .reduce((total, payment) => total + payment.amount, 0);
+            
+            totalPaid += paidPayments;
+            
+            // الأقساط المتأخرة
+            latePaymentsCount += installmentPayments
+                .filter(payment => payment.installmentId === inst.id && payment.status === 'late')
+                .length;
+            
+            // الأقساط القادمة خلال الأيام القليلة المقبلة
+            const today = new Date();
+            const upcomingDays = installmentSettings.notificationDaysBeforeDue;
+            const futureDate = new Date(today);
+            futureDate.setDate(today.getDate() + upcomingDays);
+            
+            upcomingPaymentsCount += installmentPayments
+                .filter(payment => {
+                    if (payment.installmentId !== inst.id || payment.status !== 'pending') return false;
+                    const dueDate = new Date(payment.dueDate);
+                    return dueDate >= today && dueDate <= futureDate;
+                })
+                .length;
+        });
+        
+        totalRemaining = totalAmount - totalPaid;
+        
+        // إنشاء محتوى تبويب الأقساط
+        installmentsTabContent.innerHTML = `
+            <div class="dashboard-cards">
+                <div class="card">
+                    <div class="card-header">
+                        <div>
+                            <div class="card-title">إجمالي القروض</div>
+                            <div class="card-value">${investorInstallments.length}</div>
+                        </div>
+                        <div class="card-icon primary">
+                            <i class="fas fa-receipt"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header">
+                        <div>
+                            <div class="card-title">المبلغ المتبقي</div>
+                            <div class="card-value">${formatCurrency(totalRemaining)}</div>
+                        </div>
+                        <div class="card-icon warning">
+                            <i class="fas fa-hand-holding-usd"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header">
+                        <div>
+                            <div class="card-title">الأقساط المتأخرة</div>
+                            <div class="card-value">${latePaymentsCount}</div>
+                        </div>
+                        <div class="card-icon ${latePaymentsCount > 0 ? 'danger' : 'info'}">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header">
+                        <div>
+                            <div class="card-title">الأقساط القادمة</div>
+                            <div class="card-value">${upcomingPaymentsCount}</div>
+                        </div>
+                        <div class="card-icon info">
+                            <i class="fas fa-calendar-day"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="table-container" style="margin-top: 15px;">
+                <div class="table-header">
+                    <div class="table-title">القروض بالأقساط</div>
+                    <div class="table-actions">
+                        <button class="btn btn-sm btn-primary" onclick="openAddInstallmentModal('${investorId}')">
+                            <i class="fas fa-plus"></i> إضافة قرض جديد
+                        </button>
+                    </div>
+                </div>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>المبلغ الإجمالي</th>
+                            <th>تاريخ البدء</th>
+                            <th>المدة</th>
+                            <th>المبلغ المتبقي</th>
+                            <th>الحالة</th>
+                            <th>إجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${investorInstallments.map((inst, index) => {
+                            // حساب المبلغ المدفوع والمتبقي
+                            const paidAmount = installmentPayments
+                                .filter(payment => payment.installmentId === inst.id && payment.status === 'paid')
+                                .reduce((total, payment) => total + payment.amount, 0);
+                            
+                            const remainingAmount = inst.totalAmount - paidAmount;
+                            
+                            // عدد الأقساط المتبقية
+                            const remainingPayments = installmentPayments
+                                .filter(payment => payment.installmentId === inst.id && payment.status !== 'paid')
+                                .length;
+                            
+                            // حالة القرض مع مؤشر للتأخير
+                            const hasLatePayments = installmentPayments
+                                .some(payment => payment.installmentId === inst.id && payment.status === 'late');
+                            
+                            return `
+                                <tr>
+                                    <td>${index + 1}</td>
+                                    <td>${formatCurrency(inst.totalAmount)}</td>
+                                    <td>${formatDate(inst.startDate)}</td>
+                                    <td>${inst.durationMonths} شهر</td>
+                                    <td>${formatCurrency(remainingAmount)}</td>
+                                    <td>
+                                        <span class="status ${
+                                            inst.status === 'completed' ? 'success' : 
+                                            hasLatePayments ? 'danger' : 'active'
+                                        }">
+                                            ${
+                                                inst.status === 'completed' ? 'مكتمل' : 
+                                                inst.status === 'defaulted' ? 'متعثر' : 
+                                                hasLatePayments ? 'متأخر' : 'نشط'
+                                            }
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-info btn-icon action-btn" onclick="viewInstallment('${inst.id}')">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <button class="btn btn-success btn-icon action-btn" onclick="openPayInstallmentFromInvestor('${inst.id}')">
+                                            <i class="fas fa-money-bill"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="table-container" style="margin-top: 15px;">
+                <div class="table-header">
+                    <div class="table-title">الأقساط المتأخرة والمستحقة قريبًا</div>
+                </div>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>رقم القسط</th>
+                            <th>تاريخ الاستحقاق</th>
+                            <th>المبلغ</th>
+                            <th>الحالة</th>
+                            <th>إجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${getInvestorPaymentsTableRows(investorId)}
+                    </tbody>
+                </table>
+            </div>
+        `;
+    }
+    
+    // إضافة محتوى التبويب إلى منطقة المحتوى
+    const modalBody = investorModal.querySelector('.modal-body');
+    modalBody.appendChild(installmentsTabContent);
+    
+    console.log('تم إضافة تبويب الأقساط إلى نافذة المستثمر');
+}
+
+/**
+ * الحصول على صفوف جدول أقساط المستثمر
+ */
+function getInvestorPaymentsTableRows(investorId) {
+    // البحث عن القروض المرتبطة بالمستثمر
+    const investorInstallmentIds = installments
+        .filter(inst => inst.borrowerType === 'investor' && inst.borrowerId === investorId)
+        .map(inst => inst.id);
+    
+    if (investorInstallmentIds.length === 0) {
+        return '<tr><td colspan="5" style="text-align: center;">لا توجد أقساط</td></tr>';
+    }
+    
+    // الحصول على الأقساط المتأخرة
+    const latePayments = installmentPayments.filter(payment => 
+        investorInstallmentIds.includes(payment.installmentId) && payment.status === 'late'
+    );
+    
+    // الحصول على الأقساط المستحقة قريبًا
+    const today = new Date();
+    const upcomingDays = installmentSettings.notificationDaysBeforeDue;
+    const futureDate = new Date(today);
+    futureDate.setDate(today.getDate() + upcomingDays);
+    
+    const upcomingPayments = installmentPayments.filter(payment => {
+        if (!investorInstallmentIds.includes(payment.installmentId) || payment.status !== 'pending') return false;
+        const dueDate = new Date(payment.dueDate);
+        return dueDate >= today && dueDate <= futureDate;
+    });
+    
+    // دمج الأقساط وترتيبها حسب تاريخ الاستحقاق
+    const combinedPayments = [...latePayments, ...upcomingPayments].sort((a, b) => 
+        new Date(a.dueDate) - new Date(b.dueDate)
+    );
+    
+    if (combinedPayments.length === 0) {
+        return '<tr><td colspan="5" style="text-align: center;">لا توجد أقساط متأخرة أو مستحقة قريبًا</td></tr>';
+    }
+    
+    return combinedPayments.map(payment => {
+        // الحصول على معلومات القرض
+        const installment = installments.find(inst => inst.id === payment.installmentId);
+        if (!installment) return '';
+        
+        // حساب عدد أيام التأخير أو الأيام المتبقية
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const dueDate = new Date(payment.dueDate);
+        dueDate.setHours(0, 0, 0, 0);
+        
+        const daysDiff = Math.floor((dueDate - today) / (1000 * 60 * 60 * 24));
+        const statusText = payment.status === 'late' ? 
+            `متأخر بـ ${Math.abs(daysDiff)} يوم` : 
+            `يستحق خلال ${daysDiff} يوم`;
+        
+        return `
+            <tr>
+                <td>${payment.number} / ${installment.durationMonths}</td>
+                <td>${formatDate(payment.dueDate)}</td>
+                <td>${formatCurrency(payment.amount)}</td>
+                <td>
+                    <span class="status ${payment.status === 'late' ? 'danger' : 'warning'}">
+                        ${statusText}
+                    </span>
+                </td>
+                <td>
+                    <button class="btn btn-success btn-icon action-btn" onclick="openPayInstallmentModal('${payment.id}')">
+                        <i class="fas fa-money-bill"></i> دفع
+                    </button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+/**
+ * فتح نافذة دفع قسط من ملف المستثمر
+ */
+function openPayInstallmentFromInvestor(installmentId) {
+    // الحصول على أول قسط غير مدفوع
+    const nextPayment = installmentPayments.find(payment => 
+        payment.installmentId === installmentId && 
+        (payment.status === 'pending' || payment.status === 'late')
+    );
+    
+    if (!nextPayment) {
+        createNotification('معلومات', 'لا توجد أقساط مستحقة لهذا القرض', 'info');
+        return;
+    }
+    
+    // فتح نافذة الدفع
+    openPayInstallmentModal(nextPayment.id);
+}
+
+// ============ وظائف الأقساط الأساسية ============
 
 /**
  * إنشاء معرف فريد
@@ -82,20 +684,34 @@ function generateInstallmentId() {
 }
 
 /**
- * تنسيق المبلغ مع الفواصل
+ * تنسيق العملة
  */
-function formatInstallmentAmount(amount) {
-    if (isNaN(amount)) return "0";
-    return parseFloat(amount).toLocaleString('ar-IQ');
+function formatCurrency(amount) {
+    if (typeof amount !== 'number') {
+        amount = parseFloat(amount);
+    }
+    
+    if (isNaN(amount)) return "0 " + settings.currency;
+    
+    return `${parseFloat(amount).toLocaleString('ar-IQ')} ${settings.currency}`;
+}
+
+/**
+ * تنسيق التاريخ
+ */
+function formatDate(dateString) {
+    if (!dateString) return "";
+    
+    try {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('ar-IQ');
+    } catch (e) {
+        return dateString;
+    }
 }
 
 /**
  * حساب المبلغ الإجمالي مع الفائدة
- * 
- * @param {number} principal - المبلغ الأصلي
- * @param {number} rate - معدل الفائدة السنوية (بالنسبة المئوية)
- * @param {number} durationMonths - مدة القرض بالأشهر
- * @returns {number} المبلغ الإجمالي مع الفائدة
  */
 function calculateTotalWithInterest(principal, rate, durationMonths) {
     const yearlyRate = rate / 100;
@@ -106,11 +722,6 @@ function calculateTotalWithInterest(principal, rate, durationMonths) {
 
 /**
  * حساب قيمة القسط الشهري
- * 
- * @param {number} principal - المبلغ الأصلي
- * @param {number} rate - معدل الفائدة السنوية (بالنسبة المئوية)
- * @param {number} durationMonths - مدة القرض بالأشهر
- * @returns {number} قيمة القسط الشهري
  */
 function calculateMonthlyInstallment(principal, rate, durationMonths) {
     const totalAmount = calculateTotalWithInterest(principal, rate, durationMonths);
@@ -119,12 +730,6 @@ function calculateMonthlyInstallment(principal, rate, durationMonths) {
 
 /**
  * إنشاء جدول الأقساط
- * 
- * @param {string} installmentId - معرف القرض بالأقساط
- * @param {number} totalAmount - المبلغ الإجمالي مع الفائدة
- * @param {number} durationMonths - مدة القرض بالأشهر
- * @param {string} startDate - تاريخ بدء القرض
- * @returns {Array} مصفوفة من كائنات جدول الأقساط
  */
 function generateInstallmentSchedule(installmentId, totalAmount, durationMonths, startDate) {
     const monthlyPayment = totalAmount / durationMonths;
@@ -153,11 +758,13 @@ function generateInstallmentSchedule(installmentId, totalAmount, durationMonths,
 }
 
 /**
- * التحقق من تاريخ الاستحقاق وتحديث الحالة
+ * التحقق من تواريخ الاستحقاق وتحديث الحالة
  */
 function checkDueDates() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+    
+    let latePaymentsCount = 0;
     
     installmentPayments.forEach(payment => {
         if (payment.status === 'pending') {
@@ -165,7 +772,9 @@ function checkDueDates() {
             dueDate.setHours(0, 0, 0, 0);
             
             if (dueDate < today) {
+                // تحديث حالة القسط إلى متأخر
                 payment.status = 'late';
+                latePaymentsCount++;
                 
                 // إنشاء إشعار للقسط المتأخر
                 const installment = installments.find(inst => inst.id === payment.installmentId);
@@ -173,7 +782,7 @@ function checkDueDates() {
                     const borrowerName = getBorrowerName(installment);
                     createNotification(
                         'قسط متأخر',
-                        `القسط رقم ${payment.number} للمقترض ${borrowerName} متأخر عن موعد استحقاقه (${payment.dueDate})`,
+                        `القسط رقم ${payment.number} للمقترض ${borrowerName} متأخر عن موعد استحقاقه (${formatDate(payment.dueDate)})`,
                         'warning',
                         payment.id,
                         'installmentPayment'
@@ -183,14 +792,67 @@ function checkDueDates() {
         }
     });
     
-    // حفظ التغييرات
-    saveInstallmentData();
+    if (latePaymentsCount > 0) {
+        console.log(`تم تحديث ${latePaymentsCount} قسط متأخر`);
+        
+        // حفظ التغييرات
+        saveInstallmentData();
+        
+        // تحديث شارة الأقساط
+        updateInstallmentsBadge();
+    }
+}
+
+/**
+ * التحقق من الأقساط المستحقة قريبًا
+ */
+function checkUpcomingInstallments() {
+    if (!installmentSettings.enableNotifications) {
+        return;
+    }
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const upcomingDays = installmentSettings.notificationDaysBeforeDue;
+    const futureDate = new Date(today);
+    futureDate.setDate(today.getDate() + upcomingDays);
+    
+    // الحصول على الأقساط المستحقة قريبًا
+    const upcomingPayments = installmentPayments.filter(payment => {
+        if (payment.status !== 'pending') return false;
+        
+        const dueDate = new Date(payment.dueDate);
+        dueDate.setHours(0, 0, 0, 0);
+        
+        return dueDate >= today && dueDate <= futureDate;
+    });
+    
+    // إنشاء إشعارات للأقساط المستحقة قريبًا
+    upcomingPayments.forEach(payment => {
+        const installment = installments.find(inst => inst.id === payment.installmentId);
+        if (!installment) return;
+        
+        const borrowerName = getBorrowerName(installment);
+        const dueDate = new Date(payment.dueDate);
+        const daysDiff = Math.floor((dueDate - today) / (1000 * 60 * 60 * 24));
+        
+        createNotification(
+            'قسط مستحق قريبًا',
+            `القسط رقم ${payment.number} للمقترض ${borrowerName} سيكون مستحقًا خلال ${daysDiff} يوم`,
+            'info',
+            payment.id,
+            'installmentPayment'
+        );
+    });
 }
 
 /**
  * الحصول على اسم المقترض
  */
 function getBorrowerName(installment) {
+    if (!installment) return 'غير معروف';
+    
     if (installment.borrowerType === 'investor') {
         const investor = investors.find(inv => inv.id === installment.borrowerId);
         return investor ? investor.name : 'مستثمر غير معروف';
@@ -200,7 +862,7 @@ function getBorrowerName(installment) {
 }
 
 /**
- * الحصول على نوع المقترض كنص
+ * الحصول على اسم نوع المقترض
  */
 function getBorrowerTypeName(borrowerType) {
     const category = borrowerCategories.find(cat => cat.id === borrowerType);
@@ -208,7 +870,7 @@ function getBorrowerTypeName(borrowerType) {
 }
 
 /**
- * الحصول على مجموع الأسعار لعناصر قرض محدد
+ * الحصول على إجمالي سعر العناصر
  */
 function getTotalItemsPrice(installmentId) {
     return installmentItems
@@ -217,7 +879,7 @@ function getTotalItemsPrice(installmentId) {
 }
 
 /**
- * الحصول على إجمالي المدفوعات لقرض محدد
+ * الحصول على إجمالي المدفوعات
  */
 function getTotalPayments(installmentId) {
     return installmentPayments
@@ -226,16 +888,16 @@ function getTotalPayments(installmentId) {
 }
 
 /**
- * الحصول على عدد الأقساط المتبقية لقرض محدد
+ * الحصول على عدد الأقساط المتبقية
  */
 function getRemainingInstallments(installmentId) {
     return installmentPayments
-        .filter(payment => payment.installmentId === installmentId && payment.status === 'pending')
+        .filter(payment => payment.installmentId === installmentId && payment.status !== 'paid')
         .length;
 }
 
 /**
- * الحصول على عدد الأقساط المتأخرة لقرض محدد
+ * الحصول على عدد الأقساط المتأخرة
  */
 function getLateInstallments(installmentId) {
     return installmentPayments
@@ -243,564 +905,703 @@ function getLateInstallments(installmentId) {
         .length;
 }
 
-// ============ وظائف عمليات الأقساط ============
-
 /**
- * تحميل بيانات الأقساط من التخزين المحلي
+ * إنشاء إشعار (متوافق مع نظام الإشعارات الرئيسي)
  */
-function loadInstallmentData() {
-    try {
-        const storedInstallments = localStorage.getItem('installments');
-        const storedInstallmentItems = localStorage.getItem('installmentItems');
-        const storedInstallmentPayments = localStorage.getItem('installmentPayments');
+function createNotification(title, message, type = 'info', entityId = null, entityType = null) {
+    // التحقق من وجود وظيفة الإشعارات في النظام الرئيسي
+    if (typeof window.createNotification === 'function') {
+        return window.createNotification(title, message, type, entityId, entityType);
+    } else {
+        // نسخة مبسطة من وظيفة الإشعارات
+        console.log(`إشعار (${type}): ${title} - ${message}`);
         
-        if (storedInstallments) {
-            installments = JSON.parse(storedInstallments);
-        }
+        // إنشاء إشعار بسيط إذا لم يكن نظام الإشعارات الرئيسي متاحًا
+        const toast = document.createElement('div');
+        toast.className = `alert alert-${type}`;
+        toast.style.position = 'fixed';
+        toast.style.top = '20px';
+        toast.style.right = '20px';
+        toast.style.zIndex = '9999';
+        toast.style.minWidth = '300px';
+        toast.style.maxWidth = '500px';
+        toast.style.boxShadow = '0 5px 15px rgba(0, 0, 0, 0.2)';
+        toast.style.transform = 'translateX(100%)';
+        toast.style.opacity = '0';
+        toast.style.transition = 'all 0.3s ease';
         
-        if (storedInstallmentItems) {
-            installmentItems = JSON.parse(storedInstallmentItems);
-        }
+        toast.innerHTML = `
+            <div class="alert-icon">
+                <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'danger' ? 'exclamation-circle' : type === 'warning' ? 'exclamation-triangle' : 'info-circle'}"></i>
+            </div>
+            <div class="alert-content">
+                <div class="alert-title">${title}</div>
+                <div class="alert-text">${message}</div>
+            </div>
+            <div class="modal-close" style="position: absolute; top: 10px; left: 10px; cursor: pointer;" onclick="this.parentNode.remove()">
+                <i class="fas fa-times"></i>
+            </div>
+        `;
         
-        if (storedInstallmentPayments) {
-            installmentPayments = JSON.parse(storedInstallmentPayments);
-        }
+        document.body.appendChild(toast);
         
-        // التحقق من تواريخ الاستحقاق وتحديث الحالات
-        checkDueDates();
+        setTimeout(() => {
+            toast.style.transform = 'translateX(0)';
+            toast.style.opacity = '1';
+        }, 100);
         
-    } catch (error) {
-        console.error('Error loading installment data:', error);
-        createNotification('خطأ', 'حدث خطأ أثناء تحميل بيانات الأقساط', 'danger');
+        setTimeout(() => {
+            toast.style.transform = 'translateX(100%)';
+            toast.style.opacity = '0';
+            setTimeout(() => {
+                toast.remove();
+            }, 300);
+        }, 5000);
     }
 }
 
 /**
- * حفظ بيانات الأقساط في التخزين المحلي
+ * إضافة رابط الأقساط في القائمة الجانبية
  */
-function saveInstallmentData() {
-    try {
-        localStorage.setItem('installments', JSON.stringify(installments));
-        localStorage.setItem('installmentItems', JSON.stringify(installmentItems));
-        localStorage.setItem('installmentPayments', JSON.stringify(installmentPayments));
-        
-        // إذا كانت المزامنة نشطة، قم بمزامنة البيانات مع Firebase
-        if (syncActive) {
-            syncInstallmentData();
-        }
-    } catch (error) {
-        console.error('Error saving installment data:', error);
-        createNotification('خطأ', 'حدث خطأ أثناء حفظ بيانات الأقساط', 'danger');
+function addInstallmentsMenuLink() {
+    // التحقق من وجود رابط الأقساط مسبقًا
+    if (document.querySelector('.menu-item[href="#installments"]')) {
+        // تحديث شارة الأقساط فقط
+        updateInstallmentsBadge();
+        return;
     }
-}
-
-/**
- * مزامنة بيانات الأقساط مع Firebase
- */
-function syncInstallmentData() {
-    if (window.firebaseApp && window.firebaseApp.currentUser) {
-        const db = firebase.database();
-        const userId = window.firebaseApp.currentUser.uid;
-        
-        db.ref('users/' + userId + '/installments').set(installments)
-            .catch(error => console.error('Error syncing installments:', error));
-        
-        db.ref('users/' + userId + '/installmentItems').set(installmentItems)
-            .catch(error => console.error('Error syncing installment items:', error));
-        
-        db.ref('users/' + userId + '/installmentPayments').set(installmentPayments)
-            .catch(error => console.error('Error syncing installment payments:', error));
-    }
-}
-
-/**
- * إضافة قرض جديد بالأقساط
- */
-function addInstallment(installmentData, items = []) {
-    // إنشاء معرف فريد للقرض
-    const installmentId = generateInstallmentId();
     
-    // حساب المبلغ الإجمالي للعناصر
-    const totalItemsPrice = items.reduce((total, item) => total + (item.price * item.quantity), 0);
+    // التحقق من وجود شريط التنقل الجانبي
+    const sidebar = document.querySelector('.sidebar-menu');
+    if (!sidebar) {
+        console.warn('لم يتم العثور على شريط التنقل الجانبي');
+        return;
+    }
     
-    // حساب المبلغ الإجمالي مع الفائدة
-    const totalWithInterest = calculateTotalWithInterest(
-        totalItemsPrice,
-        installmentData.interestRate,
-        installmentData.durationMonths
+    // التحقق من وجود قسم "إدارة الاستثمار"
+    let investmentManagementCategory = Array.from(sidebar.querySelectorAll('.menu-category')).find(
+        category => category.textContent.includes('إدارة الاستثمار')
     );
     
-    // إنشاء كائن القرض
-    const newInstallment = {
-        id: installmentId,
-        borrowerType: installmentData.borrowerType,
-        borrowerId: installmentData.borrowerId,
-        borrowerName: installmentData.borrowerName || '',
-        borrowerPhone: installmentData.borrowerPhone || '',
-        borrowerAddress: installmentData.borrowerAddress || '',
-        borrowerIdCard: installmentData.borrowerIdCard || '',
-        totalAmount: totalWithInterest,
-        interestRate: installmentData.interestRate,
-        startDate: installmentData.startDate,
-        durationMonths: installmentData.durationMonths,
-        status: 'active',
-        notes: installmentData.notes || '',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-    };
-    
-    // إضافة القرض إلى المصفوفة
-    installments.push(newInstallment);
-    
-    // إضافة العناصر
-    items.forEach(item => {
-        const newItem = {
-            id: generateInstallmentId(),
-            installmentId: installmentId,
-            name: item.name,
-            price: item.price,
-            quantity: item.quantity,
-            totalPrice: item.price * item.quantity,
-            createdAt: new Date().toISOString()
-        };
+    if (!investmentManagementCategory) {
+        // إنشاء القسم إذا لم يكن موجودًا
+        investmentManagementCategory = document.createElement('div');
+        investmentManagementCategory.className = 'menu-category';
+        investmentManagementCategory.textContent = 'إدارة الاستثمار';
         
-        installmentItems.push(newItem);
+        // إضافة القسم بعد قسم "لوحة التحكم"
+        const dashboardCategory = sidebar.querySelector('.menu-category:first-of-type');
+        if (dashboardCategory) {
+            dashboardCategory.insertAdjacentElement('afterend', investmentManagementCategory);
+        } else {
+            // إضافة القسم في بداية شريط التنقل إذا لم يكن هناك قسم "لوحة التحكم"
+            sidebar.prepend(investmentManagementCategory);
+        }
+    }
+    
+    // إنشاء رابط الأقساط
+    const installmentsLink = document.createElement('a');
+    installmentsLink.href = '#installments';
+    installmentsLink.className = 'menu-item';
+    installmentsLink.innerHTML = `
+        <span class="menu-icon"><i class="fas fa-receipt"></i></span>
+        <span>نظام الأقساط</span>
+        <span class="menu-badge" id="installmentsBadge" style="display:none;">0</span>
+    `;
+    
+    // إضافة مستمع النقر
+    installmentsLink.addEventListener('click', function(e) {
+        // تأكد من إنشاء صفحة الأقساط قبل الانتقال إليها
+        if (!document.getElementById('installments')) {
+            createInstallmentsPage();
+        }
+        
+        // عرض صفحة الأقساط
+        if (typeof window.showPage === 'function') {
+            window.showPage('installments');
+        } else {
+            // طريقة بديلة لعرض الصفحة إذا لم تكن دالة showPage متوفرة
+            document.querySelectorAll('.page').forEach(page => {
+                page.classList.remove('active');
+            });
+            
+            const installmentsPage = document.getElementById('installments');
+            if (installmentsPage) {
+                installmentsPage.classList.add('active');
+            }
+            
+            // تحديث حالة القائمة
+            document.querySelectorAll('.menu-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            installmentsLink.classList.add('active');
+        }
+        
+        // تحميل محتوى صفحة الأقساط
+        setTimeout(() => {
+            loadInstallmentsPage();
+        }, 100);
     });
     
-    // إنشاء جدول الأقساط
-    const schedule = generateInstallmentSchedule(
-        installmentId,
-        totalWithInterest,
-        installmentData.durationMonths,
-        installmentData.startDate
-    );
+    // البحث عن موقع مناسب لإضافة الرابط
+    const operationsLink = sidebar.querySelector('a[href="#operations"]');
+    const profitsLink = sidebar.querySelector('a[href="#profits"]');
+    const reportsLink = sidebar.querySelector('a[href="#reports"]');
     
-    // إضافة جدول الأقساط إلى المصفوفة
-    installmentPayments = [...installmentPayments, ...schedule];
+    if (operationsLink) {
+        // إضافة بعد رابط العمليات
+        operationsLink.insertAdjacentElement('afterend', installmentsLink);
+    } else if (profitsLink) {
+        // إضافة بعد رابط الأرباح
+        profitsLink.insertAdjacentElement('afterend', installmentsLink);
+    } else if (reportsLink) {
+        // إضافة قبل رابط التقارير
+        reportsLink.insertAdjacentElement('beforebegin', installmentsLink);
+    } else {
+        // إضافة في نهاية القسم
+        investmentManagementCategory.insertAdjacentElement('afterend', installmentsLink);
+    }
     
-    // حفظ البيانات
-    saveInstallmentData();
+    // تحديث شارة الأقساط
+    updateInstallmentsBadge();
     
-    // إنشاء نشاط
-    createActivity('installment', 'create', `تم إنشاء قرض بالأقساط جديد للمقترض ${getBorrowerName(newInstallment)}`);
-    
-    // إنشاء إشعار
-    createNotification(
-        'قرض جديد بالأقساط',
-        `تم إنشاء قرض بالأقساط جديد للمقترض ${getBorrowerName(newInstallment)}`,
-        'success',
-        installmentId,
-        'installment'
-    );
-    
-    return installmentId;
+    console.log('تم إضافة رابط الأقساط بنجاح');
 }
 
 /**
- * تحديث قرض بالأقساط
+ * تحديث شارة الأقساط
  */
-function updateInstallment(installmentId, updateData) {
-    // البحث عن القرض
-    const index = installments.findIndex(inst => inst.id === installmentId);
+function updateInstallmentsBadge() {
+    const latePayments = installmentPayments.filter(payment => payment.status === 'late').length;
+    const badge = document.getElementById('installmentsBadge');
     
-    if (index === -1) {
-        console.error('Installment not found:', installmentId);
-        return false;
+    if (badge) {
+        badge.textContent = latePayments;
+        badge.style.display = latePayments > 0 ? 'inline-flex' : 'none';
+    }
+}
+
+/**
+ * إنشاء نسخة احتياطية من البيانات
+ */
+function createBackup(reason = 'manual') {
+    // إنشاء اسم النسخة الافتراضي
+    const defaultName = `نسخة احتياطية للأقساط ${new Date().toLocaleDateString('ar-IQ')}`;
+    
+    // طلب اسم للنسخة الاحتياطية إذا كانت يدوية
+    let backupName = defaultName;
+    if (reason === 'manual') {
+        const userInput = prompt('أدخل اسماً للنسخة الاحتياطية:', defaultName);
+        if (userInput === null) return; // المستخدم ألغى العملية
+        if (userInput.trim() !== '') backupName = userInput;
     }
     
-    // تحديث بيانات القرض
-    installments[index] = {
-        ...installments[index],
-        ...updateData,
-        updatedAt: new Date().toISOString()
+    // إنشاء كائن النسخة الاحتياطية
+    const backup = {
+        id: generateInstallmentId(),
+        name: backupName,
+        date: new Date().toISOString(),
+        reason,
+        data: {
+            installments,
+            installmentItems,
+            installmentPayments,
+            installmentSettings
+        }
     };
     
-    // حفظ البيانات
-    saveInstallmentData();
-    
-    // إنشاء نشاط
-    createActivity('installment', 'update', `تم تحديث بيانات القرض بالأقساط للمقترض ${getBorrowerName(installments[index])}`);
-    
-    return true;
+    try {
+        // التحقق من وجود قائمة النسخ الاحتياطية في التخزين المحلي
+        let backupList = [];
+        const storedBackupList = localStorage.getItem('installmentBackupList');
+        
+        if (storedBackupList) {
+            backupList = JSON.parse(storedBackupList);
+        }
+        
+        // إضافة النسخة الاحتياطية إلى القائمة
+        backupList.push(backup);
+        
+        // الاحتفاظ بآخر 10 نسخ فقط
+        if (backupList.length > 10) {
+            backupList = backupList.slice(-10);
+        }
+        
+        // حفظ قائمة النسخ الاحتياطية
+        localStorage.setItem('installmentBackupList', JSON.stringify(backupList));
+        
+        // حفظ النسخة الاحتياطية نفسها في التخزين المحلي
+        localStorage.setItem(`installmentBackup_${backup.id}`, JSON.stringify(backup));
+        
+        console.log(`تم إنشاء نسخة احتياطية: ${backupName}`);
+        
+        if (reason === 'manual') {
+            createNotification('نجاح', 'تم إنشاء نسخة احتياطية بنجاح', 'success');
+        }
+        
+        return backup.id;
+    } catch (error) {
+        console.error('خطأ في إنشاء النسخة الاحتياطية:', error);
+        
+        if (reason === 'manual') {
+            createNotification('خطأ', 'حدث خطأ أثناء إنشاء النسخة الاحتياطية', 'danger');
+        }
+        
+        return null;
+    }
 }
 
 /**
- * حذف قرض بالأقساط
+ * استعادة نسخة احتياطية
  */
-function deleteInstallment(installmentId) {
-    // البحث عن القرض
-    const installment = installments.find(inst => inst.id === installmentId);
-    
-    if (!installment) {
-        console.error('Installment not found:', installmentId);
-        return false;
-    }
-    
-    // التحقق من حالة القرض
-    if (installment.status === 'active' && getRemainingInstallments(installmentId) > 0) {
-        const confirmation = confirm('هذا القرض نشط ويحتوي على أقساط غير مدفوعة. هل أنت متأكد من الحذف؟');
-        if (!confirmation) {
+function restoreBackup(backupId) {
+    try {
+        // البحث عن النسخة الاحتياطية في التخزين المحلي
+        const storedBackup = localStorage.getItem(`installmentBackup_${backupId}`);
+        
+        if (!storedBackup) {
+            createNotification('خطأ', 'لم يتم العثور على النسخة الاحتياطية', 'danger');
             return false;
         }
-    }
-    
-    // حذف القرض من المصفوفة
-    installments = installments.filter(inst => inst.id !== installmentId);
-    
-    // حذف عناصر القرض
-    installmentItems = installmentItems.filter(item => item.installmentId !== installmentId);
-    
-    // حذف جدول الأقساط
-    installmentPayments = installmentPayments.filter(payment => payment.installmentId !== installmentId);
-    
-    // حفظ البيانات
-    saveInstallmentData();
-    
-    // إنشاء نشاط
-    createActivity('installment', 'delete', `تم حذف القرض بالأقساط للمقترض ${getBorrowerName(installment)}`);
-    
-    // إنشاء إشعار
-    createNotification(
-        'حذف قرض بالأقساط',
-        `تم حذف القرض بالأقساط للمقترض ${getBorrowerName(installment)}`,
-        'info',
-        null,
-        null
-    );
-    
-    return true;
-}
-
-/**
- * تسجيل دفع قسط
- */
-function recordInstallmentPayment(paymentId, paymentData) {
-    // البحث عن القسط
-    const index = installmentPayments.findIndex(payment => payment.id === paymentId);
-    
-    if (index === -1) {
-        console.error('Installment payment not found:', paymentId);
-        return false;
-    }
-    
-    // تحديث بيانات القسط
-    installmentPayments[index] = {
-        ...installmentPayments[index],
-        status: 'paid',
-        paymentDate: paymentData.paymentDate || new Date().toISOString().split('T')[0],
-        notes: paymentData.notes || installmentPayments[index].notes
-    };
-    
-    // الحصول على القرض
-    const installmentId = installmentPayments[index].installmentId;
-    const installment = installments.find(inst => inst.id === installmentId);
-    
-    if (!installment) {
-        console.error('Parent installment not found:', installmentId);
-        return false;
-    }
-    
-    // التحقق مما إذا كانت جميع الأقساط مدفوعة
-    const remainingPayments = installmentPayments.filter(
-        payment => payment.installmentId === installmentId && payment.status !== 'paid'
-    );
-    
-    if (remainingPayments.length === 0) {
-        // تحديث حالة القرض إلى "مكتمل"
-        const instIndex = installments.findIndex(inst => inst.id === installmentId);
-        if (instIndex !== -1) {
-            installments[instIndex].status = 'completed';
-            installments[instIndex].updatedAt = new Date().toISOString();
-            
-            // إنشاء إشعار لاكتمال القرض
-            createNotification(
-                'اكتمال قرض بالأقساط',
-                `تم سداد جميع أقساط القرض للمقترض ${getBorrowerName(installment)}`,
-                'success',
-                installmentId,
-                'installment'
-            );
-        }
-    }
-    
-    // حفظ البيانات
-    saveInstallmentData();
-    
-    // إنشاء نشاط
-    createActivity(
-        'installment',
-        'payment',
-        `تم تسجيل دفع القسط رقم ${installmentPayments[index].number} للمقترض ${getBorrowerName(installment)}`
-    );
-    
-    // إنشاء إشعار
-    createNotification(
-        'دفع قسط',
-        `تم تسجيل دفع القسط رقم ${installmentPayments[index].number} للمقترض ${getBorrowerName(installment)}`,
-        'success',
-        paymentId,
-        'installmentPayment'
-    );
-    
-    return true;
-}
-
-/**
- * إلغاء دفع قسط
- */
-function cancelInstallmentPayment(paymentId) {
-    // البحث عن القسط
-    const index = installmentPayments.findIndex(payment => payment.id === paymentId);
-    
-    if (index === -1) {
-        console.error('Installment payment not found:', paymentId);
-        return false;
-    }
-    
-    // التأكد من أن القسط مدفوع
-    if (installmentPayments[index].status !== 'paid') {
-        console.error('Cannot cancel a payment that is not paid');
-        return false;
-    }
-    
-    // الحصول على القرض
-    const installmentId = installmentPayments[index].installmentId;
-    const installment = installments.find(inst => inst.id === installmentId);
-    
-    if (!installment) {
-        console.error('Parent installment not found:', installmentId);
-        return false;
-    }
-    
-    // إعادة القسط إلى حالة "معلق"
-    const originalStatus = 'pending';
-    const today = new Date();
-    const dueDate = new Date(installmentPayments[index].dueDate);
-    
-    // إذا كان تاريخ الاستحقاق قبل اليوم، فقم بتعيين الحالة إلى "متأخر"
-    if (dueDate < today) {
-        originalStatus = 'late';
-    }
-    
-    // تحديث بيانات القسط
-    installmentPayments[index] = {
-        ...installmentPayments[index],
-        status: originalStatus,
-        paymentDate: null,
-        notes: `تم إلغاء الدفع في ${new Date().toISOString().split('T')[0]}`
-    };
-    
-    // إذا كان القرض مكتمل، قم بتغيير حالته مرة أخرى إلى "نشط"
-    if (installment.status === 'completed') {
-        const instIndex = installments.findIndex(inst => inst.id === installmentId);
-        if (instIndex !== -1) {
-            installments[instIndex].status = 'active';
-            installments[instIndex].updatedAt = new Date().toISOString();
-        }
-    }
-    
-    // حفظ البيانات
-    saveInstallmentData();
-    
-    // إنشاء نشاط
-    createActivity(
-        'installment',
-        'payment_cancel',
-        `تم إلغاء دفع القسط رقم ${installmentPayments[index].number} للمقترض ${getBorrowerName(installment)}`
-    );
-    
-    // إنشاء إشعار
-    createNotification(
-        'إلغاء دفع قسط',
-        `تم إلغاء دفع القسط رقم ${installmentPayments[index].number} للمقترض ${getBorrowerName(installment)}`,
-        'warning',
-        paymentId,
-        'installmentPayment'
-    );
-    
-    return true;
-}
-
-/**
- * إضافة عنصر جديد إلى قرض بالأقساط
- */
-function addInstallmentItem(installmentId, itemData) {
-    // البحث عن القرض
-    const installment = installments.find(inst => inst.id === installmentId);
-    
-    if (!installment) {
-        console.error('Installment not found:', installmentId);
-        return false;
-    }
-    
-    // إنشاء كائن العنصر
-    const newItem = {
-        id: generateInstallmentId(),
-        installmentId,
-        name: itemData.name,
-        price: itemData.price,
-        quantity: itemData.quantity || 1,
-        totalPrice: itemData.price * (itemData.quantity || 1),
-        createdAt: new Date().toISOString()
-    };
-    
-    // إضافة العنصر إلى المصفوفة
-    installmentItems.push(newItem);
-    
-    // إعادة حساب المبلغ الإجمالي للقرض
-    recalculateInstallmentTotal(installmentId);
-    
-    // حفظ البيانات
-    saveInstallmentData();
-    
-    // إنشاء نشاط
-    createActivity(
-        'installment',
-        'add_item',
-        `تم إضافة عنصر جديد (${itemData.name}) إلى القرض للمقترض ${getBorrowerName(installment)}`
-    );
-    
-    return newItem.id;
-}
-
-/**
- * حذف عنصر من قرض بالأقساط
- */
-function deleteInstallmentItem(itemId) {
-    // البحث عن العنصر
-    const item = installmentItems.find(it => it.id === itemId);
-    
-    if (!item) {
-        console.error('Installment item not found:', itemId);
-        return false;
-    }
-    
-    // الحصول على القرض
-    const installmentId = item.installmentId;
-    const installment = installments.find(inst => inst.id === installmentId);
-    
-    if (!installment) {
-        console.error('Parent installment not found:', installmentId);
-        return false;
-    }
-    
-    // حذف العنصر من المصفوفة
-    installmentItems = installmentItems.filter(it => it.id !== itemId);
-    
-    // إعادة حساب المبلغ الإجمالي للقرض
-    recalculateInstallmentTotal(installmentId);
-    
-    // حفظ البيانات
-    saveInstallmentData();
-    
-    // إنشاء نشاط
-    createActivity(
-        'installment',
-        'delete_item',
-        `تم حذف عنصر (${item.name}) من القرض للمقترض ${getBorrowerName(installment)}`
-    );
-    
-    return true;
-}
-
-/**
- * إعادة حساب المبلغ الإجمالي للقرض
- */
-function recalculateInstallmentTotal(installmentId) {
-    // البحث عن القرض
-    const index = installments.findIndex(inst => inst.id === installmentId);
-    
-    if (index === -1) {
-        console.error('Installment not found:', installmentId);
-        return false;
-    }
-    
-    // حساب المبلغ الإجمالي للعناصر
-    const totalItemsPrice = getTotalItemsPrice(installmentId);
-    
-    // حساب المبلغ الإجمالي مع الفائدة
-    const totalWithInterest = calculateTotalWithInterest(
-        totalItemsPrice,
-        installments[index].interestRate,
-        installments[index].durationMonths
-    );
-    
-    // تحديث المبلغ الإجمالي للقرض
-    installments[index].totalAmount = totalWithInterest;
-    installments[index].updatedAt = new Date().toISOString();
-    
-    // إعادة حساب قيم الأقساط
-    const monthlyPayment = totalWithInterest / installments[index].durationMonths;
-    
-    // تحديث قيم الأقساط
-    installmentPayments.forEach(payment => {
-        if (payment.installmentId === installmentId && payment.status === 'pending') {
-            payment.amount = monthlyPayment;
-        }
-    });
-    
-    return true;
-}
-
-/**
- * جلب الأقساط المستحقة قريباً
- */
-function getUpcomingInstallmentPayments(days = 7) {
-    const today = new Date();
-    const futureDate = new Date(today);
-    futureDate.setDate(futureDate.getDate() + days);
-    
-    return installmentPayments.filter(payment => {
-        if (payment.status !== 'pending') return false;
         
-        const dueDate = new Date(payment.dueDate);
-        return dueDate >= today && dueDate <= futureDate;
-    });
+        // تحليل النسخة الاحتياطية
+        const backup = JSON.parse(storedBackup);
+        
+        // استعادة البيانات
+        if (backup.data) {
+            // إنشاء نسخة احتياطية قبل الاستعادة
+            createBackup('before_restore');
+            
+            // استعادة البيانات
+            if (backup.data.installments) installments = backup.data.installments;
+            if (backup.data.installmentItems) installmentItems = backup.data.installmentItems;
+            if (backup.data.installmentPayments) installmentPayments = backup.data.installmentPayments;
+            if (backup.data.installmentSettings) installmentSettings = backup.data.installmentSettings;
+            
+            // حفظ البيانات المستعادة
+            saveInstallmentData();
+            saveInstallmentSettings();
+            
+            // إعادة تحميل صفحة الأقساط إذا كانت مفتوحة
+            if (document.getElementById('installments') && document.getElementById('installments').classList.contains('active')) {
+                loadInstallmentsPage();
+            }
+            
+            // تحديث شارة الأقساط
+            updateInstallmentsBadge();
+            
+            createNotification('نجاح', `تم استعادة النسخة الاحتياطية "${backup.name}" بنجاح`, 'success');
+            return true;
+        } else {
+            createNotification('خطأ', 'النسخة الاحتياطية غير صالحة', 'danger');
+            return false;
+        }
+    } catch (error) {
+        console.error('خطأ في استعادة النسخة الاحتياطية:', error);
+        createNotification('خطأ', 'حدث خطأ أثناء استعادة النسخة الاحتياطية', 'danger');
+        return false;
+    }
 }
 
 /**
- * جلب الأقساط المتأخرة
+ * الحصول على قائمة النسخ الاحتياطية
  */
-function getLateInstallmentPayments() {
-    return installmentPayments.filter(payment => payment.status === 'late');
+function getBackupList() {
+    try {
+        const storedBackupList = localStorage.getItem('installmentBackupList');
+        
+        if (storedBackupList) {
+            return JSON.parse(storedBackupList);
+        }
+        
+        return [];
+    } catch (error) {
+        console.error('خطأ في الحصول على قائمة النسخ الاحتياطية:', error);
+        return [];
+    }
 }
+
+// ============ واجهة المستخدم وصفحة الأقساط ============
 
 /**
- * جلب ملخص الأقساط
+ * إنشاء صفحة الأقساط
  */
-function getInstallmentsSummary() {
-    const activeInstallments = installments.filter(inst => inst.status === 'active').length;
-    const completedInstallments = installments.filter(inst => inst.status === 'completed').length;
-    const defaultedInstallments = installments.filter(inst => inst.status === 'defaulted').length;
+function createInstallmentsPage() {
+    console.log('إنشاء صفحة الأقساط...');
     
-    const totalAmount = installments.reduce((total, inst) => total + inst.totalAmount, 0);
-    const totalPaid = installmentPayments
-        .filter(payment => payment.status === 'paid')
-        .reduce((total, payment) => total + payment.amount, 0);
+    // التحقق من وجود منطقة المحتوى
+    const content = document.querySelector('.content');
+    if (!content) {
+        console.error('لم يتم العثور على منطقة المحتوى');
+        return;
+    }
     
-    const pendingPayments = installmentPayments.filter(payment => payment.status === 'pending').length;
-    const latePayments = installmentPayments.filter(payment => payment.status === 'late').length;
+    // التحقق من وجود صفحة الأقساط مسبقًا
+    if (document.getElementById('installments')) {
+        console.log('صفحة الأقساط موجودة بالفعل');
+        return;
+    }
     
-    return {
-        activeInstallments,
-        completedInstallments,
-        defaultedInstallments,
-        totalInstallments: installments.length,
-        totalAmount,
-        totalPaid,
-        totalRemaining: totalAmount - totalPaid,
-        pendingPayments,
-        latePayments
-    };
-}
+    // إنشاء صفحة الأقساط
+    const installmentsPage = document.createElement('div');
+    installmentsPage.id = 'installments';
+    installmentsPage.className = 'page';
+    installmentsPage.innerHTML = `
+        <div class="header">
+            <h1 class="page-title">نظام الأقساط</h1>
+            <div class="header-actions">
+                <div class="search-bar">
+                    <input type="text" class="search-input" id="installmentSearchInput" placeholder="بحث..." oninput="searchInstallments()">
+                    <i class="fas fa-search search-icon"></i>
+                </div>
+                <button class="btn btn-primary" onclick="openAddInstallmentModal()">
+                    <i class="fas fa-plus"></i> إضافة قرض جديد
+                </button>
+                <div class="notification-btn" onclick="toggleNotificationPanel()">
+                    <i class="fas fa-bell"></i>
+                    <span class="notification-badge" id="notificationBadgeHeader">0</span>
+                </div>
+                <div class="menu-toggle" onclick="toggleSidebar()">
+                    <i class="fas fa-bars"></i>
+                </div>
+            </div>
+        </div>
 
-// ============ وظائف واجهة المستخدم ============
+        <div class="dashboard-cards">
+            <div class="card">
+                <div class="card-header">
+                    <div>
+                        <div class="card-title">القروض النشطة</div>
+                        <div class="card-value" id="totalActiveInstallments">0</div>
+                    </div>
+                    <div class="card-icon primary">
+                        <i class="fas fa-receipt"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <div>
+                        <div class="card-title">القروض المكتملة</div>
+                        <div class="card-value" id="totalCompletedInstallments">0</div>
+                    </div>
+                    <div class="card-icon success">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <div>
+                        <div class="card-title">إجمالي المبالغ</div>
+                        <div class="card-value" id="totalInstallmentAmount">0 د.ع</div>
+                    </div>
+                    <div class="card-icon warning">
+                        <i class="fas fa-money-bill-wave"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <div>
+                        <div class="card-title">المبالغ المدفوعة</div>
+                        <div class="card-value" id="totalPaidInstallments">0 د.ع</div>
+                    </div>
+                    <div class="card-icon info">
+                        <i class="fas fa-coins"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <div>
+                        <div class="card-title">المبالغ المتبقية</div>
+                        <div class="card-value" id="totalRemainingInstallments">0 د.ع</div>
+                    </div>
+                    <div class="card-icon danger">
+                        <i class="fas fa-hand-holding-usd"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <div>
+                        <div class="card-title">الأقساط المتأخرة</div>
+                        <div class="card-value" id="totalLatePayments">0</div>
+                    </div>
+                    <div class="card-icon danger">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <div>
+                        <div class="card-title">الأقساط المستحقة</div>
+                        <div class="card-value" id="totalPendingPayments">0</div>
+                    </div>
+                    <div class="card-icon warning">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <div class="tab active" onclick="switchInstallmentsTab('all')">جميع القروض</div>
+            <div class="tab" onclick="switchInstallmentsTab('active')">القروض النشطة</div>
+            <div class="tab" onclick="switchInstallmentsTab('completed')">القروض المكتملة</div>
+            <div class="tab" onclick="switchInstallmentsTab('defaulted')">القروض المتعثرة</div>
+            <div class="tab" onclick="switchInstallmentsTab('upcoming')">الأقساط المستحقة قريباً</div>
+            <div class="tab" onclick="switchInstallmentsTab('late')">الأقساط المتأخرة</div>
+            <div class="tab" onclick="switchInstallmentsTab('statistics')">الإحصائيات</div>
+            <div class="tab" onclick="switchInstallmentsTab('settings')">الإعدادات</div>
+        </div>
+
+        <div class="table-container" id="mainInstallmentsTable">
+            <div class="table-header">
+                <div class="table-title">قائمة القروض بالأقساط</div>
+                <div class="table-actions">
+                    <button class="btn btn-light" onclick="exportInstallments()">
+                        <i class="fas fa-file-export"></i> تصدير
+                    </button>
+                    <button class="btn btn-light" onclick="printTable('installmentsTable')">
+                        <i class="fas fa-print"></i> طباعة
+                    </button>
+                    <button class="btn btn-primary" onclick="createBackup('manual')">
+                        <i class="fas fa-save"></i> نسخة احتياطية
+                    </button>
+                </div>
+            </div>
+            <table class="table" id="installmentsTable">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>المقترض</th>
+                        <th>النوع</th>
+                        <th>المبلغ الإجمالي</th>
+                        <th>المبلغ المدفوع</th>
+                        <th>المبلغ المتبقي</th>
+                        <th>الأقساط المتبقية</th>
+                        <th>تاريخ البدء</th>
+                        <th>الحالة</th>
+                        <th>إجراءات</th>
+                    </tr>
+                </thead>
+                <tbody id="installmentsTableBody">
+                    <!-- سيتم ملؤها بواسطة JavaScript -->
+                </tbody>
+            </table>
+        </div>
+
+        <div class="grid-layout" id="installmentsDetailsGrids" style="display: none;">
+            <div class="table-container" id="upcomingPaymentsContainer">
+                <div class="table-header">
+                    <div class="table-title">الأقساط المستحقة قريباً</div>
+                </div>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>المقترض</th>
+                            <th>رقم القسط</th>
+                            <th>تاريخ الاستحقاق</th>
+                            <th>المبلغ</th>
+                            <th>النوع</th>
+                            <th>إجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="upcomingPaymentsTableBody">
+                        <!-- سيتم ملؤها بواسطة JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="table-container" id="latePaymentsContainer">
+                <div class="table-header">
+                    <div class="table-title">الأقساط المتأخرة</div>
+                </div>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>المقترض</th>
+                            <th>رقم القسط</th>
+                            <th>تاريخ الاستحقاق</th>
+                            <th>التأخير</th>
+                            <th>المبلغ</th>
+                            <th>النوع</th>
+                            <th>إجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="latePaymentsTableBody">
+                        <!-- سيتم ملؤها بواسطة JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="chart-container" id="installmentsChartContainer" style="display: none;">
+            <div class="chart-header">
+                <div class="chart-title">تحليل الأقساط</div>
+                <div class="chart-actions">
+                    <button class="btn btn-sm btn-light active" onclick="switchInstallmentsChartPeriod('monthly')">شهري</button>
+                    <button class="btn btn-sm btn-light" onclick="switchInstallmentsChartPeriod('quarterly')">ربع سنوي</button>
+                    <button class="btn btn-sm btn-light" onclick="switchInstallmentsChartPeriod('yearly')">سنوي</button>
+                    <button class="btn btn-sm btn-light" onclick="exportInstallmentsChart()"><i class="fas fa-download"></i> تصدير</button>
+                </div>
+            </div>
+            <div id="installmentsChart" style="height: 300px; width: 100%;">
+                <!-- سيتم رسم المخطط البياني هنا -->
+            </div>
+        </div>
+        
+        <div id="installmentsSettings" style="display: none;">
+            <div class="form-container">
+                <h2>إعدادات نظام الأقساط</h2>
+                
+                <form id="installmentSettingsForm">
+                    <div class="form-group">
+                        <h3>الإعدادات العامة</h3>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">معدل الفائدة الافتراضي (%)</label>
+                            <input type="number" class="form-control" id="defaultInterestRate" min="0" step="0.1">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">مدة القرض الافتراضية (بالأشهر)</label>
+                            <input type="number" class="form-control" id="defaultDurationMonths" min="1">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">نسبة غرامة التأخير (%)</label>
+                            <input type="number" class="form-control" id="lateFeePercentage" min="0" step="0.1">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">الحد الأدنى لمبلغ القسط</label>
+                            <input type="number" class="form-control" id="minInstallmentAmount" min="0">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">الحد الأقصى لمبلغ القسط (0 = غير محدود)</label>
+                            <input type="number" class="form-control" id="maxInstallmentAmount" min="0">
+                        </div>
+                        <div class="form-group">
+                            <div class="form-check" style="margin-top: 30px;">
+                                <input type="checkbox" class="form-check-input" id="allowPartialPayments">
+                                <label class="form-check-label" for="allowPartialPayments">السماح بالدفع الجزئي</label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <h3>إعدادات الإشعارات</h3>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" id="enableNotifications">
+                                <label class="form-check-label" for="enableNotifications">تفعيل الإشعارات</label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">عدد أيام التذكير قبل موعد الاستحقاق</label>
+                            <input type="number" class="form-control" id="notificationDaysBeforeDue" min="1" max="30">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <h3>إعدادات التكامل</h3>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" id="showInInvestorProfile">
+                                <label class="form-check-label" for="showInInvestorProfile">إظهار الأقساط في ملف المستثمر</label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <button type="button" class="btn btn-primary" onclick="saveInstallmentSettingsFromForm()">
+                                <i class="fas fa-save"></i> حفظ الإعدادات
+                            </button>
+                            <button type="button" class="btn btn-light" onclick="resetInstallmentSettings()">
+                                <i class="fas fa-undo"></i> استعادة الإعدادات الافتراضية
+                            </button>
+                        </div>
+                    </div>
+                </form>
+                
+                <div class="form-group" style="margin-top: 20px;">
+                    <h3>النسخ الاحتياطية</h3>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">النسخ الاحتياطية المتوفرة</label>
+                        <select class="form-select" id="backupListSelect" style="width: 100%;">
+                            <option value="">-- اختر نسخة احتياطية --</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <button type="button" class="btn btn-primary" onclick="createBackup('manual')">
+                            <i class="fas fa-save"></i> إنشاء نسخة احتياطية
+                        </button>
+                        <button type="button" class="btn btn-warning" onclick="restoreSelectedBackup()">
+                            <i class="fas fa-undo"></i> استعادة النسخة المحددة
+                        </button>
+                        <button type="button" class="btn btn-info" onclick="exportSelectedBackup()">
+                            <i class="fas fa-download"></i> تصدير النسخة المحددة
+                        </button>
+                        <button type="button" class="btn btn-danger" onclick="deleteSelectedBackup()">
+                            <i class="fas fa-trash"></i> حذف النسخة المحددة
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="form-group" style="margin-top: 20px;">
+                    <h3>تصدير واستيراد البيانات</h3>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <button type="button" class="btn btn-primary" onclick="exportAllInstallmentData()">
+                            <i class="fas fa-file-export"></i> تصدير جميع البيانات
+                        </button>
+                        <button type="button" class="btn btn-warning" onclick="openImportDataModal()">
+                            <i class="fas fa-file-import"></i> استيراد بيانات
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // إضافة الصفحة إلى منطقة المحتوى
+    content.appendChild(installmentsPage);
+    
+    console.log('تم إنشاء صفحة الأقساط بنجاح');
+    isInstallmentPageInitialized = true;
+}
 
 /**
  * تحميل صفحة الأقساط
  */
 function loadInstallmentsPage() {
-    // التأكد من تحميل البيانات
+    console.log('تحميل صفحة الأقساط...');
+    
+    // تأكد من تحميل البيانات
     loadInstallmentData();
     
     // تحديث البطاقات الرئيسية
@@ -809,28 +1610,490 @@ function loadInstallmentsPage() {
     // تحميل جدول الأقساط
     loadInstallmentsTable();
     
-    // تحميل الأقساط المستحقة قريباً والمتأخرة
-    loadUpcomingPayments();
-    loadLatePayments();
+    // تحديث شارة الأقساط
+    updateInstallmentsBadge();
     
-    // تحميل الرسم البياني
-    loadInstallmentsChart();
+    // التحقق من تواريخ استحقاق الأقساط
+    checkDueDates();
+    
+    // ملء قائمة النسخ الاحتياطية في إعدادات الأقساط
+    populateBackupList();
+    
+    // ملء نموذج إعدادات الأقساط
+    populateInstallmentSettingsForm();
+    
+    console.log('تم تحميل صفحة الأقساط بنجاح');
 }
 
 /**
- * تحديث بطاقات لوحة تحكم الأقساط
+ * ملء نموذج إعدادات الأقساط
+ */
+function populateInstallmentSettingsForm() {
+    // التحقق من وجود النموذج
+    const form = document.getElementById('installmentSettingsForm');
+    if (!form) return;
+    
+    // ملء الحقول بالإعدادات الحالية
+    document.getElementById('defaultInterestRate').value = installmentSettings.defaultInterestRate;
+    document.getElementById('defaultDurationMonths').value = installmentSettings.defaultDurationMonths;
+    document.getElementById('lateFeePercentage').value = installmentSettings.lateFeePercentage;
+    document.getElementById('minInstallmentAmount').value = installmentSettings.minInstallmentAmount;
+    document.getElementById('maxInstallmentAmount').value = installmentSettings.maxInstallmentAmount;
+    document.getElementById('allowPartialPayments').checked = installmentSettings.allowPartialPayments;
+    document.getElementById('enableNotifications').checked = installmentSettings.enableNotifications;
+    document.getElementById('notificationDaysBeforeDue').value = installmentSettings.notificationDaysBeforeDue;
+    document.getElementById('showInInvestorProfile').checked = installmentSettings.showInInvestorProfile;
+}
+
+/**
+ * حفظ إعدادات الأقساط من النموذج
+ */
+function saveInstallmentSettingsFromForm() {
+    // الحصول على قيم الحقول
+    const defaultInterestRate = parseFloat(document.getElementById('defaultInterestRate').value);
+    const defaultDurationMonths = parseInt(document.getElementById('defaultDurationMonths').value);
+    const lateFeePercentage = parseFloat(document.getElementById('lateFeePercentage').value);
+    const minInstallmentAmount = parseFloat(document.getElementById('minInstallmentAmount').value);
+    const maxInstallmentAmount = parseFloat(document.getElementById('maxInstallmentAmount').value);
+    const allowPartialPayments = document.getElementById('allowPartialPayments').checked;
+    const enableNotifications = document.getElementById('enableNotifications').checked;
+    const notificationDaysBeforeDue = parseInt(document.getElementById('notificationDaysBeforeDue').value);
+    const showInInvestorProfile = document.getElementById('showInInvestorProfile').checked;
+    
+    // التحقق من صحة القيم
+    if (isNaN(defaultInterestRate) || isNaN(defaultDurationMonths) || isNaN(lateFeePercentage) || 
+        isNaN(minInstallmentAmount) || isNaN(maxInstallmentAmount) || isNaN(notificationDaysBeforeDue)) {
+        createNotification('خطأ', 'يرجى التأكد من صحة جميع القيم', 'danger');
+        return;
+    }
+    
+    // تحديث الإعدادات
+    installmentSettings.defaultInterestRate = defaultInterestRate;
+    installmentSettings.defaultDurationMonths = defaultDurationMonths;
+    installmentSettings.lateFeePercentage = lateFeePercentage;
+    installmentSettings.minInstallmentAmount = minInstallmentAmount;
+    installmentSettings.maxInstallmentAmount = maxInstallmentAmount;
+    installmentSettings.allowPartialPayments = allowPartialPayments;
+    installmentSettings.enableNotifications = enableNotifications;
+    installmentSettings.notificationDaysBeforeDue = notificationDaysBeforeDue;
+    installmentSettings.showInInvestorProfile = showInInvestorProfile;
+    
+    // حفظ الإعدادات
+    if (saveInstallmentSettings()) {
+        createNotification('نجاح', 'تم حفظ الإعدادات بنجاح', 'success');
+        
+        // إعادة دمج الأقساط مع ملفات المستثمرين إذا تم تفعيل الخيار
+        if (showInInvestorProfile) {
+            integrateWithInvestorProfiles();
+        }
+    }
+}
+
+/**
+ * إعادة تعيين إعدادات الأقساط إلى القيم الافتراضية
+ */
+function resetInstallmentSettings() {
+    if (!confirm('هل أنت متأكد من إعادة تعيين جميع الإعدادات إلى القيم الافتراضية؟')) {
+        return;
+    }
+    
+    // إعادة تعيين الإعدادات
+    installmentSettings = {
+        defaultInterestRate: 4,
+        defaultDurationMonths: 12,
+        lateFeePercentage: 0.5,
+        maxInstallmentAmount: 0,
+        minInstallmentAmount: 50000,
+        enableNotifications: true,
+        notificationDaysBeforeDue: 3,
+        allowPartialPayments: true,
+        showInInvestorProfile: true
+    };
+    
+    // حفظ الإعدادات
+    if (saveInstallmentSettings()) {
+        // إعادة ملء النموذج
+        populateInstallmentSettingsForm();
+        
+        createNotification('نجاح', 'تم إعادة تعيين الإعدادات بنجاح', 'success');
+    }
+}
+
+/**
+ * ملء قائمة النسخ الاحتياطية
+ */
+function populateBackupList() {
+    const select = document.getElementById('backupListSelect');
+    if (!select) return;
+    
+    // مسح القائمة
+    select.innerHTML = '<option value="">-- اختر نسخة احتياطية --</option>';
+    
+    // الحصول على قائمة النسخ الاحتياطية
+    const backupList = getBackupList();
+    
+    if (backupList.length === 0) {
+        select.innerHTML = '<option value="">لا توجد نسخ احتياطية</option>';
+        return;
+    }
+    
+    // ترتيب النسخ الاحتياطية حسب التاريخ (الأحدث أولاً)
+    backupList.sort((a, b) => new Date(b.date) - new Date(a.date));
+    
+    // إضافة النسخ الاحتياطية إلى القائمة
+    backupList.forEach(backup => {
+        const option = document.createElement('option');
+        option.value = backup.id;
+        option.textContent = `${backup.name} (${new Date(backup.date).toLocaleString('ar-IQ')})`;
+        select.appendChild(option);
+    });
+}
+
+/**
+ * استعادة النسخة الاحتياطية المحددة
+ */
+function restoreSelectedBackup() {
+    const select = document.getElementById('backupListSelect');
+    if (!select || !select.value) {
+        createNotification('خطأ', 'يرجى اختيار نسخة احتياطية', 'danger');
+        return;
+    }
+    
+    if (!confirm('هل أنت متأكد من استعادة النسخة الاحتياطية المحددة؟ سيتم استبدال جميع البيانات الحالية.')) {
+        return;
+    }
+    
+    // استعادة النسخة الاحتياطية
+    restoreBackup(select.value);
+}
+
+/**
+ * تصدير النسخة الاحتياطية المحددة
+ */
+function exportSelectedBackup() {
+    const select = document.getElementById('backupListSelect');
+    if (!select || !select.value) {
+        createNotification('خطأ', 'يرجى اختيار نسخة احتياطية', 'danger');
+        return;
+    }
+    
+    try {
+        // الحصول على النسخة الاحتياطية
+        const storedBackup = localStorage.getItem(`installmentBackup_${select.value}`);
+        
+        if (!storedBackup) {
+            createNotification('خطأ', 'لم يتم العثور على النسخة الاحتياطية', 'danger');
+            return;
+        }
+        
+        // تحليل النسخة الاحتياطية
+        const backup = JSON.parse(storedBackup);
+        
+        // تحويل البيانات إلى JSON
+        const jsonData = JSON.stringify(backup, null, 2);
+        
+        // إنشاء ملف للتنزيل
+        const blob = new Blob([jsonData], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        
+        // إنشاء عنصر لتنزيل الملف
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `installments_backup_${new Date(backup.date).toISOString().slice(0, 10)}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        
+        createNotification('نجاح', 'تم تصدير النسخة الاحتياطية بنجاح', 'success');
+    } catch (error) {
+        console.error('خطأ في تصدير النسخة الاحتياطية:', error);
+        createNotification('خطأ', 'حدث خطأ أثناء تصدير النسخة الاحتياطية', 'danger');
+    }
+}
+
+/**
+ * حذف النسخة الاحتياطية المحددة
+ */
+function deleteSelectedBackup() {
+    const select = document.getElementById('backupListSelect');
+    if (!select || !select.value) {
+        createNotification('خطأ', 'يرجى اختيار نسخة احتياطية', 'danger');
+        return;
+    }
+    
+    if (!confirm('هل أنت متأكد من حذف النسخة الاحتياطية المحددة؟')) {
+        return;
+    }
+    
+    try {
+        const backupId = select.value;
+        
+        // الحصول على قائمة النسخ الاحتياطية
+        let backupList = getBackupList();
+        
+        // البحث عن النسخة الاحتياطية
+        const backupIndex = backupList.findIndex(b => b.id === backupId);
+        
+        if (backupIndex === -1) {
+            createNotification('خطأ', 'لم يتم العثور على النسخة الاحتياطية', 'danger');
+            return;
+        }
+        
+        // حذف النسخة الاحتياطية من القائمة
+        backupList.splice(backupIndex, 1);
+        
+        // حفظ قائمة النسخ الاحتياطية
+        localStorage.setItem('installmentBackupList', JSON.stringify(backupList));
+        
+        // حذف النسخة الاحتياطية نفسها
+        localStorage.removeItem(`installmentBackup_${backupId}`);
+        
+        // إعادة ملء قائمة النسخ الاحتياطية
+        populateBackupList();
+        
+        createNotification('نجاح', 'تم حذف النسخة الاحتياطية بنجاح', 'success');
+    } catch (error) {
+        console.error('خطأ في حذف النسخة الاحتياطية:', error);
+        createNotification('خطأ', 'حدث خطأ أثناء حذف النسخة الاحتياطية', 'danger');
+    }
+}
+
+/**
+ * استكمال كود نظام إدارة الأقساط المحسن
+ */
+
+// استكمال دالة تصدير جميع بيانات الأقساط
+function exportAllInstallmentData() {
+    try {
+        // إنشاء كائن البيانات
+        const exportData = {
+            installments,
+            installmentItems,
+            installmentPayments,
+            installmentSettings,
+            exportDate: new Date().toISOString(),
+            version: '2.0'
+        };
+        
+        // تحويل البيانات إلى JSON
+        const jsonData = JSON.stringify(exportData, null, 2);
+        
+        // إنشاء ملف للتنزيل
+        const blob = new Blob([jsonData], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        
+        // إنشاء عنصر لتنزيل الملف
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `installments_data_${new Date().toISOString().slice(0, 10)}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        
+        createNotification('نجاح', 'تم تصدير جميع البيانات بنجاح', 'success');
+    } catch (error) {
+        console.error('خطأ في تصدير البيانات:', error);
+        createNotification('خطأ', 'حدث خطأ أثناء تصدير البيانات', 'danger');
+    }
+}
+
+/**
+ * فتح نافذة استيراد البيانات
+ */
+function openImportDataModal() {
+    // إنشاء نافذة الاستيراد
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay active';
+    modal.id = 'importDataModal';
+    
+    modal.innerHTML = `
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title">استيراد بيانات الأقساط</h2>
+                <div class="modal-close" onclick="document.getElementById('importDataModal').remove()">
+                    <i class="fas fa-times"></i>
+                </div>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning">
+                    <div class="alert-icon">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="alert-content">
+                        <div class="alert-title">تنبيه</div>
+                        <div class="alert-text">سيؤدي استيراد البيانات إلى استبدال جميع البيانات الحالية. يرجى التأكد من إنشاء نسخة احتياطية قبل المتابعة.</div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">ملف البيانات (JSON)</label>
+                    <input type="file" class="form-control" id="importDataFile" accept=".json">
+                </div>
+                
+                <div class="form-group">
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input" id="importSettings">
+                        <label class="form-check-label" for="importSettings">استيراد الإعدادات</label>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input" id="mergeData">
+                        <label class="form-check-label" for="mergeData">دمج البيانات مع البيانات الحالية</label>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-light" onclick="document.getElementById('importDataModal').remove()">إلغاء</button>
+                <button class="btn btn-primary" onclick="importInstallmentData()">استيراد</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+}
+
+/**
+ * استيراد بيانات الأقساط
+ */
+function importInstallmentData() {
+    const fileInput = document.getElementById('importDataFile');
+    const importSettings = document.getElementById('importSettings').checked;
+    const mergeData = document.getElementById('mergeData').checked;
+    
+    if (!fileInput || !fileInput.files.length) {
+        createNotification('خطأ', 'يرجى اختيار ملف', 'danger');
+        return;
+    }
+    
+    if (!mergeData && !confirm('سيؤدي استيراد البيانات إلى استبدال جميع البيانات الحالية. هل أنت متأكد من المتابعة؟')) {
+        return;
+    }
+    
+    const file = fileInput.files[0];
+    const reader = new FileReader();
+    
+    reader.onload = function(event) {
+        try {
+            const importedData = JSON.parse(event.target.result);
+            
+            // التحقق من صحة البيانات
+            if (!importedData.installments || !Array.isArray(importedData.installments) ||
+                !importedData.installmentItems || !Array.isArray(importedData.installmentItems) ||
+                !importedData.installmentPayments || !Array.isArray(importedData.installmentPayments)) {
+                createNotification('خطأ', 'الملف المستورد غير صالح', 'danger');
+                return;
+            }
+            
+            // إنشاء نسخة احتياطية قبل الاستيراد
+            createBackup('before_import');
+            
+            if (mergeData) {
+                // دمج البيانات المستوردة مع البيانات الحالية
+                mergeImportedData(importedData);
+            } else {
+                // استبدال البيانات الحالية بالبيانات المستوردة
+                installments = importedData.installments;
+                installmentItems = importedData.installmentItems;
+                installmentPayments = importedData.installmentPayments;
+                
+                if (importSettings && importedData.installmentSettings) {
+                    installmentSettings = importedData.installmentSettings;
+                }
+            }
+            
+            // حفظ البيانات
+            saveInstallmentData();
+            if (importSettings) saveInstallmentSettings();
+            
+            // إغلاق النافذة
+            document.getElementById('importDataModal').remove();
+            
+            // إعادة تحميل صفحة الأقساط
+            loadInstallmentsPage();
+            
+            createNotification('نجاح', 'تم استيراد البيانات بنجاح', 'success');
+        } catch (error) {
+            console.error('خطأ في استيراد البيانات:', error);
+            createNotification('خطأ', 'حدث خطأ أثناء استيراد البيانات', 'danger');
+        }
+    };
+    
+    reader.readAsText(file);
+}
+
+/**
+ * دمج البيانات المستوردة مع البيانات الحالية
+ */
+function mergeImportedData(importedData) {
+    // دمج الأقساط
+    const existingInstallmentIds = installments.map(inst => inst.id);
+    
+    importedData.installments.forEach(importedInst => {
+        if (!existingInstallmentIds.includes(importedInst.id)) {
+            // إضافة قرض جديد
+            installments.push(importedInst);
+        } else {
+            // تحديث قرض موجود (اختياري حسب سياسة الدمج)
+            // في هذا المثال، نحتفظ بالبيانات الحالية
+        }
+    });
+    
+    // دمج عناصر الأقساط
+    const existingItemIds = installmentItems.map(item => item.id);
+    
+    importedData.installmentItems.forEach(importedItem => {
+        if (!existingItemIds.includes(importedItem.id)) {
+            // إضافة عنصر جديد
+            installmentItems.push(importedItem);
+        }
+    });
+    
+    // دمج مدفوعات الأقساط
+    const existingPaymentIds = installmentPayments.map(payment => payment.id);
+    
+    importedData.installmentPayments.forEach(importedPayment => {
+        if (!existingPaymentIds.includes(importedPayment.id)) {
+            // إضافة دفعة جديدة
+            installmentPayments.push(importedPayment);
+        }
+    });
+}
+
+/**
+ * تحديث بطاقات لوحة التحكم
  */
 function updateInstallmentsDashboardCards() {
-    const summary = getInstallmentsSummary();
+    // حساب عدد القروض النشطة
+    const activeInstallments = installments.filter(inst => inst.status === 'active').length;
+    document.getElementById('totalActiveInstallments').textContent = activeInstallments;
     
-    // تحديث البطاقات
-    document.getElementById('totalActiveInstallments').textContent = summary.activeInstallments;
-    document.getElementById('totalCompletedInstallments').textContent = summary.completedInstallments;
-    document.getElementById('totalInstallmentAmount').textContent = formatInstallmentAmount(summary.totalAmount) + ' ' + settings.currency;
-    document.getElementById('totalPaidInstallments').textContent = formatInstallmentAmount(summary.totalPaid) + ' ' + settings.currency;
-    document.getElementById('totalRemainingInstallments').textContent = formatInstallmentAmount(summary.totalRemaining) + ' ' + settings.currency;
-    document.getElementById('totalLatePayments').textContent = summary.latePayments;
-    document.getElementById('totalPendingPayments').textContent = summary.pendingPayments;
+    // حساب عدد القروض المكتملة
+    const completedInstallments = installments.filter(inst => inst.status === 'completed').length;
+    document.getElementById('totalCompletedInstallments').textContent = completedInstallments;
+    
+    // حساب إجمالي المبالغ
+    const totalAmount = installments.reduce((total, inst) => total + inst.totalAmount, 0);
+    document.getElementById('totalInstallmentAmount').textContent = formatCurrency(totalAmount);
+    
+    // حساب المبالغ المدفوعة
+    const totalPaid = installmentPayments
+        .filter(payment => payment.status === 'paid')
+        .reduce((total, payment) => total + payment.amount, 0);
+    document.getElementById('totalPaidInstallments').textContent = formatCurrency(totalPaid);
+    
+    // حساب المبالغ المتبقية
+    const totalRemaining = totalAmount - totalPaid;
+    document.getElementById('totalRemainingInstallments').textContent = formatCurrency(totalRemaining);
+    
+    // حساب عدد الأقساط المتأخرة
+    const latePayments = installmentPayments.filter(payment => payment.status === 'late').length;
+    document.getElementById('totalLatePayments').textContent = latePayments;
+    
+    // حساب عدد الأقساط المستحقة
+    const pendingPayments = installmentPayments.filter(payment => payment.status === 'pending').length;
+    document.getElementById('totalPendingPayments').textContent = pendingPayments;
 }
 
 /**
@@ -853,7 +2116,7 @@ function loadInstallmentsTable(status = 'all') {
     
     if (filteredInstallments.length === 0) {
         const row = document.createElement('tr');
-        row.innerHTML = `<td colspan="9" style="text-align: center;">لا توجد أقساط ${
+        row.innerHTML = `<td colspan="10" style="text-align: center;">لا توجد أقساط ${
             status === 'active' ? 'نشطة' : 
             status === 'completed' ? 'مكتملة' : 
             status === 'defaulted' ? 'متعثرة' : ''
@@ -874,18 +2137,21 @@ function loadInstallmentsTable(status = 'all') {
             <td>${index + 1}</td>
             <td>${getBorrowerName(installment)}</td>
             <td>${getBorrowerTypeName(installment.borrowerType)}</td>
-            <td>${formatInstallmentAmount(installment.totalAmount)} ${settings.currency}</td>
-            <td>${formatInstallmentAmount(totalPaid)} ${settings.currency}</td>
-            <td>${formatInstallmentAmount(remaining)} ${settings.currency}</td>
+            <td>${formatCurrency(installment.totalAmount)}</td>
+            <td>${formatCurrency(totalPaid)}</td>
+            <td>${formatCurrency(remaining)}</td>
             <td>${remainingInstallments} / ${installment.durationMonths}</td>
+            <td>${formatDate(installment.startDate)}</td>
             <td>
                 <span class="status ${
                     installment.status === 'active' ? 'active' : 
-                    installment.status === 'completed' ? 'success' : 'danger'
+                    installment.status === 'completed' ? 'success' : 
+                    'danger'
                 }">
                     ${
                         installment.status === 'active' ? 'نشط' : 
-                        installment.status === 'completed' ? 'مكتمل' : 'متعثر'
+                        installment.status === 'completed' ? 'مكتمل' : 
+                        'متعثر'
                     }
                     ${lateInstallments > 0 ? ` <span class="badge-warning">${lateInstallments} متأخر</span>` : ''}
                 </span>
@@ -908,6 +2174,81 @@ function loadInstallmentsTable(status = 'all') {
 }
 
 /**
+ * تبديل علامة تبويب الأقساط
+ */
+function switchInstallmentsTab(tabId) {
+    // تحديث علامات التبويب
+    document.querySelectorAll('#installments .tab').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    
+    document.querySelector(`#installments .tab[onclick="switchInstallmentsTab('${tabId}')"]`).classList.add('active');
+    
+    // إخفاء/إظهار العناصر حسب علامة التبويب
+    const mainTable = document.getElementById('mainInstallmentsTable');
+    const grids = document.getElementById('installmentsDetailsGrids');
+    const chartContainer = document.getElementById('installmentsChartContainer');
+    const settingsContainer = document.getElementById('installmentsSettings');
+    
+    // إخفاء جميع العناصر أولاً
+    mainTable.style.display = 'none';
+    grids.style.display = 'none';
+    chartContainer.style.display = 'none';
+    settingsContainer.style.display = 'none';
+    
+    // إظهار العناصر حسب علامة التبويب
+    switch (tabId) {
+        case 'all':
+        case 'active':
+        case 'completed':
+        case 'defaulted':
+            // تحديث عنوان الجدول
+            const tableTitle = mainTable.querySelector('.table-title');
+            tableTitle.textContent = `قائمة القروض ${
+                tabId === 'active' ? 'النشطة' : 
+                tabId === 'completed' ? 'المكتملة' : 
+                tabId === 'defaulted' ? 'المتعثرة' : ''
+            }`;
+            
+            // تحميل جدول الأقساط
+            loadInstallmentsTable(tabId);
+            
+            // إظهار جدول الأقساط
+            mainTable.style.display = 'block';
+            break;
+            
+        case 'upcoming':
+        case 'late':
+            // تحميل الأقساط المستحقة قريباً والمتأخرة
+            loadUpcomingPayments();
+            loadLatePayments();
+            
+            // إظهار الشبكة
+            grids.style.display = 'grid';
+            break;
+            
+        case 'statistics':
+            // تحميل الرسم البياني
+            loadInstallmentsChart();
+            
+            // إظهار الرسم البياني
+            chartContainer.style.display = 'block';
+            break;
+            
+        case 'settings':
+            // ملء نموذج الإعدادات
+            populateInstallmentSettingsForm();
+            
+            // ملء قائمة النسخ الاحتياطية
+            populateBackupList();
+            
+            // إظهار الإعدادات
+            settingsContainer.style.display = 'block';
+            break;
+    }
+}
+
+/**
  * تحميل الأقساط المستحقة قريباً
  */
 function loadUpcomingPayments() {
@@ -917,7 +2258,21 @@ function loadUpcomingPayments() {
     tbody.innerHTML = '';
     
     // الحصول على الأقساط المستحقة قريباً
-    const upcomingPayments = getUpcomingInstallmentPayments(7);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const upcomingDays = installmentSettings.notificationDaysBeforeDue;
+    const futureDate = new Date(today);
+    futureDate.setDate(today.getDate() + upcomingDays);
+    
+    const upcomingPayments = installmentPayments.filter(payment => {
+        if (payment.status !== 'pending') return false;
+        
+        const dueDate = new Date(payment.dueDate);
+        dueDate.setHours(0, 0, 0, 0);
+        
+        return dueDate >= today && dueDate <= futureDate;
+    });
     
     if (upcomingPayments.length === 0) {
         const row = document.createElement('tr');
@@ -929,7 +2284,7 @@ function loadUpcomingPayments() {
     // ترتيب الأقساط حسب تاريخ الاستحقاق
     upcomingPayments.sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
     
-    upcomingPayments.forEach((payment) => {
+    upcomingPayments.forEach(payment => {
         const installment = installments.find(inst => inst.id === payment.installmentId);
         if (!installment) return;
         
@@ -938,8 +2293,8 @@ function loadUpcomingPayments() {
         row.innerHTML = `
             <td>${getBorrowerName(installment)}</td>
             <td>${payment.number} / ${installment.durationMonths}</td>
-            <td>${payment.dueDate}</td>
-            <td>${formatInstallmentAmount(payment.amount)} ${settings.currency}</td>
+            <td>${formatDate(payment.dueDate)}</td>
+            <td>${formatCurrency(payment.amount)}</td>
             <td>${getBorrowerTypeName(installment.borrowerType)}</td>
             <td>
                 <button class="btn btn-success btn-icon action-btn" onclick="openPayInstallmentModal('${payment.id}')">
@@ -965,7 +2320,7 @@ function loadLatePayments() {
     tbody.innerHTML = '';
     
     // الحصول على الأقساط المتأخرة
-    const latePayments = getLateInstallmentPayments();
+    const latePayments = installmentPayments.filter(payment => payment.status === 'late');
     
     if (latePayments.length === 0) {
         const row = document.createElement('tr');
@@ -977,12 +2332,16 @@ function loadLatePayments() {
     // ترتيب الأقساط حسب تاريخ الاستحقاق
     latePayments.sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
     
-    latePayments.forEach((payment) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    latePayments.forEach(payment => {
         const installment = installments.find(inst => inst.id === payment.installmentId);
         if (!installment) return;
         
         const dueDate = new Date(payment.dueDate);
-        const today = new Date();
+        dueDate.setHours(0, 0, 0, 0);
+        
         const daysDiff = Math.floor((today - dueDate) / (1000 * 60 * 60 * 24));
         
         const row = document.createElement('tr');
@@ -990,9 +2349,9 @@ function loadLatePayments() {
         row.innerHTML = `
             <td>${getBorrowerName(installment)}</td>
             <td>${payment.number} / ${installment.durationMonths}</td>
-            <td>${payment.dueDate}</td>
+            <td>${formatDate(payment.dueDate)}</td>
             <td>${daysDiff} يوم</td>
-            <td>${formatInstallmentAmount(payment.amount)} ${settings.currency}</td>
+            <td>${formatCurrency(payment.amount)}</td>
             <td>${getBorrowerTypeName(installment.borrowerType)}</td>
             <td>
                 <button class="btn btn-success btn-icon action-btn" onclick="openPayInstallmentModal('${payment.id}')">
@@ -1011,48 +2370,145 @@ function loadLatePayments() {
 /**
  * تحميل الرسم البياني للأقساط
  */
-function loadInstallmentsChart() {
+function loadInstallmentsChart(period = 'monthly') {
     const chartContainer = document.getElementById('installmentsChart');
     if (!chartContainer) return;
     
-    // إعداد بيانات الرسم البياني
-    const data = [];
-    const today = new Date();
+    // إنشاء بيانات الرسم البياني
+    let labels = [];
+    let totalAmountData = [];
+    let paidAmountData = [];
+    let remainingAmountData = [];
     
-    // إعداد بيانات للأشهر الستة الماضية
-    for (let i = 5; i >= 0; i--) {
-        const month = new Date(today);
-        month.setMonth(month.getMonth() - i);
-        
-        const monthName = month.toLocaleDateString('ar', { month: 'long' });
-        const monthYear = month.getFullYear();
-        const monthStart = new Date(monthYear, month.getMonth(), 1);
-        const monthEnd = new Date(monthYear, month.getMonth() + 1, 0);
-        
-        // حساب المبالغ المدفوعة في هذا الشهر
-        const paidAmount = installmentPayments
-            .filter(payment => {
-                if (payment.status !== 'paid' || !payment.paymentDate) return false;
-                const paymentDate = new Date(payment.paymentDate);
-                return paymentDate >= monthStart && paymentDate <= monthEnd;
-            })
-            .reduce((total, payment) => total + payment.amount, 0);
-        
-        // حساب المبالغ المستحقة في هذا الشهر
-        const dueAmount = installmentPayments
-            .filter(payment => {
-                const dueDate = new Date(payment.dueDate);
-                return dueDate >= monthStart && dueDate <= monthEnd;
-            })
-            .reduce((total, payment) => total + payment.amount, 0);
-        
-        data.push({
-            month: monthName,
-            paid: paidAmount,
-            due: dueAmount
-        });
+    const now = new Date();
+    let startDate;
+    let endDate = new Date(now);
+    
+    // تحديد الفترة
+    switch (period) {
+        case 'monthly':
+            // آخر 12 شهر
+            startDate = new Date(now);
+            startDate.setMonth(startDate.getMonth() - 11);
+            
+            for (let i = 0; i < 12; i++) {
+                const date = new Date(startDate);
+                date.setMonth(date.getMonth() + i);
+                
+                const monthName = date.toLocaleDateString('ar', { month: 'long' });
+                labels.push(monthName);
+                
+                const monthStart = new Date(date.getFullYear(), date.getMonth(), 1);
+                const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+                
+                // حساب إجمالي مبالغ الأقساط المستحقة في هذا الشهر
+                const monthlyTotal = installmentPayments
+                    .filter(payment => {
+                        const paymentDate = new Date(payment.dueDate);
+                        return paymentDate >= monthStart && paymentDate <= monthEnd;
+                    })
+                    .reduce((total, payment) => total + payment.amount, 0);
+                
+                // حساب المبالغ المدفوعة في هذا الشهر
+                const monthlyPaid = installmentPayments
+                    .filter(payment => {
+                        if (payment.status !== 'paid' || !payment.paymentDate) return false;
+                        const paymentDate = new Date(payment.paymentDate);
+                        return paymentDate >= monthStart && paymentDate <= monthEnd;
+                    })
+                    .reduce((total, payment) => total + payment.amount, 0);
+                
+                // حساب المبالغ المتبقية
+                const monthlyRemaining = monthlyTotal - monthlyPaid;
+                
+                totalAmountData.push(monthlyTotal);
+                paidAmountData.push(monthlyPaid);
+                remainingAmountData.push(monthlyRemaining);
+            }
+            break;
+            
+        case 'quarterly':
+            // آخر 4 أرباع سنة
+            startDate = new Date(now);
+            startDate.setMonth(startDate.getMonth() - 11);
+            
+            for (let i = 0; i < 4; i++) {
+                const quarter = i + 1;
+                labels.push(`الربع ${quarter}`);
+                
+                const quarterStart = new Date(startDate);
+                quarterStart.setMonth(quarterStart.getMonth() + (i * 3));
+                
+                const quarterEnd = new Date(quarterStart);
+                quarterEnd.setMonth(quarterEnd.getMonth() + 3);
+                quarterEnd.setDate(0);
+                
+                // حساب إجمالي مبالغ الأقساط المستحقة في هذا الربع
+                const quarterlyTotal = installmentPayments
+                    .filter(payment => {
+                        const paymentDate = new Date(payment.dueDate);
+                        return paymentDate >= quarterStart && paymentDate <= quarterEnd;
+                    })
+                    .reduce((total, payment) => total + payment.amount, 0);
+                
+                // حساب المبالغ المدفوعة في هذا الربع
+                const quarterlyPaid = installmentPayments
+                    .filter(payment => {
+                        if (payment.status !== 'paid' || !payment.paymentDate) return false;
+                        const paymentDate = new Date(payment.paymentDate);
+                        return paymentDate >= quarterStart && paymentDate <= quarterEnd;
+                    })
+                    .reduce((total, payment) => total + payment.amount, 0);
+                
+                // حساب المبالغ المتبقية
+                const quarterlyRemaining = quarterlyTotal - quarterlyPaid;
+                
+                totalAmountData.push(quarterlyTotal);
+                paidAmountData.push(quarterlyPaid);
+                remainingAmountData.push(quarterlyRemaining);
+            }
+            break;
+            
+        case 'yearly':
+            // آخر 5 سنوات
+            startDate = new Date(now);
+            startDate.setFullYear(startDate.getFullYear() - 4);
+            
+            for (let i = 0; i < 5; i++) {
+                const year = startDate.getFullYear() + i;
+                labels.push(year.toString());
+                
+                const yearStart = new Date(year, 0, 1);
+                const yearEnd = new Date(year, 11, 31);
+                
+                // حساب إجمالي مبالغ الأقساط المستحقة في هذه السنة
+                const yearlyTotal = installmentPayments
+                    .filter(payment => {
+                        const paymentDate = new Date(payment.dueDate);
+                        return paymentDate >= yearStart && paymentDate <= yearEnd;
+                    })
+                    .reduce((total, payment) => total + payment.amount, 0);
+                
+                // حساب المبالغ المدفوعة في هذه السنة
+                const yearlyPaid = installmentPayments
+                    .filter(payment => {
+                        if (payment.status !== 'paid' || !payment.paymentDate) return false;
+                        const paymentDate = new Date(payment.paymentDate);
+                        return paymentDate >= yearStart && paymentDate <= yearEnd;
+                    })
+                    .reduce((total, payment) => total + payment.amount, 0);
+                
+                // حساب المبالغ المتبقية
+                const yearlyRemaining = yearlyTotal - yearlyPaid;
+                
+                totalAmountData.push(yearlyTotal);
+                paidAmountData.push(yearlyPaid);
+                remainingAmountData.push(yearlyRemaining);
+            }
+            break;
     }
     
+    // رسم المخطط البياني
     // تنظيف الحاوية
     chartContainer.innerHTML = '';
     
@@ -1065,20 +2521,27 @@ function loadInstallmentsChart() {
     new Chart(ctx, {
         type: 'bar',
         data: {
-            labels: data.map(d => d.month),
+            labels: labels,
             datasets: [
                 {
+                    label: 'المبالغ المستحقة',
+                    data: totalAmountData,
+                    backgroundColor: 'rgba(52, 152, 219, 0.6)',
+                    borderColor: '#3498db',
+                    borderWidth: 1
+                },
+                {
                     label: 'المبالغ المدفوعة',
-                    data: data.map(d => d.paid),
+                    data: paidAmountData,
                     backgroundColor: 'rgba(46, 204, 113, 0.6)',
                     borderColor: '#2ecc71',
                     borderWidth: 1
                 },
                 {
-                    label: 'المبالغ المستحقة',
-                    data: data.map(d => d.due),
-                    backgroundColor: 'rgba(52, 152, 219, 0.6)',
-                    borderColor: '#3498db',
+                    label: 'المبالغ المتبقية',
+                    data: remainingAmountData,
+                    backgroundColor: 'rgba(231, 76, 60, 0.6)',
+                    borderColor: '#e74c3c',
                     borderWidth: 1
                 }
             ]
@@ -1091,7 +2554,16 @@ function loadInstallmentsChart() {
                     beginAtZero: true,
                     ticks: {
                         callback: function(value) {
-                            return formatInstallmentAmount(value) + ' ' + settings.currency;
+                            return formatCurrency(value).replace(` ${settings.currency}`, '');
+                        }
+                    }
+                }
+            },
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return context.dataset.label + ': ' + formatCurrency(context.raw);
                         }
                     }
                 }
@@ -1101,9 +2573,86 @@ function loadInstallmentsChart() {
 }
 
 /**
+ * تبديل فترة الرسم البياني للأقساط
+ */
+function switchInstallmentsChartPeriod(period) {
+    // تحديث حالة الأزرار
+    document.querySelectorAll('#installmentsChartContainer .chart-actions button').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    document.querySelector(`#installmentsChartContainer .chart-actions button[onclick="switchInstallmentsChartPeriod('${period}')"]`).classList.add('active');
+    
+    // تحميل الرسم البياني
+    loadInstallmentsChart(period);
+}
+
+/**
+ * البحث في الأقساط
+ */
+function searchInstallments() {
+    const searchTerm = document.getElementById('installmentSearchInput').value.toLowerCase();
+    const tbody = document.getElementById('installmentsTableBody');
+    
+    if (!tbody) return;
+    
+    // إذا كان مصطلح البحث فارغًا، إعادة تحميل الجدول
+    if (!searchTerm) {
+        const activeTab = document.querySelector('#installments .tab.active');
+        const tabId = activeTab.getAttribute('onclick').match(/'([^']+)'/)[1];
+        
+        if (['all', 'active', 'completed', 'defaulted'].includes(tabId)) {
+            loadInstallmentsTable(tabId);
+        }
+        
+        return;
+    }
+    
+    // الحصول على جميع صفوف الجدول
+    const rows = tbody.querySelectorAll('tr');
+    
+    let matchFound = false;
+    
+    // تصفية الصفوف
+    rows.forEach(row => {
+        // جمع النص من جميع الخلايا باستثناء خلية الإجراءات
+        const rowText = Array.from(row.querySelectorAll('td:not(:last-child)'))
+            .map(cell => cell.textContent.toLowerCase())
+            .join(' ');
+        
+        // إظهار الصف إذا كان النص يحتوي على مصطلح البحث
+        if (rowText.includes(searchTerm)) {
+            row.style.display = '';
+            matchFound = true;
+        } else {
+            row.style.display = 'none';
+        }
+    });
+    
+    // إظهار رسالة إذا لم يتم العثور على تطابقات
+    if (!matchFound && rows.length > 0) {
+        // إذا كان هناك صف واحد فقط وهو صف "لا توجد أقساط"، لا نقوم بإضافة صف جديد
+        const singleRow = rows[0];
+        const singleCell = singleRow.querySelector('td[colspan]');
+        
+        if (singleRow && singleCell) {
+            // لا نفعل شيئًا، الصف موجود بالفعل
+        } else {
+            // إضافة صف للإشارة إلى عدم وجود تطابقات
+            const noMatchRow = document.createElement('tr');
+            noMatchRow.innerHTML = `<td colspan="10" style="text-align: center;">لا توجد نتائج مطابقة لـ "${searchTerm}"</td>`;
+            tbody.appendChild(noMatchRow);
+        }
+    }
+}
+
+/**
  * فتح النافذة المنبثقة لإضافة قرض جديد بالأقساط
  */
-function openAddInstallmentModal() {
+function openAddInstallmentModal(investorId = null) {
+    // تنظيف قائمة العناصر المؤقتة
+    tempInstallmentItems = [];
+    
     // إنشاء النافذة المنبثقة
     const modal = document.createElement('div');
     modal.className = 'modal-overlay active';
@@ -1128,13 +2677,9 @@ function openAddInstallmentModal() {
                         <div class="form-group">
                             <label class="form-label">نوع المقترض</label>
                             <select class="form-select" id="borrowerType" onchange="toggleBorrowerFields()">
-                                <option value="investor">مستثمر</option>
-                                <option value="public">حشد شعبي</option>
-                                <option value="welfare">رعاية اجتماعية</option>
-                                <option value="employee">موظف</option>
-                                <option value="military">عسكري</option>
-                                <option value="business">كاسب</option>
-                                <option value="other">أخرى</option>
+                                ${borrowerCategories.map(cat => `
+                                    <option value="${cat.id}" ${cat.id === 'investor' ? 'selected' : ''}>${cat.name}</option>
+                                `).join('')}
                             </select>
                         </div>
                         
@@ -1238,13 +2783,13 @@ function openAddInstallmentModal() {
                             </div>
                             <div class="form-group">
                                 <label class="form-label">مدة القرض (بالأشهر)</label>
-                                <input type="number" class="form-control" id="durationMonths" value="12" min="1" required oninput="calculateInstallmentTotal()">
+                                <input type="number" class="form-control" id="durationMonths" min="1" required oninput="calculateInstallmentTotal()">
                             </div>
                         </div>
                         <div class="form-row">
                             <div class="form-group">
                                 <label class="form-label">معدل الفائدة السنوية (%)</label>
-                                <input type="number" class="form-control" id="interestRate" value="4" min="0" step="0.1" required oninput="calculateInstallmentTotal()">
+                                <input type="number" class="form-control" id="interestRate" min="0" step="0.1" required oninput="calculateInstallmentTotal()">
                             </div>
                             <div class="form-group">
                                 <label class="form-label">المبلغ الإجمالي للعناصر</label>
@@ -1277,23 +2822,151 @@ function openAddInstallmentModal() {
     
     document.body.appendChild(modal);
     
-    // تعيين التاريخ الافتراضي لتاريخ البدء
+    // تعيين القيم الافتراضية
     document.getElementById('startDate').valueAsDate = new Date();
+    document.getElementById('durationMonths').value = installmentSettings.defaultDurationMonths;
+    document.getElementById('interestRate').value = installmentSettings.defaultInterestRate;
     
     // ملء قائمة المستثمرين
     populateInvestorsList();
     
-    // إضافة المستمعين للأحداث
-    document.getElementById('itemPrice').addEventListener('input', calculateItemTotal);
-    document.getElementById('itemQuantity').addEventListener('input', calculateItemTotal);
-    document.getElementById('interestRate').addEventListener('input', calculateInstallmentTotal);
-    document.getElementById('durationMonths').addEventListener('input', calculateInstallmentTotal);
-    
-    // تهيئة قائمة العناصر
-    window.installmentItemsList = [];
+    // إذا تم تحديد مستثمر، اختره تلقائيًا
+    if (investorId) {
+        document.getElementById('borrowerId').value = investorId;
+    }
     
     // حساب المجموع الأولي
     calculateItemTotal();
+    calculateInstallmentTotal();
+}
+
+/**
+ * إضافة عنصر إلى القائمة
+ */
+function addItemToList() {
+    const itemName = document.getElementById('itemName').value;
+    const itemPrice = parseFloat(document.getElementById('itemPrice').value);
+    const itemQuantity = parseInt(document.getElementById('itemQuantity').value) || 1;
+    
+    if (!itemName || !itemPrice) {
+        createNotification('خطأ', 'يرجى ملء جميع حقول العنصر', 'danger');
+        return;
+    }
+    
+    // إضافة العنصر إلى القائمة
+    const item = {
+        id: generateInstallmentId(),
+        name: itemName,
+        price: itemPrice,
+        quantity: itemQuantity,
+        totalPrice: itemPrice * itemQuantity
+    };
+    
+    tempInstallmentItems.push(item);
+    
+    // تحديث الجدول
+    updateItemsTable();
+    
+    // مسح حقول النموذج
+    document.getElementById('itemName').value = '';
+    document.getElementById('itemPrice').value = '';
+    document.getElementById('itemQuantity').value = '1';
+    document.getElementById('itemTotalPrice').value = '';
+    
+    // التركيز على حقل اسم العنصر
+    document.getElementById('itemName').focus();
+    
+    // حساب إجمالي المبلغ
+    calculateInstallmentTotal();
+}
+
+/**
+ * تحديث جدول العناصر
+ */
+function updateItemsTable() {
+    const tbody = document.getElementById('itemsTableBody');
+    if (!tbody) return;
+    
+    if (tempInstallmentItems.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center">لم تتم إضافة عناصر بعد</td></tr>`;
+        document.getElementById('itemsTotalSum').textContent = '0';
+        return;
+    }
+    
+    tbody.innerHTML = '';
+    
+    let totalSum = 0;
+    
+    tempInstallmentItems.forEach((item, index) => {
+        const row = document.createElement('tr');
+        
+        row.innerHTML = `
+            <td>${index + 1}</td>
+            <td>${item.name}</td>
+            <td>${formatNumber(item.price)}</td>
+            <td>${item.quantity}</td>
+            <td>${formatNumber(item.totalPrice)}</td>
+            <td>
+                <button class="btn btn-danger btn-icon action-btn" onclick="removeItemFromList('${item.id}')">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>
+        `;
+        
+        tbody.appendChild(row);
+        
+        totalSum += item.totalPrice;
+    });
+    
+    // تحديث المجموع
+    document.getElementById('itemsTotalSum').textContent = formatNumber(totalSum) + ' ' + settings.currency;
+}
+
+/**
+ * إزالة عنصر من القائمة
+ */
+function removeItemFromList(itemId) {
+    tempInstallmentItems = tempInstallmentItems.filter(item => item.id !== itemId);
+    
+    // تحديث الجدول
+    updateItemsTable();
+    
+    // إعادة حساب إجمالي المبلغ
+    calculateInstallmentTotal();
+}
+
+/**
+ * حساب إجمالي العنصر
+ */
+function calculateItemTotal() {
+    const price = parseFloat(document.getElementById('itemPrice').value) || 0;
+    const quantity = parseInt(document.getElementById('itemQuantity').value) || 1;
+    const totalPrice = price * quantity;
+    
+    document.getElementById('itemTotalPrice').value = formatNumber(totalPrice) + ' ' + settings.currency;
+}
+
+/**
+ * حساب إجمالي القرض بالأقساط
+ */
+function calculateInstallmentTotal() {
+    // حساب إجمالي العناصر
+    const totalItemsPrice = tempInstallmentItems.reduce((total, item) => total + item.totalPrice, 0);
+    
+    // الحصول على معدل الفائدة ومدة القرض
+    const interestRate = parseFloat(document.getElementById('interestRate').value) || installmentSettings.defaultInterestRate;
+    const durationMonths = parseInt(document.getElementById('durationMonths').value) || installmentSettings.defaultDurationMonths;
+    
+    // حساب المبلغ الإجمالي مع الفائدة
+    const totalWithInterest = calculateTotalWithInterest(totalItemsPrice, interestRate, durationMonths);
+    
+    // حساب قيمة القسط الشهري
+    const monthlyInstallment = totalWithInterest / durationMonths;
+    
+    // تحديث الحقول
+    document.getElementById('totalItemsAmount').value = formatNumber(totalItemsPrice) + ' ' + settings.currency;
+    document.getElementById('totalWithInterest').value = formatNumber(totalWithInterest) + ' ' + settings.currency;
+    document.getElementById('monthlyInstallment').value = formatNumber(monthlyInstallment) + ' ' + settings.currency;
 }
 
 /**
@@ -1321,13 +2994,19 @@ function populateInvestorsList() {
     
     if (!select) return;
     
-    // تنظيف القائمة
+    // مسح القائمة
     select.innerHTML = '<option value="">اختر المستثمر</option>';
+    
+    // التأكد من وجود مصفوفة المستثمرين
+    if (typeof investors === 'undefined' || !Array.isArray(investors)) {
+        console.warn('مصفوفة المستثمرين غير متوفرة');
+        return;
+    }
     
     // ترتيب المستثمرين حسب الاسم
     const sortedInvestors = [...investors].sort((a, b) => a.name.localeCompare(b.name));
     
-    // إضافة الخيارات
+    // إضافة المستثمرين إلى القائمة
     sortedInvestors.forEach(investor => {
         const option = document.createElement('option');
         option.value = investor.id;
@@ -1337,146 +3016,17 @@ function populateInvestorsList() {
 }
 
 /**
- * حساب إجمالي العنصر
- */
-function calculateItemTotal() {
-    const price = parseFloat(document.getElementById('itemPrice').value) || 0;
-    const quantity = parseInt(document.getElementById('itemQuantity').value) || 1;
-    const totalPrice = price * quantity;
-    
-    document.getElementById('itemTotalPrice').value = formatInstallmentAmount(totalPrice) + ' ' + settings.currency;
-}
-
-/**
- * إضافة عنصر إلى القائمة
- */
-function addItemToList() {
-    const itemName = document.getElementById('itemName').value;
-    const itemPrice = parseFloat(document.getElementById('itemPrice').value);
-    const itemQuantity = parseInt(document.getElementById('itemQuantity').value) || 1;
-    
-    if (!itemName || !itemPrice) {
-        alert('يرجى ملء جميع حقول العنصر');
-        return;
-    }
-    
-    // إضافة العنصر إلى القائمة
-    const item = {
-        id: generateInstallmentId(),
-        name: itemName,
-        price: itemPrice,
-        quantity: itemQuantity,
-        totalPrice: itemPrice * itemQuantity
-    };
-    
-    window.installmentItemsList.push(item);
-    
-    // تحديث الجدول
-    updateItemsTable();
-    
-    // مسح حقول النموذج
-    document.getElementById('itemName').value = '';
-    document.getElementById('itemPrice').value = '';
-    document.getElementById('itemQuantity').value = '1';
-    document.getElementById('itemTotalPrice').value = '';
-    
-    // التركيز على حقل اسم العنصر
-    document.getElementById('itemName').focus();
-    
-    // حساب إجمالي المبلغ
-    calculateInstallmentTotal();
-}
-
-/**
- * تحديث جدول العناصر
- */
-function updateItemsTable() {
-    const tbody = document.getElementById('itemsTableBody');
-    if (!tbody) return;
-    
-    if (window.installmentItemsList.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" class="text-center">لم تتم إضافة عناصر بعد</td></tr>`;
-        document.getElementById('itemsTotalSum').textContent = '0';
-        return;
-    }
-    
-    tbody.innerHTML = '';
-    
-    let totalSum = 0;
-    
-    window.installmentItemsList.forEach((item, index) => {
-        const row = document.createElement('tr');
-        
-        row.innerHTML = `
-            <td>${index + 1}</td>
-            <td>${item.name}</td>
-            <td>${formatInstallmentAmount(item.price)}</td>
-            <td>${item.quantity}</td>
-            <td>${formatInstallmentAmount(item.totalPrice)}</td>
-            <td>
-                <button class="btn btn-danger btn-icon action-btn" onclick="removeItemFromList('${item.id}')">
-                    <i class="fas fa-trash"></i>
-                </button>
-            </td>
-        `;
-        
-        tbody.appendChild(row);
-        
-        totalSum += item.totalPrice;
-    });
-    
-    // تحديث المجموع
-    document.getElementById('itemsTotalSum').textContent = formatInstallmentAmount(totalSum) + ' ' + settings.currency;
-}
-
-/**
- * إزالة عنصر من القائمة
- */
-function removeItemFromList(itemId) {
-    window.installmentItemsList = window.installmentItemsList.filter(item => item.id !== itemId);
-    
-    // تحديث الجدول
-    updateItemsTable();
-    
-    // إعادة حساب إجمالي المبلغ
-    calculateInstallmentTotal();
-}
-
-/**
- * حساب إجمالي القرض بالأقساط
- */
-function calculateInstallmentTotal() {
-    // حساب إجمالي العناصر
-    const totalItemsPrice = window.installmentItemsList.reduce((total, item) => total + item.totalPrice, 0);
-    
-    // الحصول على معدل الفائدة ومدة القرض
-    const interestRate = parseFloat(document.getElementById('interestRate').value) || 4;
-    const durationMonths = parseInt(document.getElementById('durationMonths').value) || 12;
-    
-    // حساب المبلغ الإجمالي مع الفائدة
-    const totalWithInterest = calculateTotalWithInterest(totalItemsPrice, interestRate, durationMonths);
-    
-    // حساب قيمة القسط الشهري
-    const monthlyInstallment = totalWithInterest / durationMonths;
-    
-    // تحديث الحقول
-    document.getElementById('totalItemsAmount').value = formatInstallmentAmount(totalItemsPrice) + ' ' + settings.currency;
-    document.getElementById('totalWithInterest').value = formatInstallmentAmount(totalWithInterest) + ' ' + settings.currency;
-    document.getElementById('monthlyInstallment').value = formatInstallmentAmount(monthlyInstallment) + ' ' + settings.currency;
-}
-
-/**
- * حفظ القرض بالأقساط
+ * حفظ قرض بالأقساط
  */
 function saveInstallment() {
     // التحقق من وجود عناصر
-    if (window.installmentItemsList.length === 0) {
-        alert('يرجى إضافة عنصر واحد على الأقل');
+    if (tempInstallmentItems.length === 0) {
+        createNotification('خطأ', 'يرجى إضافة عنصر واحد على الأقل', 'danger');
         switchModalTab('itemsInfo', 'addInstallmentModal');
         return;
     }
     
-    // جمع البيانات من النموذج
+    // الحصول على نوع المقترض
     const borrowerType = document.getElementById('borrowerType').value;
     let borrowerId = '';
     let borrowerName = '';
@@ -1488,7 +3038,7 @@ function saveInstallment() {
         borrowerId = document.getElementById('borrowerId').value;
         
         if (!borrowerId) {
-            alert('يرجى اختيار المستثمر');
+            createNotification('خطأ', 'يرجى اختيار المستثمر', 'danger');
             switchModalTab('borrowerInfo', 'addInstallmentModal');
             return;
         }
@@ -1498,8 +3048,8 @@ function saveInstallment() {
         if (investor) {
             borrowerName = investor.name;
             borrowerPhone = investor.phone;
-            borrowerAddress = investor.address;
-            borrowerIdCard = investor.idCard;
+            borrowerAddress = investor.address || '';
+            borrowerIdCard = investor.idCard || '';
         }
     } else {
         borrowerName = document.getElementById('borrowerName').value;
@@ -1507,41 +3057,107 @@ function saveInstallment() {
         borrowerAddress = document.getElementById('borrowerAddress').value;
         borrowerIdCard = document.getElementById('borrowerIdCard').value;
         
-        if (!borrowerName || !borrowerPhone || !borrowerAddress || !borrowerIdCard) {
-            alert('يرجى ملء جميع حقول المقترض');
+        if (!borrowerName || !borrowerPhone) {
+            createNotification('خطأ', 'يرجى ملء حقول المقترض الإلزامية', 'danger');
             switchModalTab('borrowerInfo', 'addInstallmentModal');
             return;
         }
     }
     
-    // جمع بيانات القرض
+    // الحصول على بيانات القرض
     const startDate = document.getElementById('startDate').value;
-    const durationMonths = parseInt(document.getElementById('durationMonths').value) || 12;
-    const interestRate = parseFloat(document.getElementById('interestRate').value) || 4;
+    const durationMonths = parseInt(document.getElementById('durationMonths').value);
+    const interestRate = parseFloat(document.getElementById('interestRate').value);
     const notes = document.getElementById('installmentNotes').value;
     
-    if (!startDate) {
-        alert('يرجى تحديد تاريخ البدء');
+    if (!startDate || !durationMonths || isNaN(interestRate)) {
+        createNotification('خطأ', 'يرجى ملء جميع حقول القرض الإلزامية', 'danger');
         switchModalTab('installmentInfo', 'addInstallmentModal');
         return;
     }
     
-    // إنشاء كائن بيانات القرض
-    const installmentData = {
+    // حساب إجمالي العناصر
+    const totalItemsPrice = tempInstallmentItems.reduce((total, item) => total + item.totalPrice, 0);
+    
+    // التحقق من الحد الأدنى للقرض
+    if (totalItemsPrice < installmentSettings.minInstallmentAmount) {
+        createNotification('خطأ', `يجب أن يكون المبلغ الإجمالي أكبر من ${formatNumber(installmentSettings.minInstallmentAmount)} ${settings.currency}`, 'danger');
+        switchModalTab('itemsInfo', 'addInstallmentModal');
+        return;
+    }
+    
+    // التحقق من الحد الأقصى للقرض إذا كان محدداً
+    if (installmentSettings.maxInstallmentAmount > 0 && totalItemsPrice > installmentSettings.maxInstallmentAmount) {
+        createNotification('خطأ', `يجب أن يكون المبلغ الإجمالي أقل من ${formatNumber(installmentSettings.maxInstallmentAmount)} ${settings.currency}`, 'danger');
+        switchModalTab('itemsInfo', 'addInstallmentModal');
+        return;
+    }
+    
+    // حساب المبلغ الإجمالي مع الفائدة
+    const totalWithInterest = calculateTotalWithInterest(totalItemsPrice, interestRate, durationMonths);
+    
+    // إنشاء معرف فريد للقرض
+    const installmentId = generateInstallmentId();
+    
+    // إنشاء كائن القرض
+    const newInstallment = {
+        id: installmentId,
         borrowerType,
         borrowerId,
         borrowerName,
         borrowerPhone,
         borrowerAddress,
         borrowerIdCard,
+        totalAmount: totalWithInterest,
         interestRate,
         startDate,
         durationMonths,
-        notes
+        status: 'active',
+        notes,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
     };
     
-    // إضافة القرض الجديد
-    const installmentId = addInstallment(installmentData, window.installmentItemsList);
+    // إضافة القرض إلى المصفوفة
+    installments.push(newInstallment);
+    
+    // إضافة العناصر إلى المصفوفة
+    tempInstallmentItems.forEach(item => {
+        const newItem = {
+            id: item.id,
+            installmentId,
+            name: item.name,
+            price: item.price,
+            quantity: item.quantity,
+            totalPrice: item.totalPrice,
+            createdAt: new Date().toISOString()
+        };
+        
+        installmentItems.push(newItem);
+    });
+    
+    // إنشاء جدول الأقساط
+    const payments = generateInstallmentSchedule(
+        installmentId,
+        totalWithInterest,
+        durationMonths,
+        startDate
+    );
+    
+    // إضافة الأقساط إلى المصفوفة
+    installmentPayments = [...installmentPayments, ...payments];
+    
+    // حفظ البيانات
+    saveInstallmentData();
+    
+    // إنشاء إشعار
+    createNotification(
+        'قرض جديد بالأقساط',
+        `تم إنشاء قرض جديد بالأقساط للمقترض ${borrowerName} بمبلغ ${formatNumber(totalWithInterest)} ${settings.currency}`,
+        'success',
+        installmentId,
+        'installment'
+    );
     
     // إغلاق النافذة المنبثقة
     document.getElementById('addInstallmentModal').remove();
@@ -1558,7 +3174,7 @@ function viewInstallment(installmentId) {
     const installment = installments.find(inst => inst.id === installmentId);
     
     if (!installment) {
-        alert('القرض غير موجود');
+        createNotification('خطأ', 'القرض غير موجود', 'danger');
         return;
     }
     
@@ -1604,7 +3220,7 @@ function viewInstallment(installmentId) {
                             <div class="card-header">
                                 <div>
                                     <div class="card-title">المبلغ الإجمالي</div>
-                                    <div class="card-value">${formatInstallmentAmount(installment.totalAmount)} ${settings.currency}</div>
+                                    <div class="card-value">${formatCurrency(installment.totalAmount)}</div>
                                 </div>
                                 <div class="card-icon primary">
                                     <i class="fas fa-money-bill-wave"></i>
@@ -1615,7 +3231,7 @@ function viewInstallment(installmentId) {
                             <div class="card-header">
                                 <div>
                                     <div class="card-title">المبلغ المدفوع</div>
-                                    <div class="card-value">${formatInstallmentAmount(totalPaid)} ${settings.currency}</div>
+                                    <div class="card-value">${formatCurrency(totalPaid)}</div>
                                 </div>
                                 <div class="card-icon success">
                                     <i class="fas fa-check-circle"></i>
@@ -1626,7 +3242,7 @@ function viewInstallment(installmentId) {
                             <div class="card-header">
                                 <div>
                                     <div class="card-title">المبلغ المتبقي</div>
-                                    <div class="card-value">${formatInstallmentAmount(remaining)} ${settings.currency}</div>
+                                    <div class="card-value">${formatCurrency(remaining)}</div>
                                 </div>
                                 <div class="card-icon warning">
                                     <i class="fas fa-clock"></i>
@@ -1651,7 +3267,7 @@ function viewInstallment(installmentId) {
                         <div class="form-row">
                             <div class="form-group">
                                 <label class="form-label">تاريخ البدء</label>
-                                <input type="text" class="form-control" value="${installment.startDate}" readonly>
+                                <input type="text" class="form-control" value="${formatDate(installment.startDate)}" readonly>
                             </div>
                             <div class="form-group">
                                 <label class="form-label">مدة القرض</label>
@@ -1725,9 +3341,9 @@ function viewInstallment(installmentId) {
                                     <tr>
                                         <td>${index + 1}</td>
                                         <td>${item.name}</td>
-                                        <td>${formatInstallmentAmount(item.price)} ${settings.currency}</td>
+                                        <td>${formatCurrency(item.price)}</td>
                                         <td>${item.quantity}</td>
-                                        <td>${formatInstallmentAmount(item.totalPrice)} ${settings.currency}</td>
+                                        <td>${formatCurrency(item.totalPrice)}</td>
                                     </tr>
                                 `).join('') : `
                                     <tr>
@@ -1738,7 +3354,7 @@ function viewInstallment(installmentId) {
                             <tfoot>
                                 <tr>
                                     <th colspan="4">المجموع</th>
-                                    <th>${formatInstallmentAmount(items.reduce((total, item) => total + item.totalPrice, 0))} ${settings.currency}</th>
+                                    <th>${formatCurrency(items.reduce((total, item) => total + item.totalPrice, 0))}</th>
                                 </tr>
                             </tfoot>
                         </table>
@@ -1763,8 +3379,8 @@ function viewInstallment(installmentId) {
                                 ${payments.length > 0 ? payments.map(payment => `
                                     <tr>
                                         <td>${payment.number}</td>
-                                        <td>${payment.dueDate}</td>
-                                        <td>${formatInstallmentAmount(payment.amount)} ${settings.currency}</td>
+                                        <td>${formatDate(payment.dueDate)}</td>
+                                        <td>${formatCurrency(payment.amount)}</td>
                                         <td>
                                             <span class="status ${
                                                 payment.status === 'paid' ? 'success' : 
@@ -1776,7 +3392,7 @@ function viewInstallment(installmentId) {
                                                 }
                                             </span>
                                         </td>
-                                        <td>${payment.paymentDate || '-'}</td>
+                                        <td>${payment.paymentDate ? formatDate(payment.paymentDate) : '-'}</td>
                                         <td>${payment.notes || '-'}</td>
                                         <td>
                                             ${payment.status !== 'paid' ? `
@@ -1808,105 +3424,8 @@ function viewInstallment(installmentId) {
                 <button class="btn btn-danger" onclick="openDeleteInstallmentModal('${installmentId}')">
                     <i class="fas fa-trash"></i> حذف
                 </button>
-            </div>
-        </div>
-    `;
-    
-    document.body.appendChild(modal);
-}
-
-/**
- * فتح نافذة دفع قسط
- */
-function openPayInstallmentModal(paymentId) {
-    // البحث عن القسط
-    const payment = installmentPayments.find(p => p.id === paymentId);
-    
-    if (!payment) {
-        alert('القسط غير موجود');
-        return;
-    }
-    
-    // البحث عن القرض
-    const installment = installments.find(inst => inst.id === payment.installmentId);
-    
-    if (!installment) {
-        alert('القرض غير موجود');
-        return;
-    }
-    
-    // إنشاء النافذة المنبثقة
-    const modal = document.createElement('div');
-    modal.className = 'modal-overlay active';
-    modal.id = 'payInstallmentModal';
-    
-    modal.innerHTML = `
-        <div class="modal">
-            <div class="modal-header">
-                <h2 class="modal-title">دفع القسط</h2>
-                <div class="modal-close" onclick="document.getElementById('payInstallmentModal').remove()">
-                    <i class="fas fa-times"></i>
-                </div>
-            </div>
-            <div class="modal-body">
-                <div class="form-container" style="box-shadow: none; padding: 0;">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">المقترض</label>
-                            <input type="text" class="form-control" value="${getBorrowerName(installment)}" readonly>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">رقم القسط</label>
-                            <input type="text" class="form-control" value="${payment.number} / ${installment.durationMonths}" readonly>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">تاريخ الاستحقاق</label>
-                            <input type="text" class="form-control" value="${payment.dueDate}" readonly>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">مبلغ القسط</label>
-                            <input type="text" class="form-control" value="${formatInstallmentAmount(payment.amount)} ${settings.currency}" readonly>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">تاريخ الدفع</label>
-                            <input type="date" class="form-control" id="paymentDate" value="${new Date().toISOString().split('T')[0]}" required>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">طريقة الدفع</label>
-                            <select class="form-select" id="paymentMethod">
-                                <option value="cash">نقداً</option>
-                                <option value="check">شيك</option>
-                                <option value="transfer">حوالة بنكية</option>
-                                <option value="card">بطاقة ائتمان</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">ملاحظات</label>
-                        <textarea class="form-control" id="paymentNotes" rows="3"></textarea>
-                    </div>
-                    
-                    ${payment.status === 'late' ? `
-                        <div class="alert alert-warning">
-                            <div class="alert-icon">
-                                <i class="fas fa-exclamation-triangle"></i>
-                            </div>
-                            <div class="alert-content">
-                                <div class="alert-title">تنبيه</div>
-                                <div class="alert-text">هذا القسط متأخر عن موعد استحقاقه. تاريخ الاستحقاق كان ${payment.dueDate}.</div>
-                            </div>
-                        </div>
-                    ` : ''}
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-light" onclick="document.getElementById('payInstallmentModal').remove()">إلغاء</button>
-                <button class="btn btn-success" onclick="confirmPayInstallment('${paymentId}')">
-                    <i class="fas fa-check"></i> تأكيد الدفع
+                <button class="btn btn-primary" onclick="printInstallmentDetails('${installmentId}')">
+                    <i class="fas fa-print"></i> طباعة
                 </button>
             </div>
         </div>
@@ -1916,572 +3435,350 @@ function openPayInstallmentModal(paymentId) {
 }
 
 /**
- * تأكيد دفع قسط
+ * طباعة تفاصيل القرض بالأقساط
  */
-function confirmPayInstallment(paymentId) {
-    // البحث عن القسط
-    const payment = installmentPayments.find(p => p.id === paymentId);
-    
-    if (!payment) {
-        alert('القسط غير موجود');
-        return;
-    }
-    
-    // جمع البيانات من النموذج
-    const paymentDate = document.getElementById('paymentDate').value;
-    const paymentMethod = document.getElementById('paymentMethod').value;
-    const paymentNotes = document.getElementById('paymentNotes').value;
-    
-    if (!paymentDate) {
-        alert('يرجى تحديد تاريخ الدفع');
-        return;
-    }
-    
-    // تسجيل الدفع
-    const paymentData = {
-        paymentDate,
-        notes: `تم الدفع بواسطة ${
-            paymentMethod === 'cash' ? 'نقداً' : 
-            paymentMethod === 'check' ? 'شيك' : 
-            paymentMethod === 'transfer' ? 'حوالة بنكية' : 
-            'بطاقة ائتمان'
-        }${paymentNotes ? ` - ${paymentNotes}` : ''}`
-    };
-    
-    recordInstallmentPayment(paymentId, paymentData);
-    
-    // إغلاق النافذة المنبثقة
-    document.getElementById('payInstallmentModal').remove();
-    
-    // إذا كانت نافذة عرض القرض مفتوحة، قم بتحديثها
-    const viewInstallmentModal = document.getElementById('viewInstallmentModal');
-    if (viewInstallmentModal) {
-        const installmentId = payment.installmentId;
-        viewInstallmentModal.remove();
-        setTimeout(() => viewInstallment(installmentId), 100);
-    }
-    
-    // إعادة تحميل صفحة الأقساط
-    loadInstallmentsPage();
-}
-
-/**
- * استكمال نظام إدارة الأقساط
- * 
- * هذا الملف يحتوي على استكمال وظائف إدارة الأقساط للتكامل مع نظام إدارة الاستثمار
- */
-
-/**
- * تحرير قرض بالأقساط
- */
-function editInstallment(installmentId) {
+function printInstallmentDetails(installmentId) {
     // البحث عن القرض
     const installment = installments.find(inst => inst.id === installmentId);
     
     if (!installment) {
-        alert('القرض غير موجود');
+        createNotification('خطأ', 'القرض غير موجود', 'danger');
         return;
     }
     
-    // إغلاق النافذة المنبثقة إذا كانت مفتوحة
-    const viewModal = document.getElementById('viewInstallmentModal');
-    if (viewModal) {
-        viewModal.remove();
-    }
-    
-    // الحصول على العناصر المرتبطة بالقرض
+    // الحصول على قائمة العناصر
     const items = installmentItems.filter(item => item.installmentId === installmentId);
     
-    // إنشاء نسخة محلية من العناصر
-    window.installmentItemsList = JSON.parse(JSON.stringify(items));
+    // الحصول على جدول الأقساط
+    const payments = installmentPayments.filter(payment => payment.installmentId === installmentId);
     
-    // إنشاء النافذة المنبثقة
-    const modal = document.createElement('div');
-    modal.className = 'modal-overlay active';
-    modal.id = 'editInstallmentModal';
+    // ترتيب الأقساط حسب رقم القسط
+    payments.sort((a, b) => a.number - b.number);
     
-    modal.innerHTML = `
-        <div class="modal">
-            <div class="modal-header">
-                <h2 class="modal-title">تعديل قرض بالأقساط</h2>
-                <div class="modal-close" onclick="document.getElementById('editInstallmentModal').remove()">
-                    <i class="fas fa-times"></i>
+    // حساب الإحصائيات
+    const totalPaid = getTotalPayments(installmentId);
+    const remaining = installment.totalAmount - totalPaid;
+    const remainingInstallments = getRemainingInstallments(installmentId);
+    const lateInstallments = getLateInstallments(installmentId);
+    
+    // إنشاء نافذة الطباعة
+    const printWindow = window.open('', '_blank');
+    
+    printWindow.document.write(`
+        <html dir="rtl">
+        <head>
+            <title>تفاصيل القرض بالأقساط</title>
+            <style>
+                body {
+                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                    direction: rtl;
+                    padding: 20px;
+                }
+                
+                .header {
+                    display: flex;
+                    justify-content: space-between;
+                    margin-bottom: 20px;
+                    border-bottom: 1px solid #ddd;
+                    padding-bottom: 10px;
+                }
+                
+                .title {
+                    font-size: 24px;
+                    font-weight: bold;
+                    margin-bottom: 10px;
+                }
+                
+                .subtitle {
+                    font-size: 18px;
+                    font-weight: bold;
+                    margin: 20px 0 10px;
+                    border-bottom: 1px solid #eee;
+                    padding-bottom: 5px;
+                }
+                
+                .section {
+                    margin-bottom: 20px;
+                }
+                
+                .stats {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 10px;
+                    margin-bottom: 20px;
+                }
+                
+                .stat-card {
+                    background-color: #f9f9f9;
+                    border-radius: 5px;
+                    padding: 10px;
+                    min-width: 200px;
+                    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+                }
+                
+                .stat-title {
+                    font-size: 14px;
+                    color: #666;
+                    margin-bottom: 5px;
+                }
+                
+                .stat-value {
+                    font-size: 18px;
+                    font-weight: bold;
+                }
+                
+                table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    margin-bottom: 20px;
+                }
+                
+                th, td {
+                    border: 1px solid #ddd;
+                    padding: 8px;
+                    text-align: right;
+                }
+                
+                th {
+                    background-color: #f2f2f2;
+                }
+                
+                .info-grid {
+                    display: grid;
+                    grid-template-columns: repeat(2, 1fr);
+                    gap: 10px;
+                    margin-bottom: 20px;
+                }
+                
+                .info-item {
+                    margin-bottom: 5px;
+                }
+                
+                .info-label {
+                    font-weight: bold;
+                    margin-left: 5px;
+                }
+                
+                .status {
+                    display: inline-block;
+                    padding: 3px 8px;
+                    border-radius: 3px;
+                    font-size: 12px;
+                    font-weight: bold;
+                }
+                
+                .status.success {
+                    background-color: #d4edda;
+                    color: #155724;
+                }
+                
+                .status.danger {
+                    background-color: #f8d7da;
+                    color: #721c24;
+                }
+                
+                .status.pending {
+                    background-color: #fff3cd;
+                    color: #856404;
+                }
+                
+                .footer {
+                    margin-top: 30px;
+                    text-align: center;
+                    font-size: 12px;
+                    color: #777;
+                    border-top: 1px solid #ddd;
+                    padding-top: 10px;
+                }
+                
+                @media print {
+                    button {
+                        display: none;
+                    }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <div>
+                    <h1 class="title">تفاصيل القرض بالأقساط</h1>
+                    <div>رقم القرض: ${installmentId}</div>
+                </div>
+                <div>
+                    <div>${settings.companyName || 'شركة الاستثمار العراقية'}</div>
+                    <div>تاريخ الطباعة: ${formatDate(new Date().toISOString())}</div>
                 </div>
             </div>
-            <div class="modal-body">
-                <div class="modal-tabs">
-                    <div class="modal-tab active" onclick="switchModalTab('editBorrowerInfo', 'editInstallmentModal')">معلومات المقترض</div>
-                    <div class="modal-tab" onclick="switchModalTab('editItemsInfo', 'editInstallmentModal')">العناصر</div>
-                    <div class="modal-tab" onclick="switchModalTab('editInstallmentInfo', 'editInstallmentModal')">معلومات القرض</div>
-                </div>
-                
-                <div class="modal-tab-content active" id="editBorrowerInfo">
-                    <form id="editBorrowerForm">
-                        <div class="form-group">
-                            <label class="form-label">نوع المقترض</label>
-                            <select class="form-select" id="editBorrowerType" onchange="toggleEditBorrowerFields()" ${installment.borrowerType === 'investor' ? 'disabled' : ''}>
-                                ${borrowerCategories.map(cat => `
-                                    <option value="${cat.id}" ${installment.borrowerType === cat.id ? 'selected' : ''}>${cat.name}</option>
-                                `).join('')}
-                            </select>
-                            ${installment.borrowerType === 'investor' ? `
-                                <p class="form-text">لا يمكن تغيير نوع المقترض من مستثمر إلى نوع آخر.</p>
-                            ` : ''}
-                        </div>
-                        
-                        <div id="editInvestorField" style="${installment.borrowerType === 'investor' ? 'display: block;' : 'display: none;'}">
-                            <div class="form-group">
-                                <label class="form-label">المستثمر</label>
-                                <select class="form-select" id="editBorrowerId" ${installment.borrowerType === 'investor' ? 'disabled' : ''}>
-                                    <option value="">اختر المستثمر</option>
-                                    <!-- سيتم ملؤها بواسطة JavaScript -->
-                                </select>
-                                ${installment.borrowerType === 'investor' ? `
-                                    <p class="form-text">لا يمكن تغيير المستثمر المرتبط بالقرض.</p>
-                                ` : ''}
-                            </div>
-                        </div>
-                        
-                        <div id="editOtherBorrowerFields" style="${installment.borrowerType !== 'investor' ? 'display: block;' : 'display: none;'}">
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label class="form-label">الاسم الكامل</label>
-                                    <input type="text" class="form-control" id="editBorrowerName" value="${installment.borrowerName || ''}" required>
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">رقم الهاتف</label>
-                                    <input type="text" class="form-control" id="editBorrowerPhone" value="${installment.borrowerPhone || ''}" required>
-                                </div>
-                            </div>
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label class="form-label">العنوان</label>
-                                    <input type="text" class="form-control" id="editBorrowerAddress" value="${installment.borrowerAddress || ''}" required>
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">رقم البطاقة الشخصية</label>
-                                    <input type="text" class="form-control" id="editBorrowerIdCard" value="${installment.borrowerIdCard || ''}" required>
-                                </div>
-                            </div>
-                        </div>
-                    </form>
-                </div>
-                
-                <div class="modal-tab-content" id="editItemsInfo">
-                    <form id="editItemsForm">
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label class="form-label">نوع المادة</label>
-                                <input type="text" class="form-control" id="editItemName" required>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">السعر</label>
-                                <input type="number" class="form-control" id="editItemPrice" required oninput="calculateEditItemTotal()">
-                            </div>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label class="form-label">الكمية</label>
-                                <input type="number" class="form-control" id="editItemQuantity" value="1" min="1" required oninput="calculateEditItemTotal()">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">السعر الإجمالي</label>
-                                <input type="text" class="form-control" id="editItemTotalPrice" readonly>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <button type="button" class="btn btn-primary" onclick="addEditItemToList()">
-                                <i class="fas fa-plus"></i> إضافة العنصر
-                            </button>
-                        </div>
-                        
-                        <div class="table-container" style="margin-top: 20px;">
-                            <table class="table">
-                                <thead>
-                                    <tr>
-                                        <th>#</th>
-                                        <th>نوع المادة</th>
-                                        <th>السعر</th>
-                                        <th>الكمية</th>
-                                        <th>السعر الإجمالي</th>
-                                        <th>إجراءات</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="editItemsTableBody">
-                                    <!-- سيتم ملؤها بواسطة JavaScript -->
-                                </tbody>
-                                <tfoot>
-                                    <tr>
-                                        <th colspan="4">المجموع</th>
-                                        <th id="editItemsTotalSum">0</th>
-                                        <th></th>
-                                    </tr>
-                                </tfoot>
-                            </table>
-                        </div>
-                    </form>
-                </div>
-                
-                <div class="modal-tab-content" id="editInstallmentInfo">
-                    <form id="editInstallmentForm">
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label class="form-label">تاريخ البدء</label>
-                                <input type="date" class="form-control" id="editStartDate" value="${installment.startDate}" required ${getRemainingInstallments(installmentId) < installment.durationMonths ? 'disabled' : ''}>
-                                ${getRemainingInstallments(installmentId) < installment.durationMonths ? `
-                                    <p class="form-text">لا يمكن تغيير تاريخ البدء بعد دفع بعض الأقساط.</p>
-                                ` : ''}
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">مدة القرض (بالأشهر)</label>
-                                <input type="number" class="form-control" id="editDurationMonths" value="${installment.durationMonths}" min="1" required oninput="calculateEditInstallmentTotal()" ${getRemainingInstallments(installmentId) < installment.durationMonths ? 'disabled' : ''}>
-                                ${getRemainingInstallments(installmentId) < installment.durationMonths ? `
-                                    <p class="form-text">لا يمكن تغيير مدة القرض بعد دفع بعض الأقساط.</p>
-                                ` : ''}
-                            </div>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label class="form-label">معدل الفائدة السنوية (%)</label>
-                                <input type="number" class="form-control" id="editInterestRate" value="${installment.interestRate}" min="0" step="0.1" required oninput="calculateEditInstallmentTotal()" ${getRemainingInstallments(installmentId) < installment.durationMonths ? 'disabled' : ''}>
-                                ${getRemainingInstallments(installmentId) < installment.durationMonths ? `
-                                    <p class="form-text">لا يمكن تغيير معدل الفائدة بعد دفع بعض الأقساط.</p>
-                                ` : ''}
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">المبلغ الإجمالي للعناصر</label>
-                                <input type="text" class="form-control" id="editTotalItemsAmount" readonly>
-                            </div>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label class="form-label">المبلغ الإجمالي مع الفائدة</label>
-                                <input type="text" class="form-control" id="editTotalWithInterest" readonly>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">قيمة القسط الشهري</label>
-                                <input type="text" class="form-control" id="editMonthlyInstallment" readonly>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">ملاحظات</label>
-                            <textarea class="form-control" id="editInstallmentNotes" rows="3">${installment.notes || ''}</textarea>
-                        </div>
-                    </form>
+            
+            <div class="section">
+                <div class="stats">
+                    <div class="stat-card">
+                        <div class="stat-title">المبلغ الإجمالي</div>
+                        <div class="stat-value">${formatCurrency(installment.totalAmount)}</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-title">المبلغ المدفوع</div>
+                        <div class="stat-value">${formatCurrency(totalPaid)}</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-title">المبلغ المتبقي</div>
+                        <div class="stat-value">${formatCurrency(remaining)}</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-title">الأقساط المتبقية</div>
+                        <div class="stat-value">${remainingInstallments} / ${installment.durationMonths}</div>
+                        ${lateInstallments > 0 ? `<div style="color: red;">${lateInstallments} أقساط متأخرة</div>` : ''}
+                    </div>
                 </div>
             </div>
-            <div class="modal-footer">
-                <button class="btn btn-light" onclick="document.getElementById('editInstallmentModal').remove()">إلغاء</button>
-                <button class="btn btn-primary" onclick="updateInstallmentDetails('${installmentId}')">حفظ التغييرات</button>
+            
+            <div class="section">
+                <h2 class="subtitle">معلومات القرض</h2>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-label">تاريخ البدء:</span>
+                        <span>${formatDate(installment.startDate)}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">مدة القرض:</span>
+                        <span>${installment.durationMonths} شهر</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">معدل الفائدة السنوية:</span>
+                        <span>${installment.interestRate}%</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">حالة القرض:</span>
+                        <span>${
+                            installment.status === 'active' ? 'نشط' : 
+                            installment.status === 'completed' ? 'مكتمل' : 'متعثر'
+                        }</span>
+                    </div>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">ملاحظات:</span>
+                    <span>${installment.notes || 'لا توجد ملاحظات'}</span>
+                </div>
             </div>
-        </div>
-    `;
-    
-    document.body.appendChild(modal);
-    
-    // ملء قائمة المستثمرين
-    populateInvestorsList('editBorrowerId');
-    if (installment.borrowerType === 'investor') {
-        document.getElementById('editBorrowerId').value = installment.borrowerId;
-    }
-    
-    // إضافة المستمعين للأحداث
-    document.getElementById('editItemPrice').addEventListener('input', calculateEditItemTotal);
-    document.getElementById('editItemQuantity').addEventListener('input', calculateEditItemTotal);
-    
-    // تحديث جدول العناصر
-    updateEditItemsTable();
-    
-    // حساب الإجماليات
-    calculateEditInstallmentTotal();
-}
-
-/**
- * تبديل حقول المقترض في نموذج التعديل
- */
-function toggleEditBorrowerFields() {
-    const borrowerType = document.getElementById('editBorrowerType').value;
-    const investorField = document.getElementById('editInvestorField');
-    const otherBorrowerFields = document.getElementById('editOtherBorrowerFields');
-    
-    if (borrowerType === 'investor') {
-        investorField.style.display = 'block';
-        otherBorrowerFields.style.display = 'none';
-    } else {
-        investorField.style.display = 'none';
-        otherBorrowerFields.style.display = 'block';
-    }
-}
-
-/**
- * حساب إجمالي العنصر في نموذج التعديل
- */
-function calculateEditItemTotal() {
-    const price = parseFloat(document.getElementById('editItemPrice').value) || 0;
-    const quantity = parseInt(document.getElementById('editItemQuantity').value) || 1;
-    const totalPrice = price * quantity;
-    
-    document.getElementById('editItemTotalPrice').value = formatInstallmentAmount(totalPrice) + ' ' + settings.currency;
-}
-
-/**
- * إضافة عنصر إلى القائمة في نموذج التعديل
- */
-function addEditItemToList() {
-    const itemName = document.getElementById('editItemName').value;
-    const itemPrice = parseFloat(document.getElementById('editItemPrice').value);
-    const itemQuantity = parseInt(document.getElementById('editItemQuantity').value) || 1;
-    
-    if (!itemName || !itemPrice) {
-        alert('يرجى ملء جميع حقول العنصر');
-        return;
-    }
-    
-    // إضافة العنصر إلى القائمة
-    const item = {
-        id: generateInstallmentId(),
-        name: itemName,
-        price: itemPrice,
-        quantity: itemQuantity,
-        totalPrice: itemPrice * itemQuantity
-    };
-    
-    window.installmentItemsList.push(item);
-    
-    // تحديث الجدول
-    updateEditItemsTable();
-    
-    // مسح حقول النموذج
-    document.getElementById('editItemName').value = '';
-    document.getElementById('editItemPrice').value = '';
-    document.getElementById('editItemQuantity').value = '1';
-    document.getElementById('editItemTotalPrice').value = '';
-    
-    // التركيز على حقل اسم العنصر
-    document.getElementById('editItemName').focus();
-    
-    // حساب إجمالي المبلغ
-    calculateEditInstallmentTotal();
-}
-
-/**
- * تحديث جدول العناصر في نموذج التعديل
- */
-function updateEditItemsTable() {
-    const tbody = document.getElementById('editItemsTableBody');
-    if (!tbody) return;
-    
-    if (window.installmentItemsList.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" class="text-center">لم تتم إضافة عناصر بعد</td></tr>`;
-        document.getElementById('editItemsTotalSum').textContent = '0';
-        return;
-    }
-    
-    tbody.innerHTML = '';
-    
-    let totalSum = 0;
-    
-    window.installmentItemsList.forEach((item, index) => {
-        const row = document.createElement('tr');
-        
-        row.innerHTML = `
-            <td>${index + 1}</td>
-            <td>${item.name}</td>
-            <td>${formatInstallmentAmount(item.price)}</td>
-            <td>${item.quantity}</td>
-            <td>${formatInstallmentAmount(item.totalPrice)}</td>
-            <td>
-                <button class="btn btn-danger btn-icon action-btn" onclick="removeEditItemFromList('${item.id}')">
-                    <i class="fas fa-trash"></i>
-                </button>
-            </td>
-        `;
-        
-        tbody.appendChild(row);
-        
-        totalSum += item.totalPrice;
-    });
-    
-    // تحديث المجموع
-    document.getElementById('editItemsTotalSum').textContent = formatInstallmentAmount(totalSum) + ' ' + settings.currency;
-}
-
-/**
- * إزالة عنصر من القائمة في نموذج التعديل
- */
-function removeEditItemFromList(itemId) {
-    window.installmentItemsList = window.installmentItemsList.filter(item => item.id !== itemId);
-    
-    // تحديث الجدول
-    updateEditItemsTable();
-    
-    // إعادة حساب إجمالي المبلغ
-    calculateEditInstallmentTotal();
-}
-
-/**
- * حساب إجمالي القرض بالأقساط في نموذج التعديل
- */
-function calculateEditInstallmentTotal() {
-    // حساب إجمالي العناصر
-    const totalItemsPrice = window.installmentItemsList.reduce((total, item) => total + item.totalPrice, 0);
-    
-    // الحصول على معدل الفائدة ومدة القرض
-    const interestRate = parseFloat(document.getElementById('editInterestRate').value) || 4;
-    const durationMonths = parseInt(document.getElementById('editDurationMonths').value) || 12;
-    
-    // حساب المبلغ الإجمالي مع الفائدة
-    const totalWithInterest = calculateTotalWithInterest(totalItemsPrice, interestRate, durationMonths);
-    
-    // حساب قيمة القسط الشهري
-    const monthlyInstallment = totalWithInterest / durationMonths;
-    
-    // تحديث الحقول
-    document.getElementById('editTotalItemsAmount').value = formatInstallmentAmount(totalItemsPrice) + ' ' + settings.currency;
-    document.getElementById('editTotalWithInterest').value = formatInstallmentAmount(totalWithInterest) + ' ' + settings.currency;
-    document.getElementById('editMonthlyInstallment').value = formatInstallmentAmount(monthlyInstallment) + ' ' + settings.currency;
-}
-
-/**
- * تحديث بيانات القرض بالأقساط
- */
-function updateInstallmentDetails(installmentId) {
-    // البحث عن القرض
-    const installment = installments.find(inst => inst.id === installmentId);
-    
-    if (!installment) {
-        alert('القرض غير موجود');
-        return;
-    }
-    
-    // التحقق من وجود عناصر
-    if (window.installmentItemsList.length === 0) {
-        alert('يرجى إضافة عنصر واحد على الأقل');
-        switchModalTab('editItemsInfo', 'editInstallmentModal');
-        return;
-    }
-    
-    // جمع البيانات من النموذج
-    const borrowerType = document.getElementById('editBorrowerType').value;
-    let borrowerId = installment.borrowerId;
-    let borrowerName = installment.borrowerName;
-    let borrowerPhone = installment.borrowerPhone;
-    let borrowerAddress = installment.borrowerAddress;
-    let borrowerIdCard = installment.borrowerIdCard;
-    
-    if (borrowerType === 'investor') {
-        if (installment.borrowerType !== 'investor') {
-            borrowerId = document.getElementById('editBorrowerId').value;
             
-            if (!borrowerId) {
-                alert('يرجى اختيار المستثمر');
-                switchModalTab('editBorrowerInfo', 'editInstallmentModal');
-                return;
-            }
+            <div class="section">
+                <h2 class="subtitle">معلومات المقترض</h2>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-label">الاسم:</span>
+                        <span>${getBorrowerName(installment)}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">نوع المقترض:</span>
+                        <span>${getBorrowerTypeName(installment.borrowerType)}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">رقم الهاتف:</span>
+                        <span>${installment.borrowerPhone || '-'}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">العنوان:</span>
+                        <span>${installment.borrowerAddress || '-'}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">رقم البطاقة الشخصية:</span>
+                        <span>${installment.borrowerIdCard || '-'}</span>
+                    </div>
+                </div>
+            </div>
             
-            // الحصول على بيانات المستثمر
-            const investor = investors.find(inv => inv.id === borrowerId);
-            if (investor) {
-                borrowerName = investor.name;
-                borrowerPhone = investor.phone;
-                borrowerAddress = investor.address;
-                borrowerIdCard = investor.idCard;
-            }
-        }
-    } else {
-        borrowerId = '';
-        borrowerName = document.getElementById('editBorrowerName').value;
-        borrowerPhone = document.getElementById('editBorrowerPhone').value;
-        borrowerAddress = document.getElementById('editBorrowerAddress').value;
-        borrowerIdCard = document.getElementById('editBorrowerIdCard').value;
-        
-        if (!borrowerName || !borrowerPhone || !borrowerAddress || !borrowerIdCard) {
-            alert('يرجى ملء جميع حقول المقترض');
-            switchModalTab('editBorrowerInfo', 'editInstallmentModal');
-            return;
-        }
-    }
-    
-    // جمع بيانات القرض
-    const startDate = document.getElementById('editStartDate').value;
-    const durationMonths = parseInt(document.getElementById('editDurationMonths').value) || 12;
-    const interestRate = parseFloat(document.getElementById('editInterestRate').value) || 4;
-    const notes = document.getElementById('editInstallmentNotes').value;
-    
-    if (!startDate) {
-        alert('يرجى تحديد تاريخ البدء');
-        switchModalTab('editInstallmentInfo', 'editInstallmentModal');
-        return;
-    }
-    
-    // تحديث القرض
-    const updateData = {
-        borrowerType,
-        borrowerId,
-        borrowerName,
-        borrowerPhone,
-        borrowerAddress,
-        borrowerIdCard,
-        startDate,
-        durationMonths,
-        interestRate,
-        notes
-    };
-    
-    // إذا لم يتم دفع أي أقساط، يمكننا تحديث المزيد من البيانات
-    if (getRemainingInstallments(installmentId) === installment.durationMonths) {
-        // إنشاء عناصر جديدة
-        // حذف العناصر القديمة
-        installmentItems = installmentItems.filter(item => item.installmentId !== installmentId);
-        
-        // إضافة العناصر الجديدة
-        window.installmentItemsList.forEach(item => {
-            const newItem = {
-                id: item.id,
-                installmentId,
-                name: item.name,
-                price: item.price,
-                quantity: item.quantity,
-                totalPrice: item.totalPrice,
-                createdAt: new Date().toISOString()
-            };
+            <div class="section">
+                <h2 class="subtitle">قائمة العناصر</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>نوع المادة</th>
+                            <th>السعر</th>
+                            <th>الكمية</th>
+                            <th>السعر الإجمالي</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${items.length > 0 ? items.map((item, index) => `
+                            <tr>
+                                <td>${index + 1}</td>
+                                <td>${item.name}</td>
+                                <td>${formatCurrency(item.price)}</td>
+                                <td>${item.quantity}</td>
+                                <td>${formatCurrency(item.totalPrice)}</td>
+                            </tr>
+                        `).join('') : `
+                            <tr>
+                                <td colspan="5" style="text-align: center;">لا توجد عناصر لهذا القرض</td>
+                            </tr>
+                        `}
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <th colspan="4">المجموع</th>
+                            <th>${formatCurrency(items.reduce((total, item) => total + item.totalPrice, 0))}</th>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
             
-            installmentItems.push(newItem);
-        });
-        
-        // حذف جدول الأقساط القديم
-        installmentPayments = installmentPayments.filter(payment => payment.installmentId !== installmentId);
-        
-        // حساب المبلغ الإجمالي الجديد
-        const totalItemsPrice = window.installmentItemsList.reduce((total, item) => total + item.totalPrice, 0);
-        const totalWithInterest = calculateTotalWithInterest(totalItemsPrice, interestRate, durationMonths);
-        
-        // تحديث المبلغ الإجمالي للقرض
-        updateData.totalAmount = totalWithInterest;
-        
-        // إنشاء جدول الأقساط الجديد
-        const schedule = generateInstallmentSchedule(
-            installmentId,
-            totalWithInterest,
-            durationMonths,
-            startDate
-        );
-        
-        // إضافة جدول الأقساط الجديد
-        installmentPayments = [...installmentPayments, ...schedule];
-    } else {
-        // لا يمكن تغيير بعض البيانات بعد دفع بعض الأقساط
-        alert('تم تحديث بيانات القرض بالأقساط. لا يمكن تغيير بعض البيانات بعد دفع بعض الأقساط.');
-    }
+            <div class="section">
+                <h2 class="subtitle">جدول الأقساط</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>رقم القسط</th>
+                            <th>تاريخ الاستحقاق</th>
+                            <th>المبلغ</th>
+                            <th>الحالة</th>
+                            <th>تاريخ الدفع</th>
+                            <th>ملاحظات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${payments.length > 0 ? payments.map(payment => `
+                            <tr>
+                                <td>${payment.number}</td>
+                                <td>${formatDate(payment.dueDate)}</td>
+                                <td>${formatCurrency(payment.amount)}</td>
+                                <td>
+                                    <span class="status ${
+                                        payment.status === 'paid' ? 'success' : 
+                                        payment.status === 'late' ? 'danger' : 'pending'
+                                    }">
+                                        ${
+                                            payment.status === 'paid' ? 'مدفوع' : 
+                                            payment.status === 'late' ? 'متأخر' : 'معلق'
+                                        }
+                                    </span>
+                                </td>
+                                <td>${payment.paymentDate ? formatDate(payment.paymentDate) : '-'}</td>
+                                <td>${payment.notes || '-'}</td>
+                            </tr>
+                        `).join('') : `
+                            <tr>
+                                <td colspan="6" style="text-align: center;">لا توجد أقساط لهذا القرض</td>
+                            </tr>
+                        `}
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="footer">
+                <div>تم إنشاء هذا التقرير بواسطة نظام إدارة الأقساط - ${settings.companyName || 'شركة الاستثمار العراقية'}</div>
+                <div>© ${new Date().getFullYear()} - جميع الحقوق محفوظة</div>
+            </div>
+            
+            <button onclick="window.print();" style="margin-top: 20px; padding: 10px 20px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                طباعة
+            </button>
+        </body>
+        </html>
+    `);
     
-    // تحديث القرض
-    updateInstallment(installmentId, updateData);
-    
-    // إغلاق النافذة المنبثقة
-    document.getElementById('editInstallmentModal').remove();
-    
-    // إعادة تحميل صفحة الأقساط
-    loadInstallmentsPage();
+    printWindow.document.close();
+    printWindow.focus();
 }
 
 /**
@@ -2492,7 +3789,7 @@ function openDeleteInstallmentModal(installmentId) {
     const installment = installments.find(inst => inst.id === installmentId);
     
     if (!installment) {
-        alert('القرض غير موجود');
+        createNotification('خطأ', 'القرض غير موجود', 'danger');
         return;
     }
     
@@ -2502,14 +3799,10 @@ function openDeleteInstallmentModal(installmentId) {
         viewModal.remove();
     }
     
-    const editModal = document.getElementById('editInstallmentModal');
-    if (editModal) {
-        editModal.remove();
-    }
-    
     // حساب الإحصائيات
     const remainingInstallments = getRemainingInstallments(installmentId);
     const lateInstallments = getLateInstallments(installmentId);
+    const paidInstallments = installment.durationMonths - remainingInstallments;
     
     // إنشاء النافذة المنبثقة
     const modal = document.createElement('div');
@@ -2535,6 +3828,7 @@ function openDeleteInstallmentModal(installmentId) {
                             هل أنت متأكد من حذف القرض بالأقساط للمقترض "${getBorrowerName(installment)}"؟
                             <br>
                             سيتم حذف جميع البيانات المرتبطة بهذا القرض بالأقساط.
+                            ${paidInstallments > 0 ? `<br><strong>تنبيه:</strong> تم دفع ${paidInstallments} قسط من أصل ${installment.durationMonths}.` : ''}
                             ${remainingInstallments > 0 ? `<br><strong>تنبيه:</strong> يوجد ${remainingInstallments} أقساط غير مدفوعة.` : ''}
                             ${lateInstallments > 0 ? `<br><strong>تحذير:</strong> يوجد ${lateInstallments} أقساط متأخرة.` : ''}
                         </div>
@@ -2553,579 +3847,1091 @@ function openDeleteInstallmentModal(installmentId) {
     document.body.appendChild(modal);
 }
 
-/**
- * تأكيد حذف القرض بالأقساط
- */
+// ... استكمال دالة confirmDeleteInstallment
 function confirmDeleteInstallment(installmentId) {
-    // حذف القرض
-    deleteInstallment(installmentId);
+    // البحث عن القرض
+    const installment = installments.find(inst => inst.id === installmentId);
+    
+    if (!installment) {
+        createNotification('خطأ', 'القرض غير موجود', 'danger');
+        document.getElementById('deleteInstallmentModal').remove();
+        return;
+    }
+    
+    try {
+        // حذف القرض من المصفوفة
+        const installmentIndex = installments.findIndex(inst => inst.id === installmentId);
+        installments.splice(installmentIndex, 1);
+        
+        // حذف العناصر المرتبطة بالقرض
+        installmentItems = installmentItems.filter(item => item.installmentId !== installmentId);
+        
+        // حذف الأقساط المرتبطة بالقرض
+        installmentPayments = installmentPayments.filter(payment => payment.installmentId !== installmentId);
+        
+        // حفظ البيانات
+        saveInstallmentData();
+        
+        // إنشاء إشعار بنجاح الحذف
+        createNotification('نجاح', 'تم حذف القرض بالأقساط بنجاح', 'success');
+        
+        // إغلاق النافذة المنبثقة
+        document.getElementById('deleteInstallmentModal').remove();
+        
+        // إعادة تحميل صفحة الأقساط
+        loadInstallmentsPage();
+    } catch (error) {
+        console.error('خطأ في حذف القرض:', error);
+        createNotification('خطأ', 'حدث خطأ أثناء حذف القرض', 'danger');
+    }
+}
+
+/**
+ * فتح نافذة تعديل القرض بالأقساط
+ */
+function editInstallment(installmentId) {
+    // إغلاق أي نوافذ منبثقة مفتوحة
+    const viewModal = document.getElementById('viewInstallmentModal');
+    if (viewModal) {
+        viewModal.remove();
+    }
+    
+    // البحث عن القرض
+    const installment = installments.find(inst => inst.id === installmentId);
+    
+    if (!installment) {
+        createNotification('خطأ', 'القرض غير موجود', 'danger');
+        return;
+    }
+    
+    // الحصول على قائمة العناصر
+    const items = installmentItems.filter(item => item.installmentId === installmentId);
+    
+    // تحميل العناصر إلى القائمة المؤقتة
+    tempInstallmentItems = items.map(item => ({
+        id: item.id,
+        name: item.name,
+        price: item.price,
+        quantity: item.quantity,
+        totalPrice: item.totalPrice
+    }));
+    
+    // إنشاء النافذة المنبثقة
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay active';
+    modal.id = 'editInstallmentModal';
+    
+    modal.innerHTML = `
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title">تعديل القرض بالأقساط</h2>
+                <div class="modal-close" onclick="document.getElementById('editInstallmentModal').remove()">
+                    <i class="fas fa-times"></i>
+                </div>
+            </div>
+            <div class="modal-body">
+                <div class="modal-tabs">
+                    <div class="modal-tab active" onclick="switchModalTab('borrowerInfo', 'editInstallmentModal')">معلومات المقترض</div>
+                    <div class="modal-tab" onclick="switchModalTab('itemsInfo', 'editInstallmentModal')">العناصر</div>
+                    <div class="modal-tab" onclick="switchModalTab('installmentInfo', 'editInstallmentModal')">معلومات القرض</div>
+                </div>
+                <div class="modal-tab-content active" id="borrowerInfo">
+                    <form id="borrowerForm">
+                        <div class="form-group">
+                            <label class="form-label">نوع المقترض</label>
+                            <select class="form-select" id="borrowerType" onchange="toggleBorrowerFields()" disabled>
+                                ${borrowerCategories.map(cat => `
+                                    <option value="${cat.id}" ${cat.id === installment.borrowerType ? 'selected' : ''}>${cat.name}</option>
+                                `).join('')}
+                            </select>
+                            <small style="color: #666;">لا يمكن تغيير نوع المقترض بعد إنشاء القرض</small>
+                        </div>
+                        
+                        <div id="investorField" ${installment.borrowerType !== 'investor' ? 'style="display: none;"' : ''}>
+                            <div class="form-group">
+                                <label class="form-label">المستثمر</label>
+                                <select class="form-select" id="borrowerId" disabled>
+                                    <option value="">اختر المستثمر</option>
+                                    <!-- سيتم ملؤها بواسطة JavaScript -->
+                                </select>
+                                <small style="color: #666;">لا يمكن تغيير المستثمر بعد إنشاء القرض</small>
+                            </div>
+                        </div>
+                        
+                        <div id="otherBorrowerFields" ${installment.borrowerType === 'investor' ? 'style="display: none;"' : ''}>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">الاسم الكامل</label>
+                                    <input type="text" class="form-control" id="borrowerName" value="${installment.borrowerName || ''}" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">رقم الهاتف</label>
+                                    <input type="text" class="form-control" id="borrowerPhone" value="${installment.borrowerPhone || ''}" required>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">العنوان</label>
+                                    <input type="text" class="form-control" id="borrowerAddress" value="${installment.borrowerAddress || ''}" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">رقم البطاقة الشخصية</label>
+                                    <input type="text" class="form-control" id="borrowerIdCard" value="${installment.borrowerIdCard || ''}" required>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-tab-content" id="itemsInfo">
+                    <form id="itemsForm">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">نوع المادة</label>
+                                <input type="text" class="form-control" id="itemName" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">السعر</label>
+                                <input type="number" class="form-control" id="itemPrice" required oninput="calculateItemTotal()">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">الكمية</label>
+                                <input type="number" class="form-control" id="itemQuantity" value="1" min="1" required oninput="calculateItemTotal()">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">السعر الإجمالي</label>
+                                <input type="text" class="form-control" id="itemTotalPrice" readonly>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <button type="button" class="btn btn-primary" onclick="addItemToList()">
+                                <i class="fas fa-plus"></i> إضافة العنصر
+                            </button>
+                        </div>
+                        
+                        <div class="table-container" style="margin-top: 20px;">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>نوع المادة</th>
+                                        <th>السعر</th>
+                                        <th>الكمية</th>
+                                        <th>السعر الإجمالي</th>
+                                        <th>إجراءات</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="itemsTableBody">
+                                    <!-- سيتم ملؤها بواسطة JavaScript -->
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <th colspan="4">المجموع</th>
+                                        <th id="itemsTotalSum">0</th>
+                                        <th></th>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                        <div class="alert alert-warning" style="margin-top: 15px;">
+                            <div class="alert-icon">
+                                <i class="fas fa-exclamation-triangle"></i>
+                            </div>
+                            <div class="alert-content">
+                                <div class="alert-title">تنبيه</div>
+                                <div class="alert-text">تغيير العناصر قد يؤثر على المبلغ الإجمالي للقرض وجدول الأقساط</div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-tab-content" id="installmentInfo">
+                    <form id="installmentForm">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">تاريخ البدء</label>
+                                <input type="date" class="form-control" id="startDate" value="${installment.startDate}" disabled>
+                                <small style="color: #666;">لا يمكن تغيير تاريخ البدء بعد بدء الدفعات</small>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">مدة القرض (بالأشهر)</label>
+                                <input type="number" class="form-control" id="durationMonths" value="${installment.durationMonths}" min="1" disabled>
+                                <small style="color: #666;">لا يمكن تغيير مدة القرض بعد بدء الدفعات</small>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">معدل الفائدة السنوية (%)</label>
+                                <input type="number" class="form-control" id="interestRate" value="${installment.interestRate}" min="0" step="0.1" disabled>
+                                <small style="color: #666;">لا يمكن تغيير معدل الفائدة بعد بدء الدفعات</small>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">المبلغ الإجمالي للعناصر</label>
+                                <input type="text" class="form-control" id="totalItemsAmount" readonly>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">المبلغ الإجمالي مع الفائدة</label>
+                                <input type="text" class="form-control" id="totalWithInterest" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">قيمة القسط الشهري</label>
+                                <input type="text" class="form-control" id="monthlyInstallment" readonly>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">ملاحظات</label>
+                            <textarea class="form-control" id="installmentNotes" rows="3">${installment.notes || ''}</textarea>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-light" onclick="document.getElementById('editInstallmentModal').remove()">إلغاء</button>
+                <button class="btn btn-primary" onclick="updateInstallment('${installmentId}')">حفظ التعديلات</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // ملء قائمة المستثمرين
+    if (installment.borrowerType === 'investor') {
+        populateInvestorsList();
+        document.getElementById('borrowerId').value = installment.borrowerId;
+    }
+    
+    // تحديث جدول العناصر
+    updateItemsTable();
+    
+    // حساب المجاميع
+    calculateInstallmentTotal();
+}
+
+/**
+ * تحديث القرض بالأقساط
+ */
+function updateInstallment(installmentId) {
+    // البحث عن القرض
+    const installment = installments.find(inst => inst.id === installmentId);
+    
+    if (!installment) {
+        createNotification('خطأ', 'القرض غير موجود', 'danger');
+        return;
+    }
+    
+    // الحصول على البيانات المحدثة
+    let borrowerName = '';
+    let borrowerPhone = '';
+    let borrowerAddress = '';
+    let borrowerIdCard = '';
+    
+    if (installment.borrowerType === 'investor') {
+        // بيانات المستثمر لا تحدث من هنا
+        borrowerName = installment.borrowerName;
+        borrowerPhone = installment.borrowerPhone;
+        borrowerAddress = installment.borrowerAddress;
+        borrowerIdCard = installment.borrowerIdCard;
+    } else {
+        borrowerName = document.getElementById('borrowerName').value;
+        borrowerPhone = document.getElementById('borrowerPhone').value;
+        borrowerAddress = document.getElementById('borrowerAddress').value;
+        borrowerIdCard = document.getElementById('borrowerIdCard').value;
+        
+        if (!borrowerName || !borrowerPhone) {
+            createNotification('خطأ', 'يرجى ملء جميع حقول المقترض الإلزامية', 'danger');
+            switchModalTab('borrowerInfo', 'editInstallmentModal');
+            return;
+        }
+    }
+    
+    const notes = document.getElementById('installmentNotes').value;
+    
+    // تحديث بيانات القرض
+    installment.borrowerName = borrowerName;
+    installment.borrowerPhone = borrowerPhone;
+    installment.borrowerAddress = borrowerAddress;
+    installment.borrowerIdCard = borrowerIdCard;
+    installment.notes = notes;
+    installment.updatedAt = new Date().toISOString();
+    
+    // تحديث العناصر
+    // حذف العناصر القديمة
+    installmentItems = installmentItems.filter(item => item.installmentId !== installmentId);
+    
+    // إضافة العناصر الجديدة
+    tempInstallmentItems.forEach(item => {
+        const newItem = {
+            id: item.id,
+            installmentId,
+            name: item.name,
+            price: item.price,
+            quantity: item.quantity,
+            totalPrice: item.totalPrice,
+            createdAt: new Date().toISOString()
+        };
+        
+        installmentItems.push(newItem);
+    });
+    
+    // حفظ البيانات
+    saveInstallmentData();
     
     // إغلاق النافذة المنبثقة
-    document.getElementById('deleteInstallmentModal').remove();
+    document.getElementById('editInstallmentModal').remove();
+    
+    // إعادة تحميل صفحة الأقساط
+    loadInstallmentsPage();
+    
+    createNotification('نجاح', 'تم تحديث بيانات القرض بنجاح', 'success');
+}
+
+/**
+ * فتح نافذة دفع قسط
+ */
+function openPayInstallmentModal(paymentId) {
+    // إغلاق أي نوافذ منبثقة مفتوحة
+    const viewModal = document.getElementById('viewInstallmentModal');
+    if (viewModal) {
+        viewModal.remove();
+    }
+    
+    // البحث عن القسط
+    const payment = installmentPayments.find(p => p.id === paymentId);
+    
+    if (!payment) {
+        createNotification('خطأ', 'القسط غير موجود', 'danger');
+        return;
+    }
+    
+    // البحث عن القرض
+    const installment = installments.find(inst => inst.id === payment.installmentId);
+    
+    if (!installment) {
+        createNotification('خطأ', 'القرض غير موجود', 'danger');
+        return;
+    }
+    
+    // التحقق من حالة القسط
+    if (payment.status === 'paid') {
+        createNotification('خطأ', 'هذا القسط مدفوع بالفعل', 'danger');
+        return;
+    }
+    
+    // حساب غرامة التأخير إذا كان القسط متأخراً
+    let lateFee = 0;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const dueDate = new Date(payment.dueDate);
+    dueDate.setHours(0, 0, 0, 0);
+    
+    if (dueDate < today) {
+        const daysLate = Math.floor((today - dueDate) / (1000 * 60 * 60 * 24));
+        lateFee = payment.amount * (installmentSettings.lateFeePercentage / 100) * daysLate;
+    }
+    
+    const totalAmount = payment.amount + lateFee;
+    
+    // إنشاء النافذة المنبثقة
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay active';
+    modal.id = 'payInstallmentModal';
+    
+    modal.innerHTML = `
+        <div class="modal" style="max-width: 600px;">
+            <div class="modal-header">
+                <h2 class="modal-title">دفع قسط</h2>
+                <div class="modal-close" onclick="document.getElementById('payInstallmentModal').remove()">
+                    <i class="fas fa-times"></i>
+                </div>
+            </div>
+            <div class="modal-body">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">المقترض</label>
+                        <input type="text" class="form-control" value="${getBorrowerName(installment)}" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">رقم القسط</label>
+                        <input type="text" class="form-control" value="${payment.number} / ${installment.durationMonths}" readonly>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">تاريخ الاستحقاق</label>
+                        <input type="text" class="form-control" value="${formatDate(payment.dueDate)}" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">مبلغ القسط الأصلي</label>
+                        <input type="text" class="form-control" value="${formatCurrency(payment.amount)}" readonly>
+                    </div>
+                </div>
+                ${lateFee > 0 ? `
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">غرامة التأخير</label>
+                            <input type="text" class="form-control" value="${formatCurrency(lateFee)}" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">إجمالي المبلغ المستحق</label>
+                            <input type="text" class="form-control" value="${formatCurrency(totalAmount)}" readonly>
+                        </div>
+                    </div>
+                ` : ''}
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">تاريخ الدفع</label>
+                        <input type="date" class="form-control" id="paymentDate" value="${new Date().toISOString().split('T')[0]}" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">المبلغ المدفوع</label>
+                        <input type="number" class="form-control" id="paymentAmount" value="${totalAmount}" min="0" step="0.01" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">طريقة الدفع</label>
+                    <select class="form-select" id="paymentMethod">
+                        <option value="cash">نقداً</option>
+                        <option value="check">شيك</option>
+                        <option value="transfer">حوالة مصرفية</option>
+                        <option value="other">أخرى</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">ملاحظات</label>
+                    <textarea class="form-control" id="paymentNotes" rows="3"></textarea>
+                </div>
+                ${installmentSettings.allowPartialPayments ? `
+                    <div class="alert alert-info">
+                        <div class="alert-icon">
+                            <i class="fas fa-info-circle"></i>
+                        </div>
+                        <div class="alert-content">
+                            <div class="alert-title">الدفع الجزئي مسموح</div>
+                            <div class="alert-text">يمكنك دفع جزء من المبلغ المستحق إذا لزم الأمر</div>
+                        </div>
+                    </div>
+                ` : ''}
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-light" onclick="document.getElementById('payInstallmentModal').remove()">إلغاء</button>
+                <button class="btn btn-primary" onclick="confirmPayInstallment('${paymentId}')">تأكيد الدفع</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+}
+
+/**
+ * تأكيد دفع القسط
+ */
+function confirmPayInstallment(paymentId) {
+    // البحث عن القسط
+    const payment = installmentPayments.find(p => p.id === paymentId);
+    
+    if (!payment) {
+        createNotification('خطأ', 'القسط غير موجود', 'danger');
+        return;
+    }
+    
+    // الحصول على البيانات
+    const paymentDate = document.getElementById('paymentDate').value;
+    const paymentAmount = parseFloat(document.getElementById('paymentAmount').value);
+    const paymentMethod = document.getElementById('paymentMethod').value;
+    const paymentNotes = document.getElementById('paymentNotes').value;
+    
+    // التحقق من صحة البيانات
+    if (!paymentDate || isNaN(paymentAmount) || paymentAmount <= 0) {
+        createNotification('خطأ', 'يرجى ملء جميع الحقول الإلزامية', 'danger');
+        return;
+    }
+    
+    // حساب المبلغ المستحق مع الغرامة
+    let lateFee = 0;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const dueDate = new Date(payment.dueDate);
+    dueDate.setHours(0, 0, 0, 0);
+    
+    if (dueDate < today) {
+        const daysLate = Math.floor((today - dueDate) / (1000 * 60 * 60 * 24));
+        lateFee = payment.amount * (installmentSettings.lateFeePercentage / 100) * daysLate;
+    }
+    
+    const totalAmountDue = payment.amount + lateFee;
+    
+    // التحقق من الدفع الجزئي
+    if (!installmentSettings.allowPartialPayments && paymentAmount < totalAmountDue) {
+        createNotification('خطأ', 'الدفع الجزئي غير مسموح', 'danger');
+        return;
+    }
+    
+    // تحديث بيانات القسط
+    if (paymentAmount >= totalAmountDue) {
+        payment.status = 'paid';
+        payment.paymentDate = paymentDate;
+        payment.amount = paymentAmount; // في حالة دفع أكثر من المستحق
+    } else {
+        // دفع جزئي
+        payment.status = 'partial';
+        payment.amount = payment.amount - paymentAmount;
+        payment.paymentDate = null;
+        
+        // إنشاء دفعة جديدة للمبلغ المدفوع
+        const partialPayment = {
+            id: generateInstallmentId(),
+            installmentId: payment.installmentId,
+            number: payment.number,
+            dueDate: payment.dueDate,
+            amount: paymentAmount,
+            status: 'paid',
+            paymentDate: paymentDate,
+            notes: `دفعة جزئية: ${paymentNotes || 'بدون ملاحظات'}`,
+            paymentMethod,
+            isPartial: true
+        };
+        
+        installmentPayments.push(partialPayment);
+    }
+    
+    payment.notes = paymentNotes || '';
+    payment.paymentMethod = paymentMethod;
+    
+    // التحقق مما إذا تم دفع جميع الأقساط لهذا القرض
+    const installment = installments.find(inst => inst.id === payment.installmentId);
+    const remainingPayments = installmentPayments.filter(p => 
+        p.installmentId === installment.id && 
+        p.status !== 'paid' &&
+        !p.isPartial
+    );
+    
+    if (remainingPayments.length === 0) {
+        installment.status = 'completed';
+        
+        createNotification(
+            'قرض مكتمل',
+            `تم استكمال دفع جميع أقساط القرض للمقترض ${getBorrowerName(installment)}`,
+            'success',
+            installment.id,
+            'installment'
+        );
+    }
+    
+    // حفظ البيانات
+    saveInstallmentData();
+    
+    // إغلاق النافذة المنبثقة
+    document.getElementById('payInstallmentModal').remove();
+    
+    // إعادة تحميل صفحة الأقساط
+    loadInstallmentsPage();
+    
+    createNotification('نجاح', 'تم تسجيل دفع القسط بنجاح', 'success');
+}
+
+/**
+ * إلغاء دفع القسط
+ */
+function cancelInstallmentPayment(paymentId) {
+    if (!confirm('هل أنت متأكد من إلغاء دفع هذا القسط؟')) {
+        return;
+    }
+    
+    // البحث عن القسط
+    const payment = installmentPayments.find(p => p.id === paymentId);
+    
+    if (!payment) {
+        createNotification('خطأ', 'القسط غير موجود', 'danger');
+        return;
+    }
+    
+    // التحقق من حالة القسط
+    if (payment.status !== 'paid') {
+        createNotification('خطأ', 'لا يمكن إلغاء دفع قسط غير مدفوع', 'danger');
+        return;
+    }
+    
+    // إرجاع القسط إلى حالة معلق أو متأخر
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const dueDate = new Date(payment.dueDate);
+    dueDate.setHours(0, 0, 0, 0);
+    
+    payment.status = dueDate < today ? 'late' : 'pending';
+    payment.paymentDate = null;
+    payment.paymentMethod = null;
+    payment.notes = '';
+    
+    // تحديث حالة القرض إذا كان مكتملاً
+    const installment = installments.find(inst => inst.id === payment.installmentId);
+    if (installment.status === 'completed') {
+        installment.status = 'active';
+    }
+    
+    // حفظ البيانات
+    saveInstallmentData();
+    
+    createNotification('نجاح', 'تم إلغاء دفع القسط بنجاح', 'success');
     
     // إعادة تحميل صفحة الأقساط
     loadInstallmentsPage();
 }
 
 /**
- * إضافة رابط في شريط التنقل الجانبي
+ * عرض تفاصيل دفعة قسط
  */
-function addInstallmentsMenuLink() {
-    // التحقق من وجود شريط التنقل الجانبي
-    const sidebar = document.querySelector('.sidebar-menu');
-    if (!sidebar) return;
+function viewInstallmentPayment(paymentId) {
+    // البحث عن القسط
+    const payment = installmentPayments.find(p => p.id === paymentId);
     
-    // التحقق من وجود قسم "إدارة الاستثمار"
-    let investmentManagementCategory = sidebar.querySelector('.menu-category:nth-of-type(2)');
-    
-    if (!investmentManagementCategory) {
-        // إنشاء القسم إذا لم يكن موجودًا
-        investmentManagementCategory = document.createElement('div');
-        investmentManagementCategory.className = 'menu-category';
-        investmentManagementCategory.textContent = 'إدارة الاستثمار';
-        
-        // إضافة القسم بعد قسم "لوحة التحكم"
-        const dashboardCategory = sidebar.querySelector('.menu-category:first-of-type');
-        if (dashboardCategory) {
-            dashboardCategory.after(investmentManagementCategory);
-        } else {
-            // إضافة القسم في بداية شريط التنقل إذا لم يكن هناك قسم "لوحة التحكم"
-            sidebar.prepend(investmentManagementCategory);
-        }
-    }
-    
-    // إنشاء رابط الأقساط
-    const installmentsLink = document.createElement('a');
-    installmentsLink.href = '#installments';
-    installmentsLink.className = 'menu-item';
-    installmentsLink.onclick = function() { showPage('installments'); };
-    installmentsLink.innerHTML = `
-        <span class="menu-icon"><i class="fas fa-receipt"></i></span>
-        <span>نظام الأقساط</span>
-        <span class="menu-badge" id="installmentsBadge">0</span>
-    `;
-    
-    // إضافة الرابط بعد رابط "العمليات"
-    const operationsLink = sidebar.querySelector('a[href="#operations"]');
-    if (operationsLink) {
-        operationsLink.after(installmentsLink);
-    } else {
-        // إضافة الرابط بعد قسم "إدارة الاستثمار" إذا لم يكن هناك رابط "العمليات"
-        investmentManagementCategory.after(installmentsLink);
-    }
-    
-    // تحديث عدد الأقساط المتأخرة
-    updateInstallmentsBadge();
-}
-
-/**
- * تحديث شارة الأقساط
- */
-function updateInstallmentsBadge() {
-    const latePayments = getLateInstallmentPayments().length;
-    const badge = document.getElementById('installmentsBadge');
-    
-    if (badge) {
-        badge.textContent = latePayments;
-        badge.style.display = latePayments > 0 ? 'inline-flex' : 'none';
-    }
-}
-
-/**
- * إنشاء صفحة الأقساط
- */
-function createInstallmentsPage() {
-    // التحقق من وجود منطقة المحتوى
-    const content = document.querySelector('.content');
-    if (!content) return;
-    
-    // إنشاء صفحة الأقساط
-    const installmentsPage = document.createElement('div');
-    installmentsPage.id = 'installments';
-    installmentsPage.className = 'page';
-    installmentsPage.innerHTML = `
-        <div class="header">
-            <h1 class="page-title">نظام الأقساط</h1>
-            <div class="header-actions">
-                <div class="search-bar">
-                    <input type="text" class="search-input" id="installmentSearchInput" placeholder="بحث..." oninput="searchInstallments()">
-                    <i class="fas fa-search search-icon"></i>
-                </div>
-                <button class="btn btn-primary" onclick="openAddInstallmentModal()">
-                    <i class="fas fa-plus"></i> إضافة قرض جديد
-                </button>
-                <div class="notification-btn" onclick="toggleNotificationPanel()">
-                    <i class="fas fa-bell"></i>
-                    <span class="notification-badge">0</span>
-                </div>
-                <div class="menu-toggle" onclick="toggleSidebar()">
-                    <i class="fas fa-bars"></i>
-                </div>
-            </div>
-        </div>
-
-        <div class="dashboard-cards">
-            <div class="card">
-                <div class="card-header">
-                    <div>
-                        <div class="card-title">القروض النشطة</div>
-                        <div class="card-value" id="totalActiveInstallments">0</div>
-                    </div>
-                    <div class="card-icon primary">
-                        <i class="fas fa-receipt"></i>
-                    </div>
-                </div>
-            </div>
-            <div class="card">
-                <div class="card-header">
-                    <div>
-                        <div class="card-title">القروض المكتملة</div>
-                        <div class="card-value" id="totalCompletedInstallments">0</div>
-                    </div>
-                    <div class="card-icon success">
-                        <i class="fas fa-check-circle"></i>
-                    </div>
-                </div>
-            </div>
-            <div class="card">
-                <div class="card-header">
-                    <div>
-                        <div class="card-title">إجمالي المبالغ</div>
-                        <div class="card-value" id="totalInstallmentAmount">0 د.ع</div>
-                    </div>
-                    <div class="card-icon warning">
-                        <i class="fas fa-money-bill-wave"></i>
-                    </div>
-                </div>
-            </div>
-            <div class="card">
-                <div class="card-header">
-                    <div>
-                        <div class="card-title">المبالغ المدفوعة</div>
-                        <div class="card-value" id="totalPaidInstallments">0 د.ع</div>
-                    </div>
-                    <div class="card-icon info">
-                        <i class="fas fa-coins"></i>
-                    </div>
-                </div>
-            </div>
-            <div class="card">
-                <div class="card-header">
-                    <div>
-                        <div class="card-title">المبالغ المتبقية</div>
-                        <div class="card-value" id="totalRemainingInstallments">0 د.ع</div>
-                    </div>
-                    <div class="card-icon danger">
-                        <i class="fas fa-hand-holding-usd"></i>
-                    </div>
-                </div>
-            </div>
-            <div class="card">
-                <div class="card-header">
-                    <div>
-                        <div class="card-title">الأقساط المتأخرة</div>
-                        <div class="card-value" id="totalLatePayments">0</div>
-                    </div>
-                    <div class="card-icon danger">
-                        <i class="fas fa-exclamation-triangle"></i>
-                    </div>
-                </div>
-            </div>
-            <div class="card">
-                <div class="card-header">
-                    <div>
-                        <div class="card-title">الأقساط المستحقة</div>
-                        <div class="card-value" id="totalPendingPayments">0</div>
-                    </div>
-                    <div class="card-icon warning">
-                        <i class="fas fa-clock"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="tabs">
-            <div class="tab active" onclick="switchInstallmentsTab('all')">جميع القروض</div>
-            <div class="tab" onclick="switchInstallmentsTab('active')">القروض النشطة</div>
-            <div class="tab" onclick="switchInstallmentsTab('completed')">القروض المكتملة</div>
-            <div class="tab" onclick="switchInstallmentsTab('defaulted')">القروض المتعثرة</div>
-            <div class="tab" onclick="switchInstallmentsTab('upcoming')">الأقساط المستحقة قريباً</div>
-            <div class="tab" onclick="switchInstallmentsTab('late')">الأقساط المتأخرة</div>
-            <div class="tab" onclick="switchInstallmentsTab('statistics')">الإحصائيات</div>
-        </div>
-
-        <div class="table-container">
-            <div class="table-header">
-                <div class="table-title">قائمة القروض بالأقساط</div>
-                <div class="table-actions">
-                    <button class="btn btn-light" onclick="exportInstallments()">
-                        <i class="fas fa-file-export"></i> تصدير
-                    </button>
-                    <button class="btn btn-light" onclick="printTable('installmentsTable')">
-                        <i class="fas fa-print"></i> طباعة
-                    </button>
-                </div>
-            </div>
-            <table class="table" id="installmentsTable">
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>المقترض</th>
-                        <th>النوع</th>
-                        <th>المبلغ الإجمالي</th>
-                        <th>المبلغ المدفوع</th>
-                        <th>المبلغ المتبقي</th>
-                        <th>الأقساط المتبقية</th>
-                        <th>الحالة</th>
-                        <th>إجراءات</th>
-                    </tr>
-                </thead>
-                <tbody id="installmentsTableBody">
-                    <!-- سيتم ملؤها بواسطة JavaScript -->
-                </tbody>
-            </table>
-        </div>
-
-        <div class="grid-layout">
-            <div class="table-container" id="upcomingPaymentsContainer">
-                <div class="table-header">
-                    <div class="table-title">الأقساط المستحقة قريباً</div>
-                </div>
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>المقترض</th>
-                            <th>رقم القسط</th>
-                            <th>تاريخ الاستحقاق</th>
-                            <th>المبلغ</th>
-                            <th>النوع</th>
-                            <th>إجراءات</th>
-                        </tr>
-                    </thead>
-                    <tbody id="upcomingPaymentsTableBody">
-                        <!-- سيتم ملؤها بواسطة JavaScript -->
-                    </tbody>
-                </table>
-            </div>
-
-            <div class="table-container" id="latePaymentsContainer">
-                <div class="table-header">
-                    <div class="table-title">الأقساط المتأخرة</div>
-                </div>
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>المقترض</th>
-                            <th>رقم القسط</th>
-                            <th>تاريخ الاستحقاق</th>
-                            <th>التأخير</th>
-                            <th>المبلغ</th>
-                            <th>النوع</th>
-                            <th>إجراءات</th>
-                        </tr>
-                    </thead>
-                    <tbody id="latePaymentsTableBody">
-                        <!-- سيتم ملؤها بواسطة JavaScript -->
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <div class="chart-container" id="installmentsChartContainer">
-            <div class="chart-header">
-                <div class="chart-title">تحليل الأقساط</div>
-                <div class="chart-actions">
-                    <button class="btn btn-sm btn-light" onclick="switchInstallmentsChartPeriod('monthly')">شهري</button>
-                    <button class="btn btn-sm btn-primary" onclick="switchInstallmentsChartPeriod('quarterly')">ربع سنوي</button>
-                    <button class="btn btn-sm btn-light" onclick="switchInstallmentsChartPeriod('yearly')">سنوي</button>
-                    <button class="btn btn-sm btn-light" onclick="exportInstallmentsChart()"><i class="fas fa-download"></i> تصدير</button>
-                </div>
-            </div>
-            <div id="installmentsChart" style="height: 300px; width: 100%;">
-                <!-- سيتم رسم المخطط البياني هنا -->
-            </div>
-        </div>
-    `;
-    
-    // إضافة الصفحة إلى منطقة المحتوى
-    content.appendChild(installmentsPage);
-}
-
-/**
- * تبديل علامة تبويب الأقساط
- */
-function switchInstallmentsTab(tabId) {
-    // تحديث علامات التبويب
-    document.querySelectorAll('#installments .tab').forEach(tab => {
-        tab.classList.remove('active');
-    });
-    
-    document.querySelector(`#installments .tab[onclick="switchInstallmentsTab('${tabId}')"]`).classList.add('active');
-    
-    // إخفاء/إظهار العناصر حسب علامة التبويب
-    const installmentsTable = document.querySelector('#installments .table-container:nth-of-type(3)');
-    const upcomingPaymentsContainer = document.getElementById('upcomingPaymentsContainer');
-    const latePaymentsContainer = document.getElementById('latePaymentsContainer');
-    const installmentsChartContainer = document.getElementById('installmentsChartContainer');
-    
-    // إخفاء جميع العناصر أولاً
-    installmentsTable.style.display = 'none';
-    upcomingPaymentsContainer.style.display = 'none';
-    latePaymentsContainer.style.display = 'none';
-    installmentsChartContainer.style.display = 'none';
-    
-    // إظهار العناصر حسب علامة التبويب
-    switch (tabId) {
-        case 'all':
-        case 'active':
-        case 'completed':
-        case 'defaulted':
-            // تحديث عنوان الجدول
-            const tableTitle = installmentsTable.querySelector('.table-title');
-            tableTitle.textContent = `قائمة القروض ${
-                tabId === 'active' ? 'النشطة' : 
-                tabId === 'completed' ? 'المكتملة' : 
-                tabId === 'defaulted' ? 'المتعثرة' : ''
-            }`;
-            
-            // تحميل جدول الأقساط
-            loadInstallmentsTable(tabId);
-            
-            // إظهار جدول الأقساط
-            installmentsTable.style.display = 'block';
-            break;
-            
-        case 'upcoming':
-            // تحميل الأقساط المستحقة قريباً
-            loadUpcomingPayments();
-            
-            // إظهار جدول الأقساط المستحقة قريباً
-            upcomingPaymentsContainer.style.display = 'block';
-            break;
-            
-        case 'late':
-            // تحميل الأقساط المتأخرة
-            loadLatePayments();
-            
-            // إظهار جدول الأقساط المتأخرة
-            latePaymentsContainer.style.display = 'block';
-            break;
-            
-        case 'statistics':
-            // تحميل الرسم البياني
-            loadInstallmentsChart();
-            
-            // إظهار الرسم البياني
-            installmentsChartContainer.style.display = 'block';
-            break;
-    }
-}
-
-/**
- * تبديل فترة الرسم البياني للأقساط
- */
-function switchInstallmentsChartPeriod(period) {
-    // تحديث حالة الأزرار
-    document.querySelectorAll('#installmentsChartContainer .chart-actions button').forEach(btn => {
-        btn.className = 'btn btn-sm btn-light';
-    });
-    
-    document.querySelector(`#installmentsChartContainer .chart-actions button[onclick="switchInstallmentsChartPeriod('${period}')"]`).className = 'btn btn-sm btn-primary';
-    
-    // تحميل الرسم البياني
-    loadInstallmentsChart(period);
-}
-
-/**
- * البحث في الأقساط
- */
-function searchInstallments() {
-    const searchTerm = document.getElementById('installmentSearchInput').value.toLowerCase();
-    const tbody = document.getElementById('installmentsTableBody');
-    
-    if (!tbody) return;
-    
-    // إذا كان مصطلح البحث فارغًا، إعادة تحميل الجدول
-    if (!searchTerm) {
-        const activeTab = document.querySelector('#installments .tab.active');
-        const tabId = activeTab.getAttribute('onclick').match(/'([^']+)'/)[1];
-        
-        if (['all', 'active', 'completed', 'defaulted'].includes(tabId)) {
-            loadInstallmentsTable(tabId);
-        }
-        
+    if (!payment) {
+        createNotification('خطأ', 'القسط غير موجود', 'danger');
         return;
     }
     
-    // الحصول على جميع صفوف الجدول
-    const rows = tbody.querySelectorAll('tr');
+    // البحث عن القرض
+    const installment = installments.find(inst => inst.id === payment.installmentId);
     
-    // تصفية الصفوف
-    rows.forEach(row => {
-        const borrower = row.querySelector('td:nth-child(2)').textContent.toLowerCase();
-        const type = row.querySelector('td:nth-child(3)').textContent.toLowerCase();
-        const totalAmount = row.querySelector('td:nth-child(4)').textContent.toLowerCase();
-        const status = row.querySelector('td:nth-child(8)').textContent.toLowerCase();
-        
-        // إظهار الصف إذا كان أي حقل يطابق مصطلح البحث
-        if (borrower.includes(searchTerm) || 
-            type.includes(searchTerm) || 
-            totalAmount.includes(searchTerm) || 
-            status.includes(searchTerm)) {
-            row.style.display = '';
-        } else {
-            row.style.display = 'none';
-        }
+    if (!installment) {
+        createNotification('خطأ', 'القرض غير موجود', 'danger');
+        return;
+    }
+    
+    // إنشاء النافذة المنبثقة
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay active';
+    modal.id = 'viewPaymentModal';
+    
+    modal.innerHTML = `
+        <div class="modal" style="max-width: 500px;">
+            <div class="modal-header">
+                <h2 class="modal-title">تفاصيل القسط</h2>
+                <div class="modal-close" onclick="document.getElementById('viewPaymentModal').remove()">
+                    <i class="fas fa-times"></i>
+                </div>
+            </div>
+            <div class="modal-body">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">المقترض</label>
+                        <input type="text" class="form-control" value="${getBorrowerName(installment)}" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">رقم القسط</label>
+                        <input type="text" class="form-control" value="${payment.number} / ${installment.durationMonths}" readonly>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">تاريخ الاستحقاق</label>
+                        <input type="text" class="form-control" value="${formatDate(payment.dueDate)}" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">المبلغ</label>
+                        <input type="text" class="form-control" value="${formatCurrency(payment.amount)}" readonly>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">الحالة</label>
+                        <input type="text" class="form-control" value="${
+                            payment.status === 'paid' ? 'مدفوع' : 
+                            payment.status === 'late' ? 'متأخر' : 
+                            payment.status === 'partial' ? 'دفع جزئي' : 'معلق'
+                        }" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">تاريخ الدفع</label>
+                        <input type="text" class="form-control" value="${payment.paymentDate ? formatDate(payment.paymentDate) : '-'}" readonly>
+                    </div>
+                </div>
+                ${payment.paymentMethod ? `
+                    <div class="form-group">
+                        <label class="form-label">طريقة الدفع</label>
+                        <input type="text" class="form-control" value="${
+                            payment.paymentMethod === 'cash' ? 'نقداً' :
+                            payment.paymentMethod === 'check' ? 'شيك' :
+                            payment.paymentMethod === 'transfer' ? 'حوالة مصرفية' : 'أخرى'
+                        }" readonly>
+                    </div>
+                ` : ''}
+                <div class="form-group">
+                    <label class="form-label">ملاحظات</label>
+                    <textarea class="form-control" rows="3" readonly>${payment.notes || 'لا توجد ملاحظات'}</textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-light" onclick="document.getElementById('viewPaymentModal').remove()">إغلاق</button>
+                ${payment.status !== 'paid' ? `
+                    <button class="btn btn-success" onclick="document.getElementById('viewPaymentModal').remove(); openPayInstallmentModal('${paymentId}')">
+                        <i class="fas fa-money-bill"></i> دفع
+                    </button>
+                ` : ''}
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+}
+
+/**
+ * تبديل علامة تبويب النافذة المنبثقة
+ */
+function switchModalTab(tabId, modalId) {
+    const modal = document.getElementById(modalId);
+    
+    if (!modal) return;
+    
+    // تحديث علامات التبويب
+    modal.querySelectorAll('.modal-tab').forEach(tab => {
+        tab.classList.remove('active');
     });
+    
+    modal.querySelector(`[onclick="switchModalTab('${tabId}', '${modalId}')"]`).classList.add('active');
+    
+    // تحديث محتوى علامات التبويب
+    modal.querySelectorAll('.modal-tab-content').forEach(content => {
+        content.classList.remove('active');
+    });
+    
+    modal.querySelector(`#${tabId}`).classList.add('active');
 }
 
 /**
  * تصدير بيانات الأقساط
  */
 function exportInstallments() {
-    if (installments.length === 0) {
-        createNotification('تنبيه', 'لا توجد أقساط للتصدير', 'warning');
+    try {
+        // إنشاء عناصر الشيت
+        const sheet = [
+            // العناوين
+            ['معلومات القروض بالأقساط'],
+            ['تاريخ التصدير', formatDate(new Date().toISOString())],
+            [],
+            ['#', 'المقترض', 'النوع', 'المبلغ الإجمالي', 'المبلغ المدفوع', 'المبلغ المتبقي', 'الأقساط المتبقية', 'تاريخ البدء', 'معدل الفائدة', 'الحالة', 'ملاحظات']
+        ];
+        
+        // البيانات
+        installments.forEach((installment, index) => {
+            const totalPaid = getTotalPayments(installment.id);
+            const remaining = installment.totalAmount - totalPaid;
+            const remainingInstallments = getRemainingInstallments(installment.id);
+            
+            sheet.push([
+                index + 1,
+                getBorrowerName(installment),
+                getBorrowerTypeName(installment.borrowerType),
+                installment.totalAmount,
+                totalPaid,
+                remaining,
+                `${remainingInstallments} / ${installment.durationMonths}`,
+                formatDate(installment.startDate),
+                `${installment.interestRate}%`,
+                installment.status === 'active' ? 'نشط' : installment.status === 'completed' ? 'مكتمل' : 'متعثر',
+                installment.notes || ''
+            ]);
+        });
+        
+        // إنشاء ملف Excel
+        const worksheet = XLSX.utils.aoa_to_sheet(sheet);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'القروض بالأقساط');
+        
+        // إضافة شيت العناصر
+        const itemsSheet = [
+            ['عناصر القروض'],
+            [],
+            ['#', 'رقم القرض', 'المقترض', 'نوع المادة', 'السعر', 'الكمية', 'السعر الإجمالي']
+        ];
+        
+        installmentItems.forEach((item, index) => {
+            const installment = installments.find(inst => inst.id === item.installmentId);
+            
+            itemsSheet.push([
+                index + 1,
+                item.installmentId,
+                installment ? getBorrowerName(installment) : 'غير معروف',
+                item.name,
+                item.price,
+                item.quantity,
+                item.totalPrice
+            ]);
+        });
+        
+        const itemsWorksheet = XLSX.utils.aoa_to_sheet(itemsSheet);
+        XLSX.utils.book_append_sheet(workbook, itemsWorksheet, 'العناصر');
+        
+        // إضافة شيت جدول الأقساط
+        const paymentsSheet = [
+            ['جدول الأقساط'],
+            [],
+            ['#', 'رقم القرض', 'المقترض', 'رقم القسط', 'تاريخ الاستحقاق', 'المبلغ', 'الحالة', 'تاريخ الدفع', 'طريقة الدفع', 'ملاحظات']
+        ];
+        
+        installmentPayments.forEach((payment, index) => {
+            const installment = installments.find(inst => inst.id === payment.installmentId);
+            
+            paymentsSheet.push([
+                index + 1,
+                payment.installmentId,
+                installment ? getBorrowerName(installment) : 'غير معروف',
+                payment.number,
+                formatDate(payment.dueDate),
+                payment.amount,
+                payment.status === 'paid' ? 'مدفوع' : payment.status === 'late' ? 'متأخر' : payment.status === 'partial' ? 'دفع جزئي' : 'معلق',
+                payment.paymentDate ? formatDate(payment.paymentDate) : '',
+                payment.paymentMethod === 'cash' ? 'نقداً' : payment.paymentMethod === 'check' ? 'شيك' : payment.paymentMethod === 'transfer' ? 'حوالة مصرفية' : payment.paymentMethod || '',
+                payment.notes || ''
+            ]);
+        });
+        
+        const paymentsWorksheet = XLSX.utils.aoa_to_sheet(paymentsSheet);
+        XLSX.utils.book_append_sheet(workbook, paymentsWorksheet, 'جدول الأقساط');
+        
+        // تصدير الملف
+        XLSX.writeFile(workbook, `installments_${new Date().toISOString().slice(0, 10)}.xlsx`);
+        
+        createNotification('نجاح', 'تم تصدير بيانات الأقساط بنجاح', 'success');
+    } catch (error) {
+        console.error('خطأ في تصدير بيانات الأقساط:', error);
+        createNotification('خطأ', 'حدث خطأ أثناء تصدير البيانات', 'danger');
+    }
+}
+
+/**
+ * طباعة جدول الأقساط
+ */
+function printTable(tableId) {
+    const table = document.getElementById(tableId);
+    
+    if (!table) {
+        createNotification('خطأ', 'الجدول غير موجود', 'danger');
         return;
     }
     
-    // إنشاء كائن التصدير
-    const exportData = {
-        installments,
-        installmentItems,
-        installmentPayments,
-        exportDate: new Date().toISOString(),
-        systemInfo: {
-            version: '1.0',
-            currency: settings.currency
-        }
-    };
+    // نسخ الجدول
+    const clonedTable = table.cloneNode(true);
     
-    // تحويل البيانات إلى JSON
-    const jsonData = JSON.stringify(exportData, null, 2);
+    // إزالة أعمدة الإجراءات
+    const actionColumns = clonedTable.querySelectorAll('td:last-child, th:last-child');
+    actionColumns.forEach(column => column.remove());
     
-    // إنشاء ملف للتنزيل
-    const blob = new Blob([jsonData], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
+    // إنشاء نافذة الطباعة
+    const printWindow = window.open('', '_blank');
     
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `installments_export_${new Date().toISOString().slice(0, 10)}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    printWindow.document.write(`
+        <html dir="rtl">
+        <head>
+            <title>طباعة جدول الأقساط</title>
+            <style>
+                body {
+                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                    direction: rtl;
+                }
+                
+                table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    margin: 20px 0;
+                }
+                
+                th, td {
+                    border: 1px solid #ddd;
+                    padding: 8px;
+                    text-align: right;
+                }
+                
+                th {
+                    background-color: #f2f2f2;
+                    font-weight: bold;
+                }
+                
+                .status {
+                    display: inline-block;
+                    padding: 3px 8px;
+                    border-radius: 3px;
+                    font-size: 12px;
+                    font-weight: bold;
+                }
+                
+                .status.active {
+                    background-color: #e3f2fd;
+                    color: #1976d2;
+                }
+                
+                .status.success {
+                    background-color: #d4edda;
+                    color: #155724;
+                }
+                
+                .status.danger {
+                    background-color: #f8d7da;
+                    color: #721c24;
+                }
+                
+                .status.pending {
+                    background-color: #fff3cd;
+                    color: #856404;
+                }
+                
+                @media print {
+                    button {
+                        display: none;
+                    }
+                }
+            </style>
+        </head>
+        <body>
+            <h1>جدول القروض بالأقساط</h1>
+            <p>تاريخ الطباعة: ${formatDate(new Date().toISOString())}</p>
+            ${clonedTable.outerHTML}
+            <button onclick="window.print();" style="margin-top: 20px; padding: 10px 20px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                طباعة
+            </button>
+        </body>
+        </html>
+    `);
     
-    createNotification('نجاح', 'تم تصدير بيانات الأقساط بنجاح', 'success');
+    printWindow.document.close();
+    printWindow.focus();
 }
 
 /**
  * تصدير الرسم البياني للأقساط
  */
 function exportInstallmentsChart() {
-    // الحصول على عنصر الرسم البياني
     const chartContainer = document.getElementById('installmentsChart');
-    if (!chartContainer) return;
     
-    // الحصول على عنصر canvas
-    const canvas = chartContainer.querySelector('canvas');
-    if (!canvas) {
-        createNotification('خطأ', 'لا يمكن تصدير الرسم البياني', 'danger');
+    if (!chartContainer) {
+        createNotification('خطأ', 'الرسم البياني غير موجود', 'danger');
         return;
     }
     
-    // تحويل canvas إلى URL
-    try {
-        const imageUrl = canvas.toDataURL('image/png');
-        
-        // إنشاء رابط التنزيل
-        const a = document.createElement('a');
-        a.href = imageUrl;
-        a.download = `installments_chart_${new Date().toISOString().slice(0, 10)}.png`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        
-        createNotification('نجاح', 'تم تصدير الرسم البياني بنجاح', 'success');
-    } catch (error) {
-        console.error('Error exporting chart:', error);
-        createNotification('خطأ', 'حدث خطأ أثناء تصدير الرسم البياني', 'danger');
+    const canvas = chartContainer.querySelector('canvas');
+    
+    if (!canvas) {
+        createNotification('خطأ', 'لا يوجد رسم بياني لتصديره', 'danger');
+        return;
     }
+    
+    // تحويل الرسم البياني إلى صورة
+    const imageURL = canvas.toDataURL('image/png');
+    
+    // إنشاء عنصر لتنزيل الصورة
+    const a = document.createElement('a');
+    a.href = imageURL;
+    a.download = `installments_chart_${new Date().toISOString().slice(0, 10)}.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    
+    createNotification('نجاح', 'تم تصدير الرسم البياني بنجاح', 'success');
 }
 
 /**
- * تهيئة نظام الأقساط
+ * تنسيق الأرقام
  */
-function initInstallmentSystem() {
-    // تحميل بيانات الأقساط
-    loadInstallmentData();
-    
-    // إضافة رابط في شريط التنقل الجانبي
-    addInstallmentsMenuLink();
-    
-    // إنشاء صفحة الأقساط
-    createInstallmentsPage();
-    
-    // التحقق من تواريخ الاستحقاق وتحديث الحالات
-    checkDueDates();
-    
-    // تحديث شارة الأقساط
-    updateInstallmentsBadge();
-    
-    // إضافة مستمع حدث لتحديث الأقساط يوميًا
-    // سيتم استدعاء checkDueDates() مرة واحدة يوميًا عند منتصف الليل
-    const now = new Date();
-    const night = new Date(
-        now.getFullYear(),
-        now.getMonth(),
-        now.getDate() + 1, // غدًا
-        0, 0, 0 // منتصف الليل
-    );
-    const msToMidnight = night.getTime() - now.getTime();
-    
-    // ضبط المؤقت للتشغيل عند منتصف الليل، ثم كل 24 ساعة بعد ذلك
-    setTimeout(() => {
-        checkDueDates();
-        // ضبط المؤقت للتشغيل كل 24 ساعة
-        setInterval(checkDueDates, 24 * 60 * 60 * 1000);
-    }, msToMidnight);
-    
-    console.log('تم تهيئة نظام الأقساط بنجاح');
-}
-
-// التسجيل للحصول على إشعارات الأقساط قبل موعد استحقاقها
-function registerInstallmentNotifications() {
-    // تشغيل وظيفة للتحقق من الأقساط المستحقة قريبًا
-    function checkUpcomingInstallments() {
-        const upcomingPayments = getUpcomingInstallmentPayments(3); // أقساط مستحقة خلال 3 أيام
-        
-        upcomingPayments.forEach(payment => {
-            const installment = installments.find(inst => inst.id === payment.installmentId);
-            if (!installment) return;
-            
-            const borrowerName = getBorrowerName(installment);
-            const daysUntilDue = Math.ceil((new Date(payment.dueDate) - new Date()) / (1000 * 60 * 60 * 24));
-            
-            createNotification(
-                'قسط مستحق قريبًا',
-                `القسط رقم ${payment.number} للمقترض ${borrowerName} سيكون مستحقًا خلال ${daysUntilDue} يوم${daysUntilDue === 1 ? '' : 'ين'}`,
-                'info',
-                payment.id,
-                'installmentPayment'
-            );
-        });
+function formatNumber(number) {
+    if (typeof number !== 'number') {
+        number = parseFloat(number);
     }
     
-    // التحقق من الأقساط المستحقة قريبًا عند بدء التشغيل
-    checkUpcomingInstallments();
+    if (isNaN(number)) return "0";
     
-    // التحقق من الأقساط المستحقة قريبًا كل 12 ساعة
-    setInterval(checkUpcomingInstallments, 12 * 60 * 60 * 1000);
+    return number.toLocaleString('ar-IQ');
 }
 
-// الدمج مع التطبيق الرئيسي
-document.addEventListener('DOMContentLoaded', function() {
-    // تهيئة نظام الأقساط بعد تحميل الصفحة
-    setTimeout(initInstallmentSystem, 1000);
+/**
+ * تسجيل إشعارات الأقساط
+ */
+function registerInstallmentNotifications() {
+    // التحقق من وجود نظام الإشعارات
+    if (typeof window.notifications === 'undefined') {
+        console.log('نظام الإشعارات غير متوفر');
+        return;
+    }
     
-    // التسجيل للحصول على إشعارات الأقساط
-    setTimeout(registerInstallmentNotifications, 2000);
-});
+    // تسجيل أنواع إشعارات الأقساط
+    const installmentNotificationTypes = [
+        { type: 'installment', title: 'قرض بالأقساط', icon: 'fa-receipt' },
+        { type: 'installmentPayment', title: 'قسط', icon: 'fa-money-bill' },
+        { type: 'lateInstallment', title: 'قسط متأخر', icon: 'fa-exclamation-triangle' },
+        { type: 'upcomingInstallment', title: 'قسط قادم', icon: 'fa-calendar-day' }
+    ];
+    
+    // تسجيل أنواع الإشعارات
+    installmentNotificationTypes.forEach(notificationType => {
+        if (window.notifications.registerType) {
+            window.notifications.registerType(notificationType);
+        }
+    });
+    
+    console.log('تم تسجيل إشعارات الأقساط');
+}
+
+/**
+ * مزامنة بيانات الأقساط مع Firebase
+ */
+function syncInstallmentData() {
+    // التحقق من وجود Firebase وتفعيل المزامنة
+    if (typeof firebase === 'undefined' || typeof db === 'undefined' || !syncActive) {
+        console.log('Firebase غير متوفر أو المزامنة غير مفعلة');
+        return;
+    }
+    
+    // مزامنة القروض
+    db.ref('installments').set(installments)
+        .then(() => console.log('تمت مزامنة القروض'))
+        .catch(error => console.error('خطأ في مزامنة القروض:', error));
+    
+    // مزامنة العناصر
+    db.ref('installmentItems').set(installmentItems)
+        .then(() => console.log('تمت مزامنة عناصر القروض'))
+        .catch(error => console.error('خطأ في مزامنة عناصر القروض:', error));
+    
+    // مزامنة جدول الأقساط
+    db.ref('installmentPayments').set(installmentPayments)
+        .then(() => console.log('تمت مزامنة جدول الأقساط'))
+        .catch(error => console.error('خطأ في مزامنة جدول الأقساط:', error));
+    
+    // مزامنة الإعدادات
+    db.ref('installmentSettings').set(installmentSettings)
+        .then(() => console.log('تمت مزامنة إعدادات الأقساط'))
+        .catch(error => console.error('خطأ في مزامنة إعدادات الأقساط:', error));
+}
+
+// ============ نقطة البدء ============
+
+// التحقق من وجود نظام إدارة الاستثمار الرئيسي
+if (typeof window.showPage === 'function' && typeof investors !== 'undefined') {
+    // النظام الرئيسي متوفر، يمكن تهيئة نظام الأقساط
+    document.addEventListener('DOMContentLoaded', initInstallmentSystem);
+} else {
+    console.warn('نظام إدارة الاستثمار الرئيسي غير متوفر. قد لا تعمل بعض الميزات بشكل صحيح.');
+    // تهيئة محدودة لنظام الأقساط
+    document.addEventListener('DOMContentLoaded', () => {
+        loadInstallmentData();
+        loadInstallmentSettings();
+        // يمكن تنفيذ عمليات أخرى لا تعتمد على النظام الرئيسي
+    });
+}
+
+// تصدير الدوال التي قد تحتاجها النظم الأخرى
+window.installmentFunctions = {
+    initInstallmentSystem,
+    loadInstallmentsPage,
+    openAddInstallmentModal,
+    viewInstallment,
+    openPayInstallmentModal,
+    getTotalPayments,
+    getRemainingInstallments,
+    getLateInstallments,
+    getBorrowerName,
+    formatCurrency,
+    formatDate
+};
+
+// نهاية نظام إدارة الأقساط المحسن
+console.log('نظام إدارة الأقساط المحسن - الإصدار 2.0 - تم التحميل بنجاح');
