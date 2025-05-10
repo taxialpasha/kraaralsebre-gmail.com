@@ -905,12 +905,11 @@ function getLateInstallments(installmentId) {
         .length;
 }
 
-/**
- * إنشاء إشعار (متوافق مع نظام الإشعارات الرئيسي)
- */
+// إصلاح دالة createNotification لمنع الاستدعاء الذاتي
 function createNotification(title, message, type = 'info', entityId = null, entityType = null) {
     // التحقق من وجود وظيفة الإشعارات في النظام الرئيسي
-    if (typeof window.createNotification === 'function') {
+    // والتأكد من أنها ليست نفس الدالة الحالية لتجنب الاستدعاء الذاتي
+    if (typeof window.createNotification === 'function' && window.createNotification !== createNotification) {
         return window.createNotification(title, message, type, entityId, entityType);
     } else {
         // نسخة مبسطة من وظيفة الإشعارات
