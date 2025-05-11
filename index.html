@@ -39,17 +39,41 @@
 </head>
 
 <body>
+    <!-- شريط العنوان المخصص -->
+    <div class="title-bar">
+        <div class="title-bar-left">
+            <div class="app-icon">
+                <i class="fas fa-chart-line"></i>
+            </div>
+            <div class="app-title">نظام إدارة الاستثمار المتطور</div>
+        </div>
+        <div class="title-bar-center">
+            <div class="exchange-rate" id="exchangeRate">
+                <i class="fas fa-dollar-sign"></i>
+                <span id="exchangeRateValue">جاري التحميل...</span>
+            </div>
+            <div class="clock" id="clock">00:00:00</div>
+        </div>
+        <div class="title-bar-right">
+            <button class="title-bar-button refresh-button" id="refreshButton" title="تحديث">
+                <i class="fas fa-sync-alt"></i>
+            </button>
+            <button class="title-bar-button minimize-button" id="minimizeButton">
+                <i class="fas fa-window-minimize"></i>
+            </button>
+            <button class="title-bar-button maximize-button" id="maximizeButton">
+                <i class="fas fa-window-maximize"></i>
+            </button>
+            <button class="title-bar-button close-button" id="closeButton">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    </div>
+    <!-- نهاية شريط العنوان -->
     <div class="app-container">
         <!-- Sidebar -->
         <div class="sidebar">
-            <div class="sidebar-header">
-                <div class="logo">
-                    <div class="logo-icon">
-                        <i class="fas fa-chart-line"></i>
-                    </div>
-                    <div class="logo-text">نظام الاستثمار</div>
-                </div>
-            </div>
+        
             <div class="sidebar-menu">
                 <div class="menu-category">لوحة التحكم</div>
                 <a href="#dashboard" class="menu-item active" onclick="showPage('dashboard')">
@@ -1591,36 +1615,7 @@
                                 </div>
                                 <div class="form-check">
                                     <input type="checkbox" class="form-check-input" id="loginNotifications" checked>
-                                    <label class="form-check-label" for="loginNotifications">إشعارات تسجيل الدخول</label>
-                                    <p class="form-text">تلقي إشعارات عند تسجيل الدخول إلى الحساب</p>
-                                </div>
-                                <div class="form-check">
-                                    <input type="checkbox" class="form-check-input" id="backupNotifications" checked>
-                                    <label class="form-check-label" for="backupNotifications">إشعارات النسخ الاحتياطي</label>
-                                    <p class="form-text">تلقي إشعارات عن حالة النسخ الاحتياطي</p>
-                                </div>
-                            </div>
-                            
-                            <div class="form-group">
-                                <h3 class="form-subtitle">إشعارات الاستثمار</h3>
-                                <div class="form-check">
-                                    <input type="checkbox" class="form-check-input" id="newInvestorNotifications" checked>
-                                    <label class="form-check-label" for="newInvestorNotifications">مستثمر جديد</label>
-                                    <p class="form-text">تلقي إشعارات عند إضافة مستثمر جديد</p>
-                                </div>
-                                <div class="form-check">
-                                    <input type="checkbox" class="form-check-input" id="newInvestmentNotifications" checked>
-                                    <label class="form-check-label" for="newInvestmentNotifications">استثمار جديد</label>
-                                    <p class="form-text">تلقي إشعارات عند إضافة استثمار جديد</p>
-                                </div>
-                                <div class="form-check">
-                                    <input type="checkbox" class="form-check-input" id="withdrawalNotifications" checked>
-                                    <label class="form-check-label" for="withdrawalNotifications">طلبات السحب</label>
-                                    <p class="form-text">تلقي إشعارات عند وجود طلبات سحب</p>
-                                </div>
-                                <div class="form-check">
-                                    <input type="checkbox" class="form-check-input" id="profitDistributionNotifications" checked>
-                                    <label class="form-check-label" for="profitDistributionNotifications">توزيع الأرباح</label>
+                                    <label class="form-check-label" for
                                     <p class="form-text">تلقي إشعارات عند موعد توزيع الأرباح</p>
                                 </div>
                             </div>
@@ -2565,6 +2560,7 @@
     <script src="investor-cards-delete-fix.js"></script>
     <script src="installment-system.js"></script>
     <script src="installment2-system.js"></script>
+    <script src="app-enhancements.js"></script>
     
     <script src="employee-system.js"></script>
 <script src="installment-system.js"></script>
@@ -2572,7 +2568,9 @@
 <script src="employee-system.js"></script>
 <script src="installment-system.js"></script>
 
-<script src="app-enhancements.js"></script>
+    <script src="electron-integration.js"></script>
+    <script src="electron-backup-fix.js"></script>
+
 
 </body>
 

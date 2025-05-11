@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام إدارة الاستثمار المتطور</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', 'Arial', sans-serif;
+            background: linear-gradient(135deg, #1c3b57, #2c5d7c);
+            color: #fff;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        .splash-container {
+            text-align: center;
+            animation: fadeIn 1s ease-in-out;
+        }
+
+        .logo-container {
+            position: relative;
+            width: 200px;
+            height: 200px;
+            margin: 0 auto 20px;
+        }
+
+        .logo {
+            width: 150px;
+            height: 150px;
+            background-color: #fff;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 0 30px rgba(255, 255, 255, 0.3);
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .logo i {
+            font-size: 70px;
+            color: #2c5d7c;
+        }
+
+        .app-name {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            animation: pulse 2s infinite;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .company-name {
+            font-size: 16px;
+            margin-bottom: 25px;
+            opacity: 0.8;
+        }
+
+        .loading-bar {
+            width: 300px;
+            height: 6px;
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-bottom: 15px;
+            position: relative;
+        }
+
+        .loading-bar-progress {
+            height: 100%;
+            background-color: #4CAF50;
+            width: 0%;
+            border-radius: 3px;
+            animation: loading 3s ease-in-out forwards;
+        }
+
+        .loading-text {
+            font-size: 14px;
+            opacity: 0.7;
+        }
+
+        .version {
+            position: absolute;
+            bottom: 20px;
+            font-size: 12px;
+            opacity: 0.7;
+        }
+
+        .glowing-circle {
+            position: absolute;
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            animation: rotate 10s linear infinite;
+        }
+
+        .glowing-circle::before {
+            content: '';
+            position: absolute;
+            top: -5px;
+            left: 50%;
+            width: 10px;
+            height: 10px;
+            background-color: #fff;
+            border-radius: 50%;
+            box-shadow: 0 0 10px 2px #fff;
+        }
+
+        @keyframes loading {
+            0% { width: 0%; }
+            70% { width: 70%; }
+            100% { width: 100%; }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.9; }
+            50% { opacity: 1; }
+            100% { opacity: 0.9; }
+        }
+
+        @keyframes rotate {
+            from { transform: translate(-50%, -50%) rotate(0deg); }
+            to { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+    </style>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="splash-container">
+        <div class="logo-container">
+            <div class="glowing-circle"></div>
+            <div class="logo">
+                <i class="fas fa-chart-line"></i>
+            </div>
+        </div>
+        <h1 class="app-name">نظام إدارة الاستثمار المتطور</h1>
+        <p class="company-name">شركة الاستثمار العراقية</p>
+        <div class="loading-bar">
+            <div class="loading-bar-progress" id="progress"></div>
+        </div>
+        <p class="loading-text" id="loading-text">جاري تحميل النظام...</p>
+    </div>
+    <div class="version">الإصدار 1.0.0</div>
+
+    <script>
+        // تحديث نص التحميل
+        const loadingTexts = [
+            "جاري تحميل النظام...",
+            "جاري تهيئة قاعدة البيانات...",
+            "جاري تحميل الملفات...",
+            "جاري الإعداد...",
+            "جاري تحميل الواجهة..."
+        ];
+        
+        let currentIndex = 0;
+        const loadingText = document.getElementById('loading-text');
+        
+        setInterval(() => {
+            currentIndex = (currentIndex + 1) % loadingTexts.length;
+            loadingText.textContent = loadingTexts[currentIndex];
+        }, 800);
+
+        // إرسال إشعار عند اكتمال التحميل
+        setTimeout(() => {
+            window.api.send('splash-screen-loaded');
+        }, 3000);
+    </script>
+</body>
+</html>

@@ -1,8 +1,3 @@
-
-
-
-
-
 /**
  * Firebase Integration
  * 
@@ -663,6 +658,42 @@ function setupFirebaseApp() {
                 // عرض رسالة الخطأ في الجدول
                 const tbody = document.getElementById('activitiesLogTableBody');
                 tbody.innerHTML = `<tr><td colspan="5" style="text-align: center;">حدث خطأ أثناء تحميل سجل الأنشطة</td></tr>`;
+            });
+        },
+        
+        // تحميل النسخ الاحتياطية من Firebase
+        loadBackupsFromFirebase: function() {
+            if (!this.isInitialized || !this.currentUser) {
+                console.warn('لم يتم تهيئة Firebase أو تسجيل الدخول');
+                return;
+            }
+            
+            const db = firebase.database();
+            const userId = this.currentUser.uid;
+            
+            // قراءة النسخ الاحتياطية من Firebase
+            db.ref('users/' + userId + '/backups').once('value').then(snapshot => {
+                const backups = snapshot.val();
+                
+                if (backups) {
+                    // تحويل الكائن إلى مصفوفة
+                    backupList = Object.keys(backups).map(key => backups[key]);
+                    
+                    // حفظ قائمة النسخ الاحتياطية محلياً
+                    saveBackupList();
+                    
+                    // تحديث عرض القائمة
+                    updateBackupsList();
+                    
+                    console.log('تم تحميل النسخ الاحتياطية بنجاح');
+                } else {
+                    // لا توجد نسخ احتياطية
+                    backupList = [];
+                    updateBackupsList();
+                }
+            }).catch(error => {
+                console.error('خطأ في تحميل النسخ الاحتياطية:', error);
+                createNotification('خطأ', 'حدث خطأ أثناء تحميل النسخ الاحتياطية', 'danger');
             });
         }
     };
@@ -2134,7 +2165,7 @@ function restoreFirebaseBackup() {
     // تأكيد الاستعادة مع دمج البيانات
     if (!confirm(`هل أنت متأكد من استعادة النسخة الاحتياطية "${backup.name}"؟ سيتم دمج البيانات مع البيانات الحالية.`)) {
         return;
-    }
+ }
     
     // دمج البيانات مع البيانات الحالية
     const currentData = {
@@ -2168,3 +2199,4 @@ function restoreFirebaseBackup() {
     // إظهار رسالة نجاح
     createNotification('نجاح', 'تم دمج النسخة الاحتياطية بنجاح', 'success');
 }
+
