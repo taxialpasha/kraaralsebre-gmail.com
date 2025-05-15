@@ -1989,11 +1989,13 @@ function viewOperation(id) {
     document.body.appendChild(modal);
 }
 
-// Edit investor
+/**
+ * تعديل المستثمر - وظيفة محسنة لعرض جميع بيانات المستثمر والاستثمار والمستندات
+ */
 function editInvestor(id) {
     currentInvestorId = id;
     
-    // Find investor
+    // البحث عن المستثمر
     const investor = investors.find(inv => inv.id === id);
     
     if (!investor) {
@@ -2001,13 +2003,18 @@ function editInvestor(id) {
         return;
     }
     
-    // Close view modal if open
+    // إغلاق نافذة العرض إذا كانت مفتوحة
     const viewModal = document.getElementById('viewInvestorModal');
     if (viewModal) {
         closeModal('viewInvestorModal');
     }
     
-    // Create edit investor modal
+    // البحث عن آخر استثمار للمستثمر
+    const latestInvestment = [...investments]
+        .filter(inv => inv.investorId === id)
+        .sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+    
+    // إنشاء نافذة تعديل المستثمر
     const modal = document.createElement('div');
     modal.className = 'modal-overlay active';
     modal.id = 'editInvestorModal';
@@ -2021,68 +2028,455 @@ function editInvestor(id) {
                 </div>
             </div>
             <div class="modal-body">
-                <form id="editInvestorForm">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">الاسم الكامل</label>
-                            <input type="text" class="form-control" id="editInvestorName" value="${investor.name}" required>
+                <!-- علامات التبويب -->
+                <div class="modal-tabs">
+                    <div class="modal-tab active" onclick="switchModalTab('editInvestorInfo', 'editInvestorModal')">معلومات المستثمر</div>
+                    <div class="modal-tab" onclick="switchModalTab('editInvestmentInfo', 'editInvestorModal')">معلومات الاستثمار</div>
+                    <div class="modal-tab" onclick="switchModalTab('editDocuments', 'editInvestorModal')">المستندات</div>
+                </div>
+                
+                <!-- معلومات المستثمر -->
+                <div class="modal-tab-content active" id="editInvestorInfo">
+                    <form id="editInvestorForm">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">الاسم الكامل</label>
+                                <input type="text" class="form-control" id="editInvestorName" value="${investor.name || ''}" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">رقم الهاتف</label>
+                                <input type="text" class="form-control" id="editInvestorPhone" value="${investor.phone || ''}" required>
+                            </div>
                         </div>
-                        <div class="form-group">
-                            <label class="form-label">رقم الهاتف</label>
-                            <input type="text" class="form-control" id="editInvestorPhone" value="${investor.phone}" required>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">البريد الإلكتروني</label>
+                                <input type="email" class="form-control" id="editInvestorEmail" value="${investor.email || ''}">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">تاريخ الميلاد</label>
+                                <input type="date" class="form-control" id="editInvestorBirthdate" value="${investor.birthdate || ''}">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">العنوان</label>
+                                <input type="text" class="form-control" id="editInvestorAddress" value="${investor.address || ''}" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">المدينة</label>
+                                <input type="text" class="form-control" id="editInvestorCity" value="${investor.city || ''}" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">رقم البطاقة الشخصية</label>
+                                <input type="text" class="form-control" id="editInvestorIdCard" value="${investor.idCard || ''}" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">تاريخ إصدار البطاقة</label>
+                                <input type="date" class="form-control" id="editInvestorIdCardDate" value="${investor.idCardDate || ''}">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">المهنة</label>
+                                <input type="text" class="form-control" id="editInvestorOccupation" value="${investor.occupation || ''}">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">ملاحظات</label>
+                                <textarea class="form-control" id="editInvestorNotes" rows="3">${investor.notes || ''}</textarea>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                
+                <!-- معلومات الاستثمار -->
+                <div class="modal-tab-content" id="editInvestmentInfo">
+                    <div class="alert alert-info">
+                        <div class="alert-icon">
+                            <i class="fas fa-info-circle"></i>
+                        </div>
+                        <div class="alert-content">
+                            <div class="alert-title">معلومات الاستثمار</div>
+                            <div class="alert-text">هنا يمكنك تعديل معلومات آخر استثمار للمستثمر. إذا كنت تريد تعديل استثمار آخر، يمكنك الذهاب إلى صفحة الاستثمارات.</div>
                         </div>
                     </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">البريد الإلكتروني</label>
-                            <input type="email" class="form-control" id="editInvestorEmail" value="${investor.email || ''}">
+                    
+                    <form id="editInvestmentForm">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">المبلغ (${settings.currency})</label>
+                                <input type="number" class="form-control" id="editInvestmentAmount" value="${latestInvestment ? latestInvestment.amount : ''}" ${latestInvestment ? '' : 'disabled'} required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">تاريخ الاستثمار</label>
+                                <input type="date" class="form-control" id="editInvestmentDate" value="${latestInvestment ? latestInvestment.date : ''}" ${latestInvestment ? '' : 'disabled'} required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">طريقة الدفع</label>
+                                <select class="form-select" id="editInvestmentMethod" ${latestInvestment ? '' : 'disabled'}>
+                                    <option value="cash" ${latestInvestment && latestInvestment.method === 'cash' ? 'selected' : ''}>نقداً</option>
+                                    <option value="check" ${latestInvestment && latestInvestment.method === 'check' ? 'selected' : ''}>شيك</option>
+                                    <option value="transfer" ${latestInvestment && latestInvestment.method === 'transfer' ? 'selected' : ''}>حوالة بنكية</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">رقم المرجع</label>
+                                <input type="text" class="form-control" id="editInvestmentReference" value="${latestInvestment ? latestInvestment.reference || '' : ''}" ${latestInvestment ? '' : 'disabled'}>
+                                <p class="form-text">رقم الشيك أو رقم الحوالة إن وجد</p>
+                            </div>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">تاريخ الميلاد</label>
-                            <input type="date" class="form-control" id="editInvestorBirthdate" value="${investor.birthdate || ''}">
+                            <label class="form-label">ملاحظات الاستثمار</label>
+                            <textarea class="form-control" id="editInvestmentNotes" rows="3" ${latestInvestment ? '' : 'disabled'}>${latestInvestment ? latestInvestment.notes || '' : ''}</textarea>
+                        </div>
+                        
+                        ${latestInvestment ? `<input type="hidden" id="editInvestmentId" value="${latestInvestment.id}">` : ''}
+                        
+                        ${!latestInvestment ? `
+                            <div class="alert alert-warning">
+                                <div class="alert-icon">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                </div>
+                                <div class="alert-content">
+                                    <div class="alert-title">تنبيه</div>
+                                    <div class="alert-text">لا يوجد استثمارات لهذا المستثمر. يمكنك إضافة استثمار جديد من صفحة الاستثمارات.</div>
+                                </div>
+                            </div>
+                        ` : ''}
+                    </form>
+                </div>
+                
+                <!-- المستندات -->
+                <div class="modal-tab-content" id="editDocuments">
+                    <div class="form-group">
+                        <label class="form-label">صورة البطاقة الشخصية</label>
+                        <input type="file" class="form-control" id="editInvestorIdCardImage">
+                        ${investor.documents && investor.documents.find(doc => doc.type === 'idCard') ? `
+                            <div class="form-text success">
+                                <i class="fas fa-check-circle"></i> تم تحميل المستند سابقاً
+                            </div>
+                        ` : ''}
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">عقد الاستثمار</label>
+                        <input type="file" class="form-control" id="editInvestmentContractFile">
+                        ${investor.documents && investor.documents.find(doc => doc.type === 'contract') ? `
+                            <div class="form-text success">
+                                <i class="fas fa-check-circle"></i> تم تحميل المستند سابقاً
+                            </div>
+                        ` : ''}
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">مستندات إضافية</label>
+                        <input type="file" class="form-control" id="editAdditionalDocuments" multiple>
+                        ${investor.documents && investor.documents.find(doc => doc.type === 'other') ? `
+                            <div class="form-text success">
+                                <i class="fas fa-check-circle"></i> تم تحميل مستندات إضافية سابقاً
+                            </div>
+                        ` : ''}
+                    </div>
+                    
+                    <div class="form-group" style="margin-top: 20px;">
+                        <h3 class="form-subtitle">المستندات المحملة</h3>
+                        <div class="table-container" style="box-shadow: none; padding: 0;">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>اسم المستند</th>
+                                        <th>النوع</th>
+                                        <th>تاريخ التحميل</th>
+                                        <th>إجراءات</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="investorDocumentsTableBody">
+                                    ${investor.documents && investor.documents.length > 0 ? investor.documents.map(doc => `
+                                        <tr>
+                                            <td>${doc.name}</td>
+                                            <td>${doc.type === 'idCard' ? 'صورة البطاقة الشخصية' : doc.type === 'contract' ? 'عقد الاستثمار' : 'مستند إضافي'}</td>
+                                            <td>${formatDate(doc.uploadDate)} ${formatTime(doc.uploadDate)}</td>
+                                            <td>
+                                                <button class="btn btn-danger btn-icon action-btn" onclick="deleteInvestorDocument('${investor.id}', '${doc.id}')">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    `).join('') : `<tr><td colspan="4" style="text-align: center;">لا توجد مستندات محملة</td></tr>`}
+                                </tbody>
+                            </table>
                         </div>
                     </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">العنوان</label>
-                            <input type="text" class="form-control" id="editInvestorAddress" value="${investor.address || ''}" required>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">المدينة</label>
-                            <input type="text" class="form-control" id="editInvestorCity" value="${investor.city || ''}" required>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">رقم البطاقة الشخصية</label>
-                            <input type="text" class="form-control" id="editInvestorIdCard" value="${investor.idCard || ''}" required>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">تاريخ إصدار البطاقة</label>
-                            <input type="date" class="form-control" id="editInvestorIdCardDate" value="${investor.idCardDate || ''}">
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">المهنة</label>
-                            <input type="text" class="form-control" id="editInvestorOccupation" value="${investor.occupation || ''}">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">ملاحظات</label>
-                            <textarea class="form-control" id="editInvestorNotes" rows="3">${investor.notes || ''}</textarea>
-                        </div>
-                    </div>
-                </form>
+                </div>
             </div>
             <div class="modal-footer">
                 <button class="btn btn-light" onclick="document.getElementById('editInvestorModal').remove()">إلغاء</button>
-                <button class="btn btn-primary" onclick="updateInvestor()">حفظ التغييرات</button>
+                <button class="btn btn-primary" onclick="updateInvestorWithInvestment()">حفظ التغييرات</button>
             </div>
         </div>
     `;
     
     document.body.appendChild(modal);
 }
+
+
+
+
+
+/**
+ * تحديث بيانات المستثمر والاستثمار
+ */
+function updateInvestorWithInvestment() {
+    // البحث عن المستثمر
+    const investor = investors.find(inv => inv.id === currentInvestorId);
+    
+    if (!investor) {
+        createNotification('خطأ', 'المستثمر غير موجود', 'danger');
+        return;
+    }
+    
+    // الحصول على قيم النموذج - معلومات المستثمر
+    const name = document.getElementById('editInvestorName').value;
+    const phone = document.getElementById('editInvestorPhone').value;
+    const email = document.getElementById('editInvestorEmail').value;
+    const birthdate = document.getElementById('editInvestorBirthdate').value;
+    const address = document.getElementById('editInvestorAddress').value;
+    const city = document.getElementById('editInvestorCity').value;
+    const idCard = document.getElementById('editInvestorIdCard').value;
+    const idCardDate = document.getElementById('editInvestorIdCardDate').value;
+    const occupation = document.getElementById('editInvestorOccupation').value;
+    const notes = document.getElementById('editInvestorNotes').value;
+    
+    // التحقق من الحقول المطلوبة
+    if (!name || !phone || !address || !city || !idCard) {
+        createNotification('خطأ', 'يرجى ملء جميع الحقول المطلوبة للمستثمر', 'danger');
+        switchModalTab('editInvestorInfo', 'editInvestorModal');
+        return;
+    }
+    
+    // التحقق من صحة رقم الهاتف
+    if (!validatePhone(phone)) {
+        createNotification('خطأ', 'رقم الهاتف غير صالح', 'danger');
+        switchModalTab('editInvestorInfo', 'editInvestorModal');
+        return;
+    }
+    
+    // التحقق من صحة البريد الإلكتروني إذا تم إدخاله
+    if (email && !validateEmail(email)) {
+        createNotification('خطأ', 'البريد الإلكتروني غير صالح', 'danger');
+        switchModalTab('editInvestorInfo', 'editInvestorModal');
+        return;
+    }
+    
+    // تحديث بيانات المستثمر
+    investor.name = name;
+    investor.phone = phone;
+    investor.email = email;
+    investor.birthdate = birthdate;
+    investor.address = address;
+    investor.city = city;
+    investor.idCard = idCard;
+    investor.idCardDate = idCardDate;
+    investor.occupation = occupation;
+    investor.notes = notes;
+    investor.updatedAt = new Date().toISOString();
+    
+    // تحديث معلومات الاستثمار إذا كان موجوداً
+    const investmentId = document.getElementById('editInvestmentId');
+    if (investmentId && investmentId.value) {
+        // البحث عن الاستثمار
+        const investment = investments.find(inv => inv.id === investmentId.value);
+        
+        if (investment) {
+            // الحصول على قيم نموذج الاستثمار
+            const amount = parseFloat(document.getElementById('editInvestmentAmount').value);
+            const date = document.getElementById('editInvestmentDate').value;
+            const method = document.getElementById('editInvestmentMethod').value;
+            const reference = document.getElementById('editInvestmentReference').value;
+            const investmentNotes = document.getElementById('editInvestmentNotes').value;
+            
+            // التحقق من الحقول المطلوبة
+            if (!amount || !date || isNaN(amount) || amount <= 0) {
+                createNotification('خطأ', 'يرجى ملء جميع الحقول المطلوبة للاستثمار بشكل صحيح', 'danger');
+                switchModalTab('editInvestmentInfo', 'editInvestorModal');
+                return;
+            }
+            
+            // التحقق من الحد الأدنى للاستثمار
+            if (amount < settings.minInvestment) {
+                createNotification('خطأ', `الحد الأدنى للاستثمار هو ${formatNumber(settings.minInvestment)} ${settings.currency}`, 'danger');
+                switchModalTab('editInvestmentInfo', 'editInvestorModal');
+                return;
+            }
+            
+            // تحديث بيانات الاستثمار
+            investment.amount = amount;
+            investment.date = date;
+            investment.method = method;
+            investment.reference = reference;
+            investment.notes = investmentNotes;
+            investment.updatedAt = new Date().toISOString();
+            
+            // إنشاء إشعار بتحديث الاستثمار
+            createNotification('نجاح', `تم تحديث بيانات الاستثمار بمبلغ ${formatCurrency(amount)}`, 'success');
+        }
+    }
+    
+    // معالجة تحميل المستندات
+    const idCardImage = document.getElementById('editInvestorIdCardImage');
+    const contractFile = document.getElementById('editInvestmentContractFile');
+    const additionalDocs = document.getElementById('editAdditionalDocuments');
+    
+    // إضافة مستند البطاقة الشخصية إذا تم تحميله
+    if (idCardImage && idCardImage.files && idCardImage.files.length > 0) {
+        const file = idCardImage.files[0];
+        
+        // إنشاء مستند جديد
+        if (!investor.documents) {
+            investor.documents = [];
+        }
+        
+        // حذف المستند القديم إذا وجد
+        investor.documents = investor.documents.filter(doc => doc.type !== 'idCard');
+        
+        // إضافة المستند الجديد
+        investor.documents.push({
+            id: generateId(),
+            type: 'idCard',
+            name: file.name,
+            size: file.size,
+            mimeType: file.type,
+            uploadDate: new Date().toISOString()
+        });
+    }
+    
+    // إضافة عقد الاستثمار إذا تم تحميله
+    if (contractFile && contractFile.files && contractFile.files.length > 0) {
+        const file = contractFile.files[0];
+        
+        // إنشاء مستند جديد
+        if (!investor.documents) {
+            investor.documents = [];
+        }
+        
+        // حذف المستند القديم إذا وجد
+        investor.documents = investor.documents.filter(doc => doc.type !== 'contract');
+        
+        // إضافة المستند الجديد
+        investor.documents.push({
+            id: generateId(),
+            type: 'contract',
+            name: file.name,
+            size: file.size,
+            mimeType: file.type,
+            uploadDate: new Date().toISOString()
+        });
+    }
+    
+    // إضافة المستندات الإضافية إذا تم تحميلها
+    if (additionalDocs && additionalDocs.files && additionalDocs.files.length > 0) {
+        // إنشاء مستند جديد
+        if (!investor.documents) {
+            investor.documents = [];
+        }
+        
+        // إضافة كل مستند إضافي
+        for (let i = 0; i < additionalDocs.files.length; i++) {
+            const file = additionalDocs.files[i];
+            
+            investor.documents.push({
+                id: generateId(),
+                type: 'other',
+                name: file.name,
+                size: file.size,
+                mimeType: file.type,
+                uploadDate: new Date().toISOString()
+            });
+        }
+    }
+    
+    // حفظ البيانات
+    saveData();
+    
+    // إنشاء نشاط تحديث
+    createInvestorActivity(investor.id, 'update', 'تم تحديث بيانات المستثمر');
+    
+    // إغلاق النافذة
+    document.getElementById('editInvestorModal').remove();
+    
+    // تحديث جدول المستثمرين
+    loadInvestors();
+    
+    // إظهار رسالة نجاح
+    createNotification('نجاح', 'تم تحديث بيانات المستثمر بنجاح', 'success');
+}
+
+
+
+
+/**
+ * حذف مستند للمستثمر
+ * @param {string} investorId معرف المستثمر
+ * @param {string} documentId معرف المستند
+ */
+function deleteInvestorDocument(investorId, documentId) {
+    // البحث عن المستثمر
+    const investor = investors.find(inv => inv.id === investorId);
+    
+    if (!investor || !investor.documents) {
+        createNotification('خطأ', 'المستثمر أو المستند غير موجود', 'danger');
+        return;
+    }
+    
+    // التأكيد على الحذف
+    if (!confirm('هل أنت متأكد من حذف هذا المستند؟')) {
+        return;
+    }
+    
+    // العثور على المستند
+    const documentIndex = investor.documents.findIndex(doc => doc.id === documentId);
+    
+    if (documentIndex === -1) {
+        createNotification('خطأ', 'المستند غير موجود', 'danger');
+        return;
+    }
+    
+    // الحصول على اسم المستند قبل الحذف
+    const documentName = investor.documents[documentIndex].name;
+    
+    // حذف المستند
+    investor.documents.splice(documentIndex, 1);
+    
+    // حفظ البيانات
+    saveData();
+    
+    // تحديث جدول المستندات
+    const documentTable = document.getElementById('investorDocumentsTableBody');
+    if (documentTable) {
+        documentTable.innerHTML = investor.documents && investor.documents.length > 0 ? 
+            investor.documents.map(doc => `
+                <tr>
+                    <td>${doc.name}</td>
+                    <td>${doc.type === 'idCard' ? 'صورة البطاقة الشخصية' : doc.type === 'contract' ? 'عقد الاستثمار' : 'مستند إضافي'}</td>
+                    <td>${formatDate(doc.uploadDate)} ${formatTime(doc.uploadDate)}</td>
+                    <td>
+                        <button class="btn btn-danger btn-icon action-btn" onclick="deleteInvestorDocument('${investor.id}', '${doc.id}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('') : 
+            `<tr><td colspan="4" style="text-align: center;">لا توجد مستندات محملة</td></tr>`;
+    }
+    
+    // إظهار رسالة نجاح
+    createNotification('نجاح', `تم حذف المستند "${documentName}" بنجاح`, 'success');
+}
+
+
+
 
 // Update investor
 function updateInvestor() {

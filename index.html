@@ -13,24 +13,24 @@
 
 
     <!-- إضافة مكتبات Firebase -->
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-messaging.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-messaging.js"></script>
 
-<!-- إعدادات Firebase -->
-<script>
-    const firebaseConfig = {
-        apiKey: "AIzaSyDGpAHia_wEmrhnmYjrPf1n1TrAzwEMiAI",
-        authDomain: "messageemeapp.firebaseapp.com",
-        databaseURL: "https://messageemeapp-default-rtdb.firebaseio.com",
-        projectId: "messageemeapp",
-        storageBucket: "messageemeapp.appspot.com",
-        messagingSenderId: "255034474844",
-        appId: "1:255034474844:web:5e3b7a6bc4b2fb94cc4199"
-    };
-</script>
+    <!-- إعدادات Firebase -->
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyDGpAHia_wEmrhnmYjrPf1n1TrAzwEMiAI",
+            authDomain: "messageemeapp.firebaseapp.com",
+            databaseURL: "https://messageemeapp-default-rtdb.firebaseio.com",
+            projectId: "messageemeapp",
+            storageBucket: "messageemeapp.appspot.com",
+            messagingSenderId: "255034474844",
+            appId: "1:255034474844:web:5e3b7a6bc4b2fb94cc4199"
+        };
+    </script>
 
 
     <style>
@@ -73,7 +73,7 @@
     <div class="app-container">
         <!-- Sidebar -->
         <div class="sidebar">
-        
+
             <div class="sidebar-menu">
                 <div class="menu-category">لوحة التحكم</div>
                 <a href="#dashboard" class="menu-item active" onclick="showPage('dashboard')">
@@ -182,7 +182,8 @@
                     </div>
                     <div class="alert-content">
                         <div class="alert-title">مرحباً بك في النظام</div>
-                        <div class="alert-text" id="dashboardAlertText">مرحباً بك في نظام إدارة الاستثمار. اضغط على أي عنصر من القائمة الجانبية للتنقل.</div>
+                        <div class="alert-text" id="dashboardAlertText">مرحباً بك في نظام إدارة الاستثمار. اضغط على أي
+                            عنصر من القائمة الجانبية للتنقل.</div>
                     </div>
                 </div>
 
@@ -266,9 +267,12 @@
                         <div class="chart-header">
                             <div class="chart-title">تحليل الاستثمارات والأرباح</div>
                             <div class="chart-actions">
-                                <button class="btn btn-sm btn-light" id="dailyChartBtn" onclick="switchChartPeriod('daily')">اليومي</button>
-                                <button class="btn btn-sm btn-primary" id="monthlyChartBtn" onclick="switchChartPeriod('monthly')">الشهري</button>
-                                <button class="btn btn-sm btn-light" id="yearlyChartBtn" onclick="switchChartPeriod('yearly')">السنوي</button>
+                                <button class="btn btn-sm btn-light" id="dailyChartBtn"
+                                    onclick="switchChartPeriod('daily')">اليومي</button>
+                                <button class="btn btn-sm btn-primary" id="monthlyChartBtn"
+                                    onclick="switchChartPeriod('monthly')">الشهري</button>
+                                <button class="btn btn-sm btn-light" id="yearlyChartBtn"
+                                    onclick="switchChartPeriod('yearly')">السنوي</button>
                             </div>
                         </div>
                         <div id="investmentChart" style="height: 300px; width: 100%;">
@@ -425,10 +429,14 @@
                         <div class="chart-header">
                             <div class="chart-title">تحليل الأداء</div>
                             <div class="chart-actions">
-                                <button class="btn btn-sm btn-light" onclick="switchPerformanceChartPeriod('daily')">اليومي</button>
-                                <button class="btn btn-sm btn-primary" onclick="switchPerformanceChartPeriod('monthly')">الشهري</button>
-                                <button class="btn btn-sm btn-light" onclick="switchPerformanceChartPeriod('yearly')">السنوي</button>
-                                <button class="btn btn-sm btn-light" onclick="exportPerformanceChart()"><i class="fas fa-download"></i> تصدير</button>
+                                <button class="btn btn-sm btn-light"
+                                    onclick="switchPerformanceChartPeriod('daily')">اليومي</button>
+                                <button class="btn btn-sm btn-primary"
+                                    onclick="switchPerformanceChartPeriod('monthly')">الشهري</button>
+                                <button class="btn btn-sm btn-light"
+                                    onclick="switchPerformanceChartPeriod('yearly')">السنوي</button>
+                                <button class="btn btn-sm btn-light" onclick="exportPerformanceChart()"><i
+                                        class="fas fa-download"></i> تصدير</button>
                             </div>
                         </div>
                         <div id="performanceChart" style="height: 400px; width: 100%;">
@@ -450,11 +458,13 @@
                         <div class="chart-header">
                             <div class="chart-title">توزيع الاستثمارات</div>
                             <div class="chart-actions">
-                                <button class="btn btn-sm btn-light" onclick="exportInvestmentsChart()"><i class="fas fa-download"></i> تصدير</button>
+                                <button class="btn btn-sm btn-light" onclick="exportInvestmentsChart()"><i
+                                        class="fas fa-download"></i> تصدير</button>
                             </div>
                         </div>
                         <div id="investmentsDistributionChart" style="height: 400px; width: 100%;">
-                            <div style="height: 400px; width: 100%; display: flex; align-items: center; justify-content: center;">
+                            <div
+                                style="height: 400px; width: 100%; display: flex; align-items: center; justify-content: center;">
                                 <div style="text-align: center; color: var(--gray-600);">
                                     <i class="fas fa-chart-pie fa-3x" style="margin-bottom: 10px;"></i>
                                     <p>سيتم عرض الرسم البياني هنا</p>
@@ -462,7 +472,7 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="table-container">
                         <div class="table-header">
                             <div class="table-title">إحصائيات الاستثمارات</div>
@@ -490,14 +500,19 @@
                         <div class="chart-header">
                             <div class="chart-title">نمو الأرباح</div>
                             <div class="chart-actions">
-                                <button class="btn btn-sm btn-light" onclick="switchProfitsChartPeriod('monthly')">شهري</button>
-                                <button class="btn btn-sm btn-primary" onclick="switchProfitsChartPeriod('quarterly')">ربع سنوي</button>
-                                <button class="btn btn-sm btn-light" onclick="switchProfitsChartPeriod('yearly')">سنوي</button>
-                                <button class="btn btn-sm btn-light" onclick="exportProfitsChart()"><i class="fas fa-download"></i> تصدير</button>
+                                <button class="btn btn-sm btn-light"
+                                    onclick="switchProfitsChartPeriod('monthly')">شهري</button>
+                                <button class="btn btn-sm btn-primary"
+                                    onclick="switchProfitsChartPeriod('quarterly')">ربع سنوي</button>
+                                <button class="btn btn-sm btn-light"
+                                    onclick="switchProfitsChartPeriod('yearly')">سنوي</button>
+                                <button class="btn btn-sm btn-light" onclick="exportProfitsChart()"><i
+                                        class="fas fa-download"></i> تصدير</button>
                             </div>
                         </div>
                         <div id="profitsGrowthChart" style="height: 400px; width: 100%;">
-                            <div style="height: 400px; width: 100%; display: flex; align-items: center; justify-content: center;">
+                            <div
+                                style="height: 400px; width: 100%; display: flex; align-items: center; justify-content: center;">
                                 <div style="text-align: center; color: var(--gray-600);">
                                     <i class="fas fa-chart-line fa-3x" style="margin-bottom: 10px;"></i>
                                     <p>سيتم عرض الرسم البياني هنا</p>
@@ -505,7 +520,7 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="table-container">
                         <div class="table-header">
                             <div class="table-title">أعلى 5 مستثمرين من حيث الأرباح</div>
@@ -532,11 +547,13 @@
                         <div class="chart-header">
                             <div class="chart-title">نمو عدد المستثمرين</div>
                             <div class="chart-actions">
-                                <button class="btn btn-sm btn-light" onclick="exportInvestorsChart()"><i class="fas fa-download"></i> تصدير</button>
+                                <button class="btn btn-sm btn-light" onclick="exportInvestorsChart()"><i
+                                        class="fas fa-download"></i> تصدير</button>
                             </div>
                         </div>
                         <div id="investorsGrowthChart" style="height: 400px; width: 100%;">
-                            <div style="height: 400px; width: 100%; display: flex; align-items: center; justify-content: center;">
+                            <div
+                                style="height: 400px; width: 100%; display: flex; align-items: center; justify-content: center;">
                                 <div style="text-align: center; color: var(--gray-600);">
                                     <i class="fas fa-users fa-3x" style="margin-bottom: 10px;"></i>
                                     <p>سيتم عرض الرسم البياني هنا</p>
@@ -544,14 +561,15 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="grid-layout">
                         <div class="chart-container">
                             <div class="chart-header">
                                 <div class="chart-title">توزيع المستثمرين حسب المدينة</div>
                             </div>
                             <div id="investorsByCityChart" style="height: 300px; width: 100%;">
-                                <div style="height: 300px; width: 100%; display: flex; align-items: center; justify-content: center;">
+                                <div
+                                    style="height: 300px; width: 100%; display: flex; align-items: center; justify-content: center;">
                                     <div style="text-align: center; color: var(--gray-600);">
                                         <i class="fas fa-map-marker-alt fa-3x" style="margin-bottom: 10px;"></i>
                                         <p>سيتم عرض الرسم البياني هنا</p>
@@ -559,13 +577,14 @@
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div class="chart-container">
                             <div class="chart-header">
                                 <div class="chart-title">توزيع المستثمرين حسب المهنة</div>
                             </div>
                             <div id="investorsByOccupationChart" style="height: 300px; width: 100%;">
-                                <div style="height: 300px; width: 100%; display: flex; align-items: center; justify-content: center;">
+                                <div
+                                    style="height: 300px; width: 100%; display: flex; align-items: center; justify-content: center;">
                                     <div style="text-align: center; color: var(--gray-600);">
                                         <i class="fas fa-briefcase fa-3x" style="margin-bottom: 10px;"></i>
                                         <p>سيتم عرض الرسم البياني هنا</p>
@@ -582,11 +601,13 @@
                         <div class="chart-header">
                             <div class="chart-title">اتجاهات النمو</div>
                             <div class="chart-actions">
-                                <button class="btn btn-sm btn-light" onclick="exportTrendsChart()"><i class="fas fa-download"></i> تصدير</button>
+                                <button class="btn btn-sm btn-light" onclick="exportTrendsChart()"><i
+                                        class="fas fa-download"></i> تصدير</button>
                             </div>
                         </div>
                         <div id="growthTrendsChart" style="height: 400px; width: 100%;">
-                            <div style="height: 400px; width: 100%; display: flex; align-items: center; justify-content: center;">
+                            <div
+                                style="height: 400px; width: 100%; display: flex; align-items: center; justify-content: center;">
                                 <div style="text-align: center; color: var(--gray-600);">
                                     <i class="fas fa-chart-line fa-3x" style="margin-bottom: 10px;"></i>
                                     <p>سيتم عرض الرسم البياني هنا</p>
@@ -594,7 +615,7 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="alert alert-info">
                         <div class="alert-icon">
                             <i class="fas fa-info-circle"></i>
@@ -602,11 +623,12 @@
                         <div class="alert-content">
                             <div class="alert-title">تحليل الاتجاهات</div>
                             <div class="alert-text" id="trendsAnalysisText">
-                                يتم جمع البيانات وتحليلها لعرض اتجاهات النمو في النظام. سيتم تحديث هذا التحليل تلقائيًا كل شهر.
+                                يتم جمع البيانات وتحليلها لعرض اتجاهات النمو في النظام. سيتم تحديث هذا التحليل تلقائيًا
+                                كل شهر.
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="table-container">
                         <div class="table-header">
                             <div class="table-title">التوقعات المستقبلية</div>
@@ -635,7 +657,8 @@
                     <h1 class="page-title">المستثمرين</h1>
                     <div class="header-actions">
                         <div class="search-bar">
-                            <input type="text" class="search-input" id="investorSearchInput" placeholder="بحث عن مستثمر..." oninput="searchInvestors()">
+                            <input type="text" class="search-input" id="investorSearchInput"
+                                placeholder="بحث عن مستثمر..." oninput="searchInvestors()">
                             <i class="fas fa-search search-icon"></i>
                         </div>
                         <button class="btn btn-primary" onclick="openAddInvestorModal()">
@@ -693,7 +716,8 @@
                     <h1 class="page-title">الاستثمارات</h1>
                     <div class="header-actions">
                         <div class="search-bar">
-                            <input type="text" class="search-input" id="investmentSearchInput" placeholder="بحث..." oninput="searchInvestments()">
+                            <input type="text" class="search-input" id="investmentSearchInput" placeholder="بحث..."
+                                oninput="searchInvestments()">
                             <i class="fas fa-search search-icon"></i>
                         </div>
                         <button class="btn btn-primary" onclick="openNewInvestmentModal()">
@@ -839,10 +863,14 @@
                     <div class="chart-header">
                         <div class="chart-title">تحليل الأرباح</div>
                         <div class="chart-actions">
-                            <button class="btn btn-sm btn-light" onclick="switchProfitsAnalysisChart('daily')">اليومي</button>
-                            <button class="btn btn-sm btn-primary" onclick="switchProfitsAnalysisChart('monthly')">الشهري</button>
-                            <button class="btn btn-sm btn-light" onclick="switchProfitsAnalysisChart('yearly')">السنوي</button>
-                            <button class="btn btn-sm btn-light" onclick="exportProfitsAnalysisChart()"><i class="fas fa-download"></i> تصدير</button>
+                            <button class="btn btn-sm btn-light"
+                                onclick="switchProfitsAnalysisChart('daily')">اليومي</button>
+                            <button class="btn btn-sm btn-primary"
+                                onclick="switchProfitsAnalysisChart('monthly')">الشهري</button>
+                            <button class="btn btn-sm btn-light"
+                                onclick="switchProfitsAnalysisChart('yearly')">السنوي</button>
+                            <button class="btn btn-sm btn-light" onclick="exportProfitsAnalysisChart()"><i
+                                    class="fas fa-download"></i> تصدير</button>
                         </div>
                     </div>
                     <div id="profitsChart" style="height: 300px; width: 100%;">
@@ -896,7 +924,8 @@
                     <h1 class="page-title">العمليات</h1>
                     <div class="header-actions">
                         <div class="search-bar">
-                            <input type="text" class="search-input" id="operationsSearchInput" placeholder="بحث..." oninput="searchOperations()">
+                            <input type="text" class="search-input" id="operationsSearchInput" placeholder="بحث..."
+                                oninput="searchOperations()">
                             <i class="fas fa-search search-icon"></i>
                         </div>
                         <div class="notification-btn" onclick="toggleNotificationPanel()">
@@ -1192,10 +1221,14 @@
                         <div class="chart-header">
                             <div class="chart-title">تحليل الإيرادات والمصروفات</div>
                             <div class="chart-actions">
-                                <button class="btn btn-sm btn-light" onclick="switchFinancialChartPeriod('daily')">اليومي</button>
-                                <button class="btn btn-sm btn-primary" onclick="switchFinancialChartPeriod('monthly')">الشهري</button>
-                                <button class="btn btn-sm btn-light" onclick="switchFinancialChartPeriod('yearly')">السنوي</button>
-                                <button class="btn btn-sm btn-light" onclick="exportFinancialChart()"><i class="fas fa-download"></i> تصدير</button>
+                                <button class="btn btn-sm btn-light"
+                                    onclick="switchFinancialChartPeriod('daily')">اليومي</button>
+                                <button class="btn btn-sm btn-primary"
+                                    onclick="switchFinancialChartPeriod('monthly')">الشهري</button>
+                                <button class="btn btn-sm btn-light"
+                                    onclick="switchFinancialChartPeriod('yearly')">السنوي</button>
+                                <button class="btn btn-sm btn-light" onclick="exportFinancialChart()"><i
+                                        class="fas fa-download"></i> تصدير</button>
                             </div>
                         </div>
                         <div id="financialChart" style="height: 300px; width: 100%;">
@@ -1252,7 +1285,8 @@
                             </div>
                             <div class="form-group">
                                 <label class="form-label">الفترة</label>
-                                <select class="form-select" id="financialReportPeriod" required onchange="toggleCustomDateRange()">
+                                <select class="form-select" id="financialReportPeriod" required
+                                    onchange="toggleCustomDateRange()">
                                     <option value="">اختر الفترة</option>
                                     <option value="daily">يومي</option>
                                     <option value="weekly">أسبوعي</option>
@@ -1395,7 +1429,6 @@
                     <div class="tab" onclick="switchSettingsTab('investment')">الاستثمار</div>
                     <div class="tab" onclick="switchSettingsTab('profile')">الملف الشخصي</div>
                     <div class="tab" onclick="switchSettingsTab('notifications')">الإشعارات</div>
-                    <div class="tab" onclick="switchSettingsTab('backup')">النسخ الاحتياطي</div>
                     <div class="tab" onclick="switchSettingsTab('system')">النظام</div>
                     <div class="tab" onclick="switchSettingsTab('sync')">المزامنة والنسخ الاحتياطي</div>
                 </div>
@@ -1563,23 +1596,27 @@
                                 </div>
                                 <div class="form-group">
                                     <label class="form-label">البريد الإلكتروني</label>
-                                    <input type="email" class="form-control" id="userEmail" value="admin@iraqinvest.com">
+                                    <input type="email" class="form-control" id="userEmail"
+                                        value="admin@iraqinvest.com">
                                 </div>
                             </div>
                             <div class="form-row">
                                 <div class="form-group">
                                     <label class="form-label">كلمة المرور الحالية</label>
-                                    <input type="password" class="form-control" id="currentPassword" placeholder="أدخل كلمة المرور الحالية">
+                                    <input type="password" class="form-control" id="currentPassword"
+                                        placeholder="أدخل كلمة المرور الحالية">
                                 </div>
                                 <div class="form-group">
                                     <label class="form-label">كلمة المرور الجديدة</label>
-                                    <input type="password" class="form-control" id="newPassword" placeholder="أدخل كلمة المرور الجديدة">
+                                    <input type="password" class="form-control" id="newPassword"
+                                        placeholder="أدخل كلمة المرور الجديدة">
                                 </div>
                             </div>
                             <div class="form-row">
                                 <div class="form-group">
                                     <label class="form-label">تأكيد كلمة المرور</label>
-                                    <input type="password" class="form-control" id="confirmPassword" placeholder="أدخل كلمة المرور الجديدة مرة أخرى">
+                                    <input type="password" class="form-control" id="confirmPassword"
+                                        placeholder="أدخل كلمة المرور الجديدة مرة أخرى">
                                 </div>
                                 <div class="form-group">
                                     <label class="form-label">الصورة الشخصية</label>
@@ -1615,11 +1652,11 @@
                                 </div>
                                 <div class="form-check">
                                     <input type="checkbox" class="form-check-input" id="loginNotifications" checked>
-                                    <label class="form-check-label" for
-                                    <p class="form-text">تلقي إشعارات عند موعد توزيع الأرباح</p>
+                                    <label class="form-check-label" for <p class="form-text">تلقي إشعارات عند موعد توزيع
+                                        الأرباح</p>
                                 </div>
                             </div>
-                            
+
                             <div class="form-group">
                                 <h3 class="form-subtitle">طرق الإشعار</h3>
                                 <div class="form-check">
@@ -1635,13 +1672,14 @@
                                     <label class="form-check-label" for="pushNotifications">إشعارات المتصفح</label>
                                 </div>
                             </div>
-                            
+
                             <div class="form-group">
                                 <h3 class="form-subtitle">توقيت الإشعارات</h3>
                                 <div class="form-row">
                                     <div class="form-group">
                                         <label class="form-label">وقت البدء</label>
-                                        <input type="time" class="form-control" id="notificationStartTime" value="09:00">
+                                        <input type="time" class="form-control" id="notificationStartTime"
+                                            value="09:00">
                                     </div>
                                     <div class="form-group">
                                         <label class="form-label">وقت الانتهاء</label>
@@ -1650,9 +1688,9 @@
                                 </div>
                                 <p class="form-text">لن يتم إرسال الإشعارات خارج هذه الأوقات إلا في حالات الطوارئ</p>
                             </div>
-                            
+
                             <div class="form-group">
-                              <button type="submit" class="btn btn-primary">
+                                <button type="submit" class="btn btn-primary">
                                     <i class="fas fa-save"></i> حفظ الإعدادات
                                 </button>
                                 <button type="reset" class="btn btn-light">
@@ -1663,68 +1701,7 @@
                     </div>
                 </div>
 
-                <div id="backupSettings" class="settings-tab-content">
-                    <div class="form-container">
-                        <div class="form-header">
-                            <h2 class="form-title">النسخ الاحتياطي واستعادة البيانات</h2>
-                            <p class="form-subtitle">إدارة البيانات والنسخ الاحتياطي</p>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label class="form-label">إنشاء نسخة احتياطية</label>
-                                <button class="btn btn-primary" onclick="createBackup()">
-                                    <i class="fas fa-download"></i> إنشاء نسخة احتياطية
-                                </button>
-                                <p class="form-text">قم بإنشاء نسخة احتياطية كاملة من جميع بيانات النظام.</p>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">استعادة من نسخة احتياطية</label>
-                                <input type="file" class="form-control" id="restoreFile" accept=".json">
-                                <button class="btn btn-warning" onclick="restoreBackup()" style="margin-top: 10px;">
-                                    <i class="fas fa-upload"></i> استعادة
-                                </button>
-                                <p class="form-text">تحذير: سيتم استبدال جميع البيانات الحالية بالبيانات من النسخة
-                                    الاحتياطية.</p>
-                            </div>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label class="form-label">النسخ الاحتياطية السابقة</label>
-                                <select class="form-select" id="previousBackups" size="5" style="height: auto;">
-                                    <!-- Will be populated by JavaScript -->
-                                </select>
-                                <div style="margin-top: 10px;">
-                                    <button class="btn btn-light btn-sm" onclick="downloadSelectedBackup()">
-                                        <i class="fas fa-download"></i> تنزيل
-                                    </button>
-                                    <button class="btn btn-light btn-sm" onclick="restoreSelectedBackup()">
-                                        <i class="fas fa-upload"></i> استعادة
-                                    </button>
-                                    <button class="btn btn-danger btn-sm" onclick="deleteSelectedBackup()">
-                                        <i class="fas fa-trash"></i> حذف
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">تصدير البيانات</label>
-                            <div class="form-row">
-                                <button class="btn btn-light" onclick="exportInvestors()">
-                                    <i class="fas fa-file-export"></i> المستثمرين
-                                </button>
-                                <button class="btn btn-light" onclick="exportInvestments()">
-                                    <i class="fas fa-file-export"></i> الاستثمارات
-                                </button>
-                                <button class="btn btn-light" onclick="exportOperations()">
-                                    <i class="fas fa-file-export"></i> العمليات
-                                </button>
-                                <button class="btn btn-light" onclick="exportReports()">
-                                    <i class="fas fa-file-export"></i> التقارير
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            
 
                 <div id="systemSettings" class="settings-tab-content">
                     <!-- System Settings Content -->
@@ -1759,7 +1736,7 @@
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <div class="form-group">
                                 <h3 class="form-subtitle">الأداء</h3>
                                 <div class="form-check">
@@ -1775,12 +1752,13 @@
                                     <input type="number" class="form-control" id="autoSaveInterval" min="1" value="5">
                                 </div>
                             </div>
-                            
+
                             <div class="form-group">
                                 <h3 class="form-subtitle">الأمان</h3>
                                 <div class="form-check">
                                     <input type="checkbox" class="form-check-input" id="enableTwoFactor">
-                                    <label class="form-check-label" for="enableTwoFactor">تفعيل المصادقة الثنائية</label>
+                                    <label class="form-check-label" for="enableTwoFactor">تفعيل المصادقة
+                                        الثنائية</label>
                                 </div>
                                 <div class="form-group">
                                     <label class="form-label">مدة الجلسة (بالدقائق)</label>
@@ -1795,13 +1773,14 @@
                                     </select>
                                 </div>
                             </div>
-                            
+
                             <div class="form-group">
                                 <h3 class="form-subtitle">تكامل API</h3>
                                 <div class="form-group">
                                     <label class="form-label">مفتاح API</label>
                                     <div class="input-group">
-                                        <input type="password" class="form-control" id="apiKey" value="****************************************">
+                                        <input type="password" class="form-control" id="apiKey"
+                                            value="****************************************">
                                         <button class="btn btn-light" type="button" onclick="toggleApiKeyVisibility()">
                                             <i class="fas fa-eye"></i>
                                         </button>
@@ -1815,7 +1794,7 @@
                                     <label class="form-check-label" for="enableApiAccess">تفعيل وصول API</label>
                                 </div>
                             </div>
-                            
+
                             <div class="form-group">
                                 <button type="submit" class="btn btn-primary">
                                     <i class="fas fa-save"></i> حفظ الإعدادات
@@ -1834,15 +1813,16 @@
                             <h2 class="form-title">إعدادات المزامنة</h2>
                             <p class="form-subtitle">إعدادات مزامنة البيانات مع Firebase</p>
                         </div>
-                        
+
                         <div class="form-group">
                             <div class="form-check">
-                                <input type="checkbox" class="form-check-input" id="syncEnabled" onchange="toggleSync(this.checked)">
+                                <input type="checkbox" class="form-check-input" id="syncEnabled"
+                                    onchange="toggleSync(this.checked)">
                                 <label class="form-check-label" for="syncEnabled">تفعيل المزامنة مع Firebase</label>
                             </div>
                             <p class="form-text">سيتم مزامنة البيانات تلقائيًا كل 5 دقائق وعند إجراء تغييرات.</p>
                         </div>
-                        
+
                         <div id="connectionInfo" style="display: none;">
                             <div class="form-group">
                                 <label class="form-label">حالة الاتصال</label>
@@ -1856,31 +1836,33 @@
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <div class="form-row">
                                 <button class="btn btn-primary" onclick="window.firebaseApp.showLoginDialog()">
                                     <i class="fas fa-sign-in-alt"></i> تسجيل الدخول
                                 </button>
-                                <button class="btn btn-light" onclick="window.firebaseApp.signOut()" id="signOutButton" style="display: none;">
+                                <button class="btn btn-light" onclick="window.firebaseApp.signOut()" id="signOutButton"
+                                    style="display: none;">
                                     <i class="fas fa-sign-out-alt"></i> تسجيل الخروج
                                 </button>
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="form-container">
                         <div class="form-header">
                             <h2 class="form-title">النسخ الاحتياطي</h2>
                             <p class="form-subtitle">إدارة النسخ الاحتياطية في Firebase</p>
                         </div>
-                        
+
                         <div class="form-row">
                             <div class="form-group">
                                 <label class="form-label">إنشاء نسخة احتياطية</label>
                                 <button class="btn btn-primary" onclick="createFirebaseBackupFromSettings()">
                                     <i class="fas fa-cloud-upload-alt"></i> إنشاء نسخة احتياطية في Firebase
                                 </button>
-                                <p class="form-text">قم بإنشاء نسخة احتياطية كاملة من جميع بيانات النظام في Firebase.</p>
+                                <p class="form-text">قم بإنشاء نسخة احتياطية كاملة من جميع بيانات النظام في Firebase.
+                                </p>
                             </div>
                             <div class="form-group">
                                 <label class="form-label">استعادة نسخة احتياطية</label>
@@ -1890,12 +1872,13 @@
                                 <p class="form-text">عرض واستعادة النسخ الاحتياطية المخزنة في Firebase.</p>
                             </div>
                         </div>
-                        
+
                         <div class="form-group">
                             <label class="form-label">النسخ الاحتياطية التلقائية</label>
                             <div class="form-check">
                                 <input type="checkbox" class="form-check-input" id="autoBackupEnabled">
-                                <label class="form-check-label" for="autoBackupEnabled">تفعيل النسخ الاحتياطي التلقائي</label>
+                                <label class="form-check-label" for="autoBackupEnabled">تفعيل النسخ الاحتياطي
+                                    التلقائي</label>
                             </div>
                             <select class="form-select" id="autoBackupFrequency" style="margin-top: 10px;">
                                 <option value="daily">يوميًا</option>
@@ -1905,13 +1888,13 @@
                             <p class="form-text">سيتم إنشاء نسخة احتياطية تلقائيًا حسب الجدول المحدد.</p>
                         </div>
                     </div>
-                    
+
                     <div class="form-container">
                         <div class="form-header">
                             <h2 class="form-title">الأنشطة والسجلات</h2>
                             <p class="form-subtitle">إدارة سجلات النظام</p>
                         </div>
-                        
+
                         <div class="form-group">
                             <div class="form-check">
                                 <input type="checkbox" class="form-check-input" id="activityLoggingEnabled" checked>
@@ -1919,14 +1902,14 @@
                             </div>
                             <p class="form-text">سيتم تسجيل جميع الأنشطة في النظام في Firebase.</p>
                         </div>
-                        
+
                         <div class="form-group">
                             <button class="btn btn-primary" onclick="window.firebaseApp.showActivitiesLog()">
                                 <i class="fas fa-history"></i> عرض سجل الأنشطة
                             </button>
                         </div>
                     </div>
-                    
+
                     <div class="form-group">
                         <button type="button" class="btn btn-primary" onclick="saveSyncSettings()">
                             <i class="fas fa-save"></i> حفظ الإعدادات
@@ -2406,14 +2389,14 @@
                         </form>
                     </div>
                 </div>
-                
+
                 <div id="syncOptions" style="display: none;">
                     <div class="form-container">
                         <div class="form-header">
                             <h2 class="form-title">خيارات المزامنة</h2>
                             <p class="form-subtitle">تم تسجيل الدخول كـ <span id="loggedInUser"></span></p>
                         </div>
-                        
+
                         <div class="form-group">
                             <h3 class="form-subtitle">الحالة</h3>
                             <div class="alert alert-info" id="syncStatusAlert">
@@ -2428,12 +2411,13 @@
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div class="form-group">
                             <button class="btn btn-primary" id="startSyncButton" onclick="startSync()">
                                 <i class="fas fa-play"></i> بدء المزامنة
                             </button>
-                            <button class="btn btn-danger" id="stopSyncButton" onclick="stopSync()" style="display: none;">
+                            <button class="btn btn-danger" id="stopSyncButton" onclick="stopSync()"
+                                style="display: none;">
                                 <i class="fas fa-stop"></i> إيقاف المزامنة
                             </button>
 
@@ -2441,7 +2425,7 @@
                                 <i class="fas fa-sync"></i> تحديث قائمة النسخ الاحتياطية
                             </button>
                         </div>
-                        
+
                         <div class="form-group">
                             <h3 class="form-subtitle">النسخ الاحتياطية</h3>
                             <select class="form-select" id="backupsList" size="5" style="height: auto;">
@@ -2549,10 +2533,13 @@
     </div>
     <script src="chart-utils.js"></script>
     <script src="app.js"></script>
+   
+
+    <script src="settings-fix.js"></script>
     <script src="firebase-integration.js"></script>
     <script src="firebase-fix.js"></script>
-    <script src="fixes.js"></script>  <!-- Add this line -->
-    
+    <script src="fixes.js"></script> <!-- Add this line -->
+
     <script src="daily-profit-calculations.js"></script>
 
     <script src="investor-card-system.js"></script>
@@ -2561,15 +2548,40 @@
     <script src="installment-system.js"></script>
     <script src="installment2-system.js"></script>
     <script src="app-enhancements.js"></script>
-    
-    <script src="employee-system.js"></script>
-<script src="installment-system.js"></script>
 
-<script src="employee-system.js"></script>
-<script src="installment-system.js"></script>
+    <script src="employee-system.js"></script>
+    <script src="installment-system.js"></script>
+
+    <script src="employee-system.js"></script>
+    <script src="installment-system.js"></script>
 
     <script src="electron-integration.js"></script>
     <script src="electron-backup-fix.js"></script>
+
+
+
+
+
+    <link rel="stylesheet" href="notification-styles.css">
+<script src="notification-enhancements.js"></script>
+<script src="toast-enhancements.js"></script>
+<script src="notification-integration.js"></script>
+
+
+<link rel="stylesheet" href="central-notification-styles.css">
+<script src="central-notification-panel.js"></script>
+<script src="accumulated-profits.js"></script>
+<script src="notification2-integration.js"></script>
+<script src="notification-search-fixed.js"></script>
+
+
+<link rel="stylesheet" href="comprehensive-backup-styles.css">
+<script src="comprehensive-backup.js"></script>
+<script src="backup-reports.js"></script>
+
+
+
+
 
 
 </body>
