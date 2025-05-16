@@ -148,6 +148,7 @@ const DEFAULT_SESSION_DURATION = 30;
 let activityLog = [];
 
 // تهيئة نظام الأمان
+// تهيئة نظام الأمان
 function initSecuritySystem() {
     // التحقق من وجود مستخدم مسجل دخوله في الجلسة
     const savedUser = sessionStorage.getItem('currentUser');
@@ -161,6 +162,9 @@ function initSecuritySystem() {
         // عرض شاشة تسجيل الدخول
         showLoginScreen();
     }
+    
+    // إضافة زر الأمان إلى الشريط الجانبي - إضافة جديدة
+    addSecuritySidebarButton();
     
     // إضافة علامة تبويب الأمان إلى صفحة الإعدادات
     if (document.getElementById('settings')) {
@@ -3626,3 +3630,295 @@ window.securitySystemPart2 = {
     checkNewUserPasswordStrength,
     checkPasswordMatch
 };
+
+// إضافة زر الأمان في الشريط الجانبي
+function addSecuritySidebarButton() {
+    // البحث عن الشريط الجانبي
+    const sidebar = document.querySelector('.sidebar-menu');
+    if (!sidebar) return;
+    
+    // التحقق من عدم وجود الزر مسبقاً
+    if (document.querySelector('.menu-item[href="#security"]')) return;
+    
+    // إنشاء زر الأمان
+    const securityButton = document.createElement('a');
+    securityButton.href = "#security";
+    securityButton.className = "menu-item";
+    securityButton.onclick = function() { showSecurityPage(); return false; };
+    securityButton.innerHTML = `
+        <div class="menu-icon">
+            <i class="fas fa-shield-alt"></i>
+        </div>
+        <span class="menu-title">الأمان والمستخدمين</span>
+    `;
+    
+    // إضافة الزر إلى الشريط الجانبي قبل زر الإعدادات
+    const settingsButton = document.querySelector('.menu-item[href="#settings"]');
+    if (settingsButton) {
+        sidebar.insertBefore(securityButton, settingsButton);
+    } else {
+        // إذا لم يتم العثور على زر الإعدادات، أضف الزر في نهاية القائمة
+        sidebar.appendChild(securityButton);
+    }
+    
+    // إنشاء صفحة الأمان إذا لم تكن موجودة
+    createSecurityPage();
+}
+
+// إنشاء صفحة الأمان
+function createSecurityPage() {
+    // التحقق من عدم وجود الصفحة مسبقاً
+    if (document.getElementById('security')) return;
+    
+    // إنشاء صفحة الأمان
+    const securityPage = document.createElement('div');
+    securityPage.id = "security";
+    securityPage.className = "page";
+    
+    securityPage.innerHTML = `
+        <div class="page-header">
+            <h1 class="page-title"><i class="fas fa-shield-alt"></i> الأمان وإدارة المستخدمين</h1>
+            <p class="page-subtitle">إدارة المستخدمين والصلاحيات وإعدادات الأمان</p>
+        </div>
+        
+        <div class="form-container">
+            <!-- قسم إدارة المستخدمين -->
+            <div class="form-header">
+                <h2 class="form-title"><i class="fas fa-users-cog"></i> إدارة المستخدمين</h2>
+                <p class="form-subtitle">إضافة وتعديل المستخدمين وإدارة الصلاحيات</p>
+            </div>
+            
+            <div class="table-container">
+                <div class="table-header">
+                    <div class="table-title">قائمة المستخدمين</div>
+                    <button class="btn btn-primary" onclick="securitySystem.openAddUserModal()">
+                        <i class="fas fa-user-plus"></i> إضافة مستخدم
+                    </button>
+                </div>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>اسم المستخدم</th>
+                            <th>الاسم الكامل</th>
+                            <th>الدور</th>
+                            <th>البريد الإلكتروني</th>
+                            <th>آخر تسجيل دخول</th>
+                            <th>الحالة</th>
+                            <th>إجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersTableBody">
+                        <!-- سيتم ملؤها بواسطة JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- قسم كلمة المرور -->
+            <div class="form-container">
+                <div class="form-header">
+                    <h2 class="form-title"><i class="fas fa-key"></i> تغيير كلمة المرور</h2>
+                </div>
+                <form id="changePasswordForm" onsubmit="securitySystem.changeCurrentUserPassword(event)">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">كلمة المرور الحالية</label>
+                            <div class="password-input-container">
+                                <input type="password" class="form-control" id="currentPassword" required>
+                                <button type="button" class="password-toggle" onclick="securitySystem.togglePasswordField('currentPassword')">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">كلمة المرور الجديدة</label>
+                            <div class="password-input-container">
+                                <input type="password" class="form-control" id="newPassword" required>
+                                <button type="button" class="password-toggle" onclick="securitySystem.togglePasswordField('newPassword')">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                            <div class="password-strength" id="passwordStrength">
+                                <div class="strength-meter">
+                                    <div class="strength-meter-fill" id="strengthMeter"></div>
+                                </div>
+                                <div class="strength-text" id="strengthText">ضعيفة</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">تأكيد كلمة المرور الجديدة</label>
+                            <div class="password-input-container">
+                                <input type="password" class="form-control" id="confirmPassword" required>
+                                <button type="button" class="password-toggle" onclick="securitySystem.togglePasswordField('confirmPassword')">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="password-requirements">
+                                <h4>متطلبات كلمة المرور:</h4>
+                                <ul>
+                                    <li id="req-length"><i class="fas fa-times-circle"></i> 8 أحرف على الأقل</li>
+                                    <li id="req-uppercase"><i class="fas fa-times-circle"></i> حرف كبير واحد على الأقل</li>
+                                    <li id="req-lowercase"><i class="fas fa-times-circle"></i> حرف صغير واحد على الأقل</li>
+                                    <li id="req-number"><i class="fas fa-times-circle"></i> رقم واحد على الأقل</li>
+                                    <li id="req-special"><i class="fas fa-times-circle"></i> حرف خاص واحد على الأقل</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> تغيير كلمة المرور
+                        </button>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- باقي محتويات صفحة الأمان (نفس المحتوى من تبويب الأمان) -->
+            
+            <!-- سجل الأنشطة -->
+            <div class="form-container">
+                <div class="form-header">
+                    <h2 class="form-title"><i class="fas fa-history"></i> سجل الأنشطة</h2>
+                </div>
+                <div class="activity-log-filters">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">تصفية حسب النوع</label>
+                            <select class="form-select" id="activityTypeFilter" onchange="securitySystem.filterActivityLog()">
+                                <option value="all">الكل</option>
+                                <option value="login">تسجيل الدخول</option>
+                                <option value="logout">تسجيل الخروج</option>
+                                <option value="security">الأمان</option>
+                                <option value="user">إدارة المستخدمين</option>
+                                <option value="settings">الإعدادات</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">تصفية حسب المستخدم</label>
+                            <select class="form-select" id="activityUserFilter" onchange="securitySystem.filterActivityLog()">
+                                <option value="all">الكل</option>
+                                <!-- سيتم ملؤها بواسطة JavaScript -->
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">تصفية حسب التاريخ</label>
+                            <input type="date" class="form-control" id="activityDateFilter" onchange="securitySystem.filterActivityLog()">
+                        </div>
+                    </div>
+                </div>
+                <div class="table-container" style="max-height: 400px; overflow-y: auto;">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>التاريخ والوقت</th>
+                                <th>المستخدم</th>
+                                <th>النوع</th>
+                                <th>الوصف</th>
+                                <th>عنوان IP</th>
+                            </tr>
+                        </thead>
+                        <tbody id="activityLogTableBody">
+                            <!-- سيتم ملؤها بواسطة JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+                <div class="activity-log-actions">
+                    <button class="btn btn-primary" onclick="securitySystem.exportActivityLog()">
+                        <i class="fas fa-file-export"></i> تصدير السجل
+                    </button>
+                    <button class="btn btn-danger" onclick="securitySystem.clearActivityLog()">
+                        <i class="fas fa-trash"></i> مسح السجل
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // إضافة الصفحة إلى الوثيقة
+    document.querySelector('.content').appendChild(securityPage);
+    
+    // ربط مستمعات الأحداث
+    const newPasswordInput = document.getElementById('newPassword');
+    if (newPasswordInput) {
+        newPasswordInput.addEventListener('input', checkPasswordStrength);
+    }
+    
+    // ملء جدول المستخدمين
+    populateUsersTable();
+    
+    // ملء سجل الأنشطة
+    populateActivityLog();
+    
+    // ملء قائمة المستخدمين في تصفية سجل الأنشطة
+    populateActivityUserFilter();
+}
+
+// عرض صفحة الأمان
+function showSecurityPage() {
+    // إخفاء جميع الصفحات
+    document.querySelectorAll('.page').forEach(page => {
+        page.classList.remove('active');
+    });
+    
+    // عرض صفحة الأمان
+    document.getElementById('security').classList.add('active');
+    
+    // تحديث العنصر النشط في القائمة
+    document.querySelectorAll('.menu-item').forEach(item => {
+        item.classList.remove('active');
+    });
+    
+    document.querySelector('.menu-item[href="#security"]').classList.add('active');
+    
+    // تحديث جدول المستخدمين وسجل الأنشطة
+    populateUsersTable();
+    populateActivityLog();
+}
+
+// تصدير وظائف النظام للوصول إليها من خارج الملف
+window.securitySystem = {
+    // تهيئة النظام
+    initSecuritySystem,
+    
+    // وظائف تسجيل الدخول والخروج
+    attemptLogin,
+    logout,
+    togglePasswordVisibility,
+    showForgotPasswordForm,
+    resetPassword,
+    showHelpInfo,
+    
+    // وظائف الشريط الجانبي (جديدة)
+    addSecuritySidebarButton,
+    showSecurityPage,
+    
+    // وظائف إدارة المستخدمين
+    openAddUserModal,
+    saveNewUser,
+    editUser,
+    updateUser,
+    unlockUser,
+    deleteUser,
+    togglePasswordField: togglePasswordVisibility,
+    
+    // وظائف إدارة الصلاحيات
+    selectAllPermissions,
+    deselectAllPermissions,
+    loadDefaultPermissions,
+    
+    // وظائف إدارة المستخدم الحالي
+    changeCurrentUserPassword,
+    
+    // وظائف سجل الأنشطة
+    exportActivityLog,
+    clearActivityLog,
+    filterActivityLog,
+    
+    // وظائف إعدادات الأمان
+    saveSecuritySettings
+};
+
