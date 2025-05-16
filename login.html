@@ -1,0 +1,1435 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام إدارة الاستثمار المتطور</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+
+    <!-- إضافة نظام الأمان المتكامل -->
+    <style>
+        /* الأنماط الأساسية لنظام الأمان */
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2ecc71;
+            --warning-color: #f39c12;
+            --danger-color: #e74c3c;
+            --info-color: #3498db;
+            --gray-100: #f8f9fa;
+            --gray-200: #e9ecef;
+            --gray-300: #dee2e6;
+            --gray-400: #ced4da;
+            --gray-500: #adb5bd;
+            --gray-600: #6c757d;
+            --gray-700: #495057;
+            --gray-800: #343a40;
+            --gray-900: #212529;
+            --border-radius: 6px;
+            --border-radius-sm: 4px;
+            --box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        /* أنماط شاشة تسجيل الدخول */
+        .login-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #1a237e, #0d47a1);
+            z-index: 9999;
+            direction: rtl;
+        }
+        
+        .login-box {
+            width: 400px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .login-header {
+            background-color: #f5f5f5;
+            padding: 20px;
+            text-align: center;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .login-header h1 {
+            margin: 0;
+            font-size: 1.5rem;
+            color: #333;
+        }
+        
+        .login-header .app-icon {
+            margin-bottom: 10px;
+            font-size: 2.5rem;
+            color: var(--primary-color);
+        }
+        
+        .login-form {
+            padding: 20px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 10px 15px;
+            border: 1px solid var(--gray-300);
+            border-radius: var(--border-radius);
+            transition: border-color 0.3s ease;
+            font-size: 1rem;
+        }
+        
+        .form-control:focus {
+            border-color: var(--primary-color);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+        }
+        
+        .login-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+        
+        .login-footer {
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            border-top: 1px solid #eee;
+            font-size: 0.8rem;
+            color: #666;
+        }
+        
+        .btn {
+            display: inline-block;
+            font-weight: 600;
+            padding: 10px 15px;
+            border-radius: var(--border-radius);
+            text-align: center;
+            cursor: pointer;
+            border: none;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: #2980b9;
+        }
+        
+        .btn-block {
+            width: 100%;
+        }
+        
+        .password-input {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        
+        .toggle-password {
+            position: absolute;
+            left: 10px;
+            background: none;
+            border: none;
+            color: #666;
+            cursor: pointer;
+        }
+        
+        .shake {
+            animation: shake 0.5s;
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-10px); }
+            20%, 40%, 60%, 80% { transform: translateX(10px); }
+        }
+        
+        /* أنماط نافذة الترحيب */
+        .welcome-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            direction: rtl;
+            opacity: 1;
+            transition: opacity 0.5s ease;
+        }
+        
+        .welcome-overlay.fade-out {
+            opacity: 0;
+        }
+        
+        .welcome-content {
+            text-align: center;
+        }
+        
+        .welcome-icon {
+            font-size: 5rem;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+        }
+        
+        .welcome-content h2 {
+            margin-bottom: 10px;
+            font-size: 2rem;
+        }
+        
+        .welcome-content p {
+            margin-bottom: 20px;
+            font-size: 1.2rem;
+            opacity: 0.8;
+        }
+        
+        .loading-spinner {
+            margin-top: 30px;
+        }
+        
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            margin: 0 auto;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* أنماط شاشة تحذير انتهاء الجلسة */
+        .session-timeout-warning {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            direction: rtl;
+        }
+        
+        .session-timeout-content {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            width: 400px;
+            text-align: center;
+        }
+        
+        .session-timeout-header {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 20px;
+            color: #e74c3c;
+        }
+        
+        .session-timeout-header i {
+            font-size: 3rem;
+            margin-bottom: 10px;
+        }
+        
+        .session-timeout-header h3 {
+            margin: 0;
+        }
+        
+        .session-timeout-actions {
+            margin-top: 20px;
+        }
+        
+        /* أنماط صفحة إعدادات الأمان */
+        .security-tab-content {
+            display: none;
+            padding: 20px;
+        }
+        
+        .security-tab-content.active {
+            display: block;
+        }
+        
+        .permissions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .permission-item {
+            display: flex;
+            align-items: center;
+            padding: 5px;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+        }
+        
+        .permission-item input {
+            margin-left: 10px;
+        }
+        
+        /* أنماط قوة كلمة المرور */
+        .password-strength {
+            margin-top: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .strength-bar {
+            height: 5px;
+            width: 0;
+            background-color: #ddd;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+        }
+        
+        .strength-bar.weak {
+            background-color: #e74c3c;
+        }
+        
+        .strength-bar.moderate {
+            background-color: #f39c12;
+        }
+        
+        .strength-bar.strong {
+            background-color: #3498db;
+        }
+        
+        .strength-bar.very-strong {
+            background-color: #2ecc71;
+        }
+        
+        .strength-text {
+            font-size: 0.8rem;
+            color: var(--gray-600);
+            margin-top: 5px;
+        }
+    </style>
+    <link href="style.css" rel="stylesheet" />
+</head>
+
+<body>
+    <!-- شاشة تسجيل الدخول ستتم إضافتها ديناميكياً بواسطة JavaScript -->
+    
+    <!-- شريط العنوان المخصص -->
+    <div class="title-bar">
+        <div class="title-bar-left">
+            <div class="app-icon">
+                <i class="fas fa-chart-line"></i>
+            </div>
+            <div class="app-title">نظام إدارة الاستثمار المتطور</div>
+        </div>
+        <div class="title-bar-center">
+            <div class="exchange-rate" id="exchangeRate">
+                <i class="fas fa-dollar-sign"></i>
+                <span id="exchangeRateValue">جاري التحميل...</span>
+            </div>
+            <div class="clock" id="clock">00:00:00</div>
+        </div>
+        <div class="title-bar-right">
+            <!-- إضافة زر تسجيل الخروج -->
+            <button class="title-bar-button logout-button" id="logoutButton" title="تسجيل الخروج">
+                <i class="fas fa-sign-out-alt"></i>
+            </button>
+            <button class="title-bar-button refresh-button" id="refreshButton" title="تحديث">
+                <i class="fas fa-sync-alt"></i>
+            </button>
+            <button class="title-bar-button minimize-button" id="minimizeButton">
+                <i class="fas fa-window-minimize"></i>
+            </button>
+            <button class="title-bar-button maximize-button" id="maximizeButton">
+                <i class="fas fa-window-maximize"></i>
+            </button>
+            <button class="title-bar-button close-button" id="closeButton">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    </div>
+    <!-- نهاية شريط العنوان -->
+    <div class="app-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+
+            <div class="sidebar-menu">
+                <div class="menu-category">لوحة التحكم</div>
+                <a href="#dashboard" class="menu-item active" onclick="showPage('dashboard')">
+                    <span class="menu-icon"><i class="fas fa-tachometer-alt"></i></span>
+                    <span>الرئيسية</span>
+                </a>
+                <a href="#analytics" class="menu-item" onclick="showPage('analytics')">
+                    <span class="menu-icon"><i class="fas fa-chart-bar"></i></span>
+                    <span>التحليلات</span>
+                </a>
+
+                <div class="menu-category">إدارة الاستثمار</div>
+                <a href="#investors" class="menu-item" onclick="showPage('investors')">
+                    <span class="menu-icon"><i class="fas fa-users"></i></span>
+                    <span>المستثمرين</span>
+                </a>
+                <a href="#investments" class="menu-item" onclick="showPage('investments')">
+                    <span class="menu-icon"><i class="fas fa-money-bill-wave"></i></span>
+                    <span>الاستثمارات</span>
+                </a>
+                <a href="#profits" class="menu-item" onclick="showPage('profits')">
+                    <span class="menu-icon"><i class="fas fa-hand-holding-usd"></i></span>
+                    <span>الأرباح</span>
+                </a>
+                <a href="#operations" class="menu-item" onclick="showPage('operations')">
+                    <span class="menu-icon"><i class="fas fa-exchange-alt"></i></span>
+                    <span>العمليات</span>
+                    <span class="menu-badge" id="operationsBadge">0</span>
+                </a>
+
+                <div class="menu-category">التقارير</div>
+                <a href="#reports" class="menu-item" onclick="showPage('reports')">
+                    <span class="menu-icon"><i class="fas fa-file-alt"></i></span>
+                    <span>التقارير</span>
+                </a>
+                <a href="#financial" class="menu-item" onclick="showPage('financial')">
+                    <span class="menu-icon"><i class="fas fa-file-invoice-dollar"></i></span>
+                    <span>التقارير المالية</span>
+                </a>
+
+                <div class="menu-category">النظام</div>
+                <a href="#calendar" class="menu-item" onclick="showPage('calendar')">
+                    <span class="menu-icon"><i class="fas fa-calendar-alt"></i></span>
+                    <span>التقويم</span>
+                </a>
+                <a href="#notifications" class="menu-item" onclick="toggleNotificationPanel()">
+                    <span class="menu-icon"><i class="fas fa-bell"></i></span>
+                    <span>الإشعارات</span>
+                    <span class="menu-badge" id="notificationBadge">0</span>
+                </a>
+                <a href="#settings" class="menu-item" onclick="showPage('settings')">
+                    <span class="menu-icon"><i class="fas fa-cog"></i></span>
+                    <span>الإعدادات</span>
+                </a>
+            </div>
+            <div class="sidebar-footer">
+                <div class="sidebar-user">
+                    <div class="user-avatar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="user-info">
+                        <div class="user-name">المدير</div>
+                        <div class="user-role">مسؤول النظام</div>
+                    </div>
+                </div>
+                <div class="logout-btn" id="sidebarLogoutBtn">
+                    <i class="fas fa-sign-out-alt"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Content Area -->
+        <div class="content">
+            <!-- Dashboard Page -->
+            <div id="dashboard" class="page active">
+                <div class="header">
+                    <h1 class="page-title">لوحة التحكم</h1>
+                    <div class="header-actions">
+                        <div class="search-bar">
+                            <input type="text" class="search-input" placeholder="بحث...">
+                            <i class="fas fa-search search-icon"></i>
+                        </div>
+                        <div class="notification-btn" onclick="toggleNotificationPanel()">
+                            <i class="fas fa-bell"></i>
+                            <span class="notification-badge" id="notificationBadgeHeader">0</span>
+                        </div>
+                        <div class="menu-toggle" onclick="toggleSidebar()">
+                            <i class="fas fa-bars"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="alert alert-info">
+                    <div class="alert-icon">
+                        <i class="fas fa-info"></i>
+                    </div>
+                    <div class="alert-content">
+                        <div class="alert-title">مرحباً بك في النظام</div>
+                        <div class="alert-text" id="dashboardAlertText">مرحباً بك في نظام إدارة الاستثمار. اضغط على أي
+                            عنصر من القائمة الجانبية للتنقل.</div>
+                    </div>
+                </div>
+
+                <div class="dashboard-cards">
+                    <div class="card">
+                        <div class="card-bg primary">
+                            <i class="fas fa-users fa-4x"></i>
+                        </div>
+                        <div class="card-header">
+                            <div>
+                                <div class="card-title">إجمالي المستثمرين</div>
+                                <div class="card-value" id="totalInvestors">0</div>
+                                <div class="card-change up">
+                                    <i class="fas fa-arrow-up"></i>
+                                    <span id="investorsChangeText">0% منذ الشهر الماضي</span>
+                                </div>
+                            </div>
+                            <div class="card-icon primary">
+                                <i class="fas fa-users"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- باقي البطاقات هنا... -->
+                </div>
+
+                <!-- باقي محتوى لوحة التحكم... -->
+            </div>
+
+            <!-- Settings Page -->
+            <div id="settings" class="page">
+                <div class="header">
+                    <h1 class="page-title">الإعدادات</h1>
+                    <div class="header-actions">
+                        <div class="notification-btn" onclick="toggleNotificationPanel()">
+                            <i class="fas fa-bell"></i>
+                            <span class="notification-badge">0</span>
+                        </div>
+                        <div class="menu-toggle" onclick="toggleSidebar()">
+                            <i class="fas fa-bars"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tabs">
+                    <div class="tab active" onclick="switchSettingsTab('general')">عام</div>
+                    <div class="tab" onclick="switchSettingsTab('investment')">الاستثمار</div>
+                    <div class="tab" onclick="switchSettingsTab('profile')">الملف الشخصي</div>
+                    <div class="tab" onclick="switchSettingsTab('notifications')">الإشعارات</div>
+                    <div class="tab" onclick="switchSettingsTab('system')">النظام</div>
+                    <div class="tab" onclick="switchSettingsTab('sync')">المزامنة والنسخ الاحتياطي</div>
+                    <!-- تم إضافة تبويب الأمان (سيتم إضافته ديناميكياً بواسطة نظام الأمان) -->
+                </div>
+
+                <!-- محتوى تبويبات الإعدادات (سيتم تعبئتها ديناميكياً) -->
+                <div id="generalSettings" class="settings-tab-content active">
+                    <!-- محتوى الإعدادات العامة -->
+                </div>
+
+                <div id="investmentSettings" class="settings-tab-content">
+                    <!-- محتوى إعدادات الاستثمار -->
+                </div>
+
+                <div id="profileSettings" class="settings-tab-content">
+                    <!-- محتوى إعدادات الملف الشخصي -->
+                </div>
+
+                <div id="notificationSettings" class="settings-tab-content">
+                    <!-- محتوى إعدادات الإشعارات -->
+                </div>
+
+                <div id="systemSettings" class="settings-tab-content">
+                    <!-- محتوى إعدادات النظام -->
+                </div>
+
+                <div id="syncSettings" class="settings-tab-content">
+                    <!-- محتوى إعدادات المزامنة -->
+                </div>
+
+                <!-- تبويب إعدادات الأمان ستتم إضافته ديناميكياً -->
+            </div>
+
+            <!-- بقية الصفحات هنا -->
+        </div>
+    </div>
+
+    <!-- النوافذ المنبثقة والمكونات التي تضاف ديناميكياً -->
+
+    <!-- نظام الأمان المتكامل -->
+    <script>
+        /**
+         * نظام الأمان المتكامل للتطبيق - الإعداد والتهيئة
+         */
+
+        // ===================== بيانات النظام =====================
+        // المستخدمين الافتراضيين (المدير والمستخدم)
+        const defaultUsers = [
+            {
+                id: "admin-1",
+                username: "00000000",
+                password: "00000000", // هذه كلمة المرور الافتراضية
+                fullName: "المدير",
+                role: "admin",
+                email: "admin@example.com",
+                active: true,
+                lastLogin: null,
+                createdAt: new Date().toISOString()
+            },
+            {
+                id: "user-1",
+                username: "user",
+                password: "password", // كلمة مرور افتراضية للمستخدم العادي
+                fullName: "المستخدم",
+                role: "user",
+                email: "user@example.com",
+                active: true,
+                lastLogin: null,
+                createdAt: new Date().toISOString()
+            }
+        ];
+
+        // تحديد الأدوار والصلاحيات
+        const defaultRoles = {
+            admin: {
+                name: "المدير",
+                description: "وصول كامل لجميع الميزات",
+                permissions: {
+                    dashboard: true,
+                    analytics: true,
+                    investors: true,
+                    investments: true,
+                    profits: true,
+                    operations: true,
+                    reports: true,
+                    financial: true,
+                    calendar: true,
+                    settings: true,
+                    security: true,
+                    users: true
+                }
+            },
+            user: {
+                name: "مستخدم",
+                description: "وصول محدود للميزات",
+                permissions: {
+                    dashboard: true,
+                    analytics: false,
+                    investors: true,
+                    investments: true,
+                    profits: false,
+                    operations: false,
+                    reports: false,
+                    financial: false,
+                    calendar: true,
+                    settings: false,
+                    security: false,
+                    users: false
+                }
+            }
+        };
+
+        // ===================== التهيئة الرئيسية للنظام =====================
+        
+        // إخفاء واجهة التطبيق عند التحميل
+        document.addEventListener('DOMContentLoaded', function() {
+            // إخفاء واجهة التطبيق
+            document.querySelector('.app-container').style.display = 'none';
+            
+            // تهيئة نظام الأمان
+            initSecuritySystem();
+            
+            // إضافة مستمع لأزرار تسجيل الخروج
+            document.getElementById('logoutButton').addEventListener('click', function() {
+                handleLogout();
+            });
+            
+            document.getElementById('sidebarLogoutBtn').addEventListener('click', function() {
+                handleLogout();
+            });
+        });
+
+        // تهيئة نظام الأمان
+        function initSecuritySystem() {
+            // تهيئة البيانات الأولية
+            initializeSecuritySystem();
+            
+            // التحقق من جلسة "تذكرني" نشطة
+            if (!checkRememberSession()) {
+                // عرض صفحة تسجيل الدخول
+                createLoginPage();
+            }
+        }
+
+        // تهيئة البيانات الأولية للنظام
+        function initializeSecuritySystem() {
+            if (!localStorage.getItem('appUsers')) {
+                localStorage.setItem('appUsers', JSON.stringify(defaultUsers));
+            }
+            
+            if (!localStorage.getItem('appRoles')) {
+                localStorage.setItem('appRoles', JSON.stringify(defaultRoles));
+            }
+            
+            if (!localStorage.getItem('securitySettings')) {
+                const defaultSettings = {
+                    loginAttempts: 5,                // عدد محاولات تسجيل الدخول المسموح بها
+                    lockDuration: 15,                // مدة القفل بالدقائق
+                    sessionTimeout: 30,              // مدة انتهاء الجلسة بالدقائق
+                    enforceStrongPassword: false,    // فرض كلمات مرور قوية
+                    twoFactorAuth: false,            // المصادقة الثنائية
+                    logActivities: true,             // تسجيل النشاطات
+                    autoLogout: true                 // تسجيل الخروج التلقائي
+                };
+                
+                localStorage.setItem('securitySettings', JSON.stringify(defaultSettings));
+            }
+            
+            if (!localStorage.getItem('activityLogs')) {
+                localStorage.setItem('activityLogs', JSON.stringify([]));
+            }
+        }
+
+        // ===================== إدارة البيانات =====================
+        
+        // الحصول على قائمة المستخدمين
+        function getUsers() {
+            return JSON.parse(localStorage.getItem('appUsers') || '[]');
+        }
+
+        // الحصول على قائمة الأدوار
+        function getRoles() {
+            return JSON.parse(localStorage.getItem('appRoles') || '{}');
+        }
+
+        // الحصول على إعدادات الأمان
+        function getSecuritySettings() {
+            return JSON.parse(localStorage.getItem('securitySettings') || '{}');
+        }
+
+        // حفظ المستخدمين
+        function saveUsers(users) {
+            localStorage.setItem('appUsers', JSON.stringify(users));
+        }
+
+        // ===================== إدارة المصادقة =====================
+        
+        // التحقق من صحة اسم المستخدم وكلمة المرور
+        function authenticate(username, password) {
+            const users = getUsers();
+            const user = users.find(u => u.username === username && u.password === password && u.active);
+            
+            if (user) {
+                // تحديث آخر تسجيل دخول
+                user.lastLogin = new Date().toISOString();
+                saveUsers(users);
+                
+                // إنشاء بيانات الجلسة
+                const session = {
+                    userId: user.id,
+                    username: user.username,
+                    role: user.role,
+                    fullName: user.fullName,
+                    loginTime: new Date().toISOString(),
+                    expiryTime: calculateSessionExpiry()
+                };
+                
+                // حفظ الجلسة
+                localStorage.setItem('currentSession', JSON.stringify(session));
+                
+                // تسجيل النشاط
+                addActivityLog({
+                    action: 'تسجيل دخول ناجح',
+                    username: user.username,
+                    details: {
+                        role: user.role,
+                        timestamp: new Date().toISOString()
+                    }
+                });
+                
+                return { success: true, user, session };
+            } else {
+                // تسجيل محاولة فاشلة
+                const failedUser = users.find(u => u.username === username);
+                
+                addActivityLog({
+                    action: 'محاولة تسجيل دخول فاشلة',
+                    username: username,
+                    details: {
+                        reason: failedUser ? 'كلمة مرور خاطئة' : 'حساب غير موجود',
+                        timestamp: new Date().toISOString()
+                    }
+                });
+                
+                return { success: false, error: 'بيانات الدخول غير صحيحة' };
+            }
+        }
+
+        // حساب وقت انتهاء الجلسة
+        function calculateSessionExpiry() {
+            const settings = getSecuritySettings();
+            const timeout = settings.sessionTimeout || 30; // الافتراضي 30 دقيقة
+            const expiryTime = new Date();
+            expiryTime.setMinutes(expiryTime.getMinutes() + timeout);
+            return expiryTime.toISOString();
+        }
+
+        // التحقق من صلاحية الجلسة
+        function validateSession() {
+            const sessionData = localStorage.getItem('currentSession');
+            
+            if (!sessionData) {
+                return { valid: false, error: 'جلسة غير موجودة' };
+            }
+            
+            const session = JSON.parse(sessionData);
+            const now = new Date();
+            const expiry = new Date(session.expiryTime);
+            
+            if (now > expiry) {
+                // الجلسة منتهية
+                localStorage.removeItem('currentSession');
+                return { valid: false, error: 'انتهت صلاحية الجلسة' };
+            }
+            
+            // تمديد وقت انتهاء الجلسة
+            session.expiryTime = calculateSessionExpiry();
+            localStorage.setItem('currentSession', JSON.stringify(session));
+            
+            return { valid: true, session };
+        }
+
+        // الحصول على المستخدم الحالي
+        function getCurrentUser() {
+            const sessionValidation = validateSession();
+            
+            if (!sessionValidation.valid) {
+                return null;
+            }
+            
+            const users = getUsers();
+            return users.find(u => u.id === sessionValidation.session.userId);
+        }
+
+        // ===================== وظائف واجهة المستخدم =====================
+        
+        // إنشاء صفحة تسجيل الدخول
+        function createLoginPage() {
+            // إنشاء عنصر الصفحة
+            const loginPage = document.createElement('div');
+            loginPage.id = 'securityLoginPage';
+            loginPage.className = 'security-login-page';
+            
+            loginPage.innerHTML = `
+                <div class="login-container">
+                    <div class="login-box">
+                        <div class="login-header">
+                            <div class="app-icon">
+                                <i class="fas fa-chart-line"></i>
+                            </div>
+                            <h1>نظام إدارة الاستثمار المتطور</h1>
+                        </div>
+                        <div class="login-form">
+                            <div class="form-group">
+                                <label for="loginUsername">اسم المستخدم</label>
+                                <input type="text" id="loginUsername" class="form-control" placeholder="أدخل اسم المستخدم" autocomplete="username">
+                            </div>
+                            <div class="form-group">
+                                <label for="loginPassword">كلمة المرور</label>
+                                <div class="password-input">
+                                    <input type="password" id="loginPassword" class="form-control" placeholder="أدخل كلمة المرور" autocomplete="current-password">
+                                    <button type="button" class="toggle-password" title="إظهار كلمة المرور" onclick="togglePasswordVisibility()">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="login-error" id="loginErrorMessage" style="display: none;"></div>
+                            <div class="form-group">
+                                <button id="loginSubmitButton" class="btn btn-primary btn-block" onclick="processLogin()">
+                                    <i class="fas fa-sign-in-alt"></i> تسجيل الدخول
+                                </button>
+                            </div>
+                        </div>
+                        <div class="login-footer">
+                            <div class="company-name">
+                                <span>شركة الاستثمار العراقية</span>
+                            </div>
+                            <div class="version">الإصدار 1.0.0</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // إضافة الصفحة إلى الجسم
+            document.body.appendChild(loginPage);
+            
+            // إضافة مستمعي الأحداث
+            setupLoginEventListeners();
+            
+            return loginPage;
+        }
+
+        // إعداد مستمعي الأحداث لصفحة تسجيل الدخول
+        function setupLoginEventListeners() {
+            // مستمع لضغط Enter في حقل اسم المستخدم
+            const usernameInput = document.getElementById('loginUsername');
+            if (usernameInput) {
+                usernameInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        document.getElementById('loginPassword').focus();
+                    }
+                });
+            }
+            
+            // مستمع لضغط Enter في حقل كلمة المرور
+            const passwordInput = document.getElementById('loginPassword');
+            if (passwordInput) {
+                passwordInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        processLogin();
+                    }
+                });
+            }
+        }
+
+        // إظهار/إخفاء كلمة المرور
+        function togglePasswordVisibility() {
+            const passwordInput = document.getElementById('loginPassword');
+            const toggleBtn = document.querySelector('.toggle-password i');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                toggleBtn.className = 'fas fa-eye-slash';
+            } else {
+                passwordInput.type = 'password';
+                toggleBtn.className = 'fas fa-eye';
+            }
+        }
+
+        // معالجة تسجيل الدخول
+        function processLogin() {
+            // الحصول على بيانات النموذج
+            const username = document.getElementById('loginUsername').value;
+            const password = document.getElementById('loginPassword').value;
+            const errorElement = document.getElementById('loginErrorMessage');
+            
+            // التحقق من تعبئة الحقول المطلوبة
+            if (!username || !password) {
+                errorElement.textContent = 'يرجى إدخال اسم المستخدم وكلمة المرور';
+                errorElement.style.display = 'block';
+                
+                // هز شاشة تسجيل الدخول
+                const loginBox = document.querySelector('.login-box');
+                loginBox.classList.add('shake');
+                setTimeout(() => {
+                    loginBox.classList.remove('shake');
+                }, 500);
+                
+                return;
+            }
+            
+            // قفل زر تسجيل الدخول أثناء المعالجة
+            const loginButton = document.getElementById('loginSubmitButton');
+            loginButton.disabled = true;
+            loginButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري التحقق...';
+            
+            // محاكاة التأخير للتحقق (يمكن استبداله بطلب API حقيقي)
+            setTimeout(() => {
+                // التحقق من صحة بيانات الدخول
+                const authResult = authenticate(username, password);
+                
+                if (authResult.success) {
+                    // إخفاء صفحة تسجيل الدخول
+                    const loginPage = document.getElementById('securityLoginPage');
+                    
+                    // إعداد تأخير للانتقال إلى التطبيق
+                    setTimeout(() => {
+                        loginPage.remove();
+                        initializeApp();
+                    }, 1000);
+                } else {
+                    // إظهار رسالة الخطأ
+                    errorElement.textContent = authResult.error || 'اسم المستخدم أو كلمة المرور غير صحيحة';
+                    errorElement.style.display = 'block';
+                    
+                    // هز شاشة تسجيل الدخول
+                    const loginBox = document.querySelector('.login-box');
+                    loginBox.classList.add('shake');
+                    setTimeout(() => {
+                        loginBox.classList.remove('shake');
+                    }, 500);
+                    
+                    // إعادة تفعيل زر تسجيل الدخول
+                    loginButton.disabled = false;
+                    loginButton.innerHTML = '<i class="fas fa-sign-in-alt"></i> تسجيل الدخول';
+                }
+            }, 1000);
+        }
+
+        // تهيئة التطبيق بعد تسجيل الدخول
+        function initializeApp() {
+            // عرض واجهة التطبيق
+            document.querySelector('.app-container').style.display = 'flex';
+            
+            // تحديث معلومات المستخدم في الشريط الجانبي
+            updateUserInfo();
+            
+            // تطبيق صلاحيات المستخدم
+            applyUserPermissions();
+            
+            // إضافة زر "إعدادات الأمان" في صفحة الإعدادات
+            addSecuritySettingsButton();
+            
+            // إعداد مراقبة انتهاء الجلسة
+            setupSessionTimeout();
+            
+            // عرض إشعار بتسجيل الدخول
+            const user = getCurrentUser();
+            if (user) {
+                const notificationTitle = `مرحباً، ${user.fullName}`;
+                const notificationMessage = `تم تسجيل دخولك بنجاح. آخر تسجيل دخول: ${
+                    user.lastLogin ? new Date(user.lastLogin).toLocaleString('ar-PS') : 'هذه أول مرة'
+                }`;
+                
+                createNotification(notificationTitle, notificationMessage, 'success');
+            }
+            
+            // افتح صفحة لوحة التحكم
+            showPage('dashboard');
+        }
+
+        // تحديث معلومات المستخدم
+        function updateUserInfo() {
+            const user = getCurrentUser();
+            if (!user) return;
+            
+            const userNameElement = document.querySelector('.user-name');
+            const userRoleElement = document.querySelector('.user-role');
+            
+            if (userNameElement) {
+                userNameElement.textContent = user.fullName;
+            }
+            
+            if (userRoleElement) {
+                const roles = getRoles();
+                const roleName = roles[user.role]?.name || user.role;
+                userRoleElement.textContent = roleName;
+            }
+        }
+
+        // تطبيق صلاحيات المستخدم
+        function applyUserPermissions() {
+            const user = getCurrentUser();
+            if (!user) return;
+            
+            const roles = getRoles();
+            const userRole = roles[user.role];
+            
+            if (!userRole) return;
+            
+            // تطبيق صلاحيات الشريط الجانبي
+            const menuItems = document.querySelectorAll('.menu-item');
+            
+            menuItems.forEach(item => {
+                const href = item.getAttribute('href');
+                if (!href) return;
+                
+                const page = href.replace('#', '');
+                
+                if (userRole.permissions[page] === false) {
+                    item.style.display = 'none';
+                } else {
+                    item.style.display = '';
+                }
+            });
+        }
+
+        // التحقق من صلاحية المستخدم
+        function checkPermission(permission) {
+            const user = getCurrentUser();
+            
+            if (!user) {
+                return false;
+            }
+            
+            const roles = getRoles();
+            const userRole = roles[user.role];
+            
+            if (!userRole) {
+                return false;
+            }
+            
+            return userRole.permissions[permission] === true;
+        }
+
+        // إضافة زر إعدادات الأمان
+        function addSecuritySettingsButton() {
+            // التحقق من وجود صلاحية "security"
+            if (!checkPermission('security')) return;
+            
+            const settingsTabs = document.querySelector('#settings .tabs');
+            if (!settingsTabs) return;
+            
+            // التحقق من عدم وجود زر إعدادات الأمان
+            if (settingsTabs.querySelector('.tab[onclick="switchSettingsTab(\'security\')"]')) return;
+            
+            // إنشاء زر إعدادات الأمان
+            const securityTab = document.createElement('div');
+            securityTab.className = 'tab';
+            securityTab.textContent = 'الأمان';
+            securityTab.setAttribute('onclick', "switchSettingsTab('security')");
+            
+            settingsTabs.appendChild(securityTab);
+            
+            // إنشاء محتوى إعدادات الأمان
+            addSecuritySettingsContent();
+        }
+
+        // إضافة محتوى إعدادات الأمان
+        function addSecuritySettingsContent() {
+            const settingsContent = document.querySelector('#settings');
+            if (!settingsContent) return;
+            
+            // التحقق من عدم وجود قسم إعدادات الأمان
+            if (settingsContent.querySelector('#securitySettings')) return;
+            
+            const securitySettingsDiv = document.createElement('div');
+            securitySettingsDiv.id = 'securitySettings';
+            securitySettingsDiv.className = 'settings-tab-content';
+            
+            securitySettingsDiv.innerHTML = `
+                <div class="tabs">
+                    <div class="tab active" onclick="switchSecurityTab('general')">عام</div>
+                    <div class="tab" onclick="switchSecurityTab('users')">المستخدمين</div>
+                    <div class="tab" onclick="switchSecurityTab('roles')">الأدوار والصلاحيات</div>
+                    <div class="tab" onclick="switchSecurityTab('logs')">سجل النشاطات</div>
+                </div>
+                
+                <div id="securityGeneral" class="security-tab-content active">
+                    <!-- إعدادات الأمان العامة -->
+                    <div class="form-container">
+                        <div class="form-header">
+                            <h2 class="form-title">إعدادات الأمان العامة</h2>
+                            <p class="form-subtitle">تخصيص إعدادات حماية وأمان النظام</p>
+                        </div>
+                        <form id="securitySettingsForm">
+                            <div class="form-group">
+                                <h3 class="form-subtitle">تسجيل الدخول</h3>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label class="form-label">عدد محاولات تسجيل الدخول المسموح بها</label>
+                                        <input type="number" class="form-control" id="loginAttempts" min="1" max="10" value="5">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">مدة قفل الحساب (بالدقائق)</label>
+                                        <input type="number" class="form-control" id="lockDuration" min="1" max="60" value="15">
+                                    </div>
+                                </div>
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" id="enforceStrongPassword">
+                                    <label class="form-check-label" for="enforceStrongPassword">فرض كلمات مرور قوية</label>
+                                    <p class="form-text">يتطلب 8 أحرف على الأقل وتشمل أحرف كبيرة وصغيرة وأرقام ورموز</p>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <h3 class="form-subtitle">الجلسة</h3>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label class="form-label">مدة انتهاء الجلسة (بالدقائق)</label>
+                                        <input type="number" class="form-control" id="sessionTimeout" min="5" max="240" value="30">
+                                    </div>
+                                </div>
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" id="autoLogout" checked>
+                                    <label class="form-check-label" for="autoLogout">تسجيل الخروج التلقائي عند الخمول</label>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <h3 class="form-subtitle">المصادقة الثنائية</h3>
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" id="twoFactorAuth">
+                                    <label class="form-check-label" for="twoFactorAuth">تفعيل المصادقة الثنائية</label>
+                                    <p class="form-text">استخدام رمز إضافي يرسل عبر البريد الإلكتروني أو تطبيقات المصادقة</p>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <h3 class="form-subtitle">السجلات والمراقبة</h3>
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" id="logActivities" checked>
+                                    <label class="form-check-label" for="logActivities">تسجيل نشاطات المستخدمين</label>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <button type="button" class="btn btn-primary" onclick="saveSecurityGeneralSettings()">
+                                    <i class="fas fa-save"></i> حفظ الإعدادات
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                
+                <div id="securityUsers" class="security-tab-content">
+                    <!-- إدارة المستخدمين -->
+                    <div class="form-container">
+                        <div class="form-header">
+                            <h2 class="form-title">إدارة المستخدمين</h2>
+                            <button class="btn btn-primary" onclick="openAddUserModal()">
+                                <i class="fas fa-user-plus"></i> إضافة مستخدم جديد
+                            </button>
+                        </div>
+                        <div class="table-container">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>اسم المستخدم</th>
+                                        <th>الاسم الكامل</th>
+                                        <th>الدور</th>
+                                        <th>البريد الإلكتروني</th>
+                                        <th>آخر تسجيل دخول</th>
+                                        <th>الحالة</th>
+                                        <th>إجراءات</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="usersTableBody">
+                                    <!-- سيتم تعبئته ديناميكيًا -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="securityRoles" class="security-tab-content">
+                    <!-- إدارة الأدوار والصلاحيات -->
+                    <div class="form-container">
+                        <div class="form-header">
+                            <h2 class="form-title">إدارة الأدوار والصلاحيات</h2>
+                            <button class="btn btn-primary" onclick="openAddRoleModal()">
+                                <i class="fas fa-plus"></i> إضافة دور جديد
+                            </button>
+                        </div>
+                        <div class="table-container">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>الدور</th>
+                                        <th>الوصف</th>
+                                        <th>عدد المستخدمين</th>
+                                        <th>عدد الصلاحيات</th>
+                                        <th>إجراءات</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="rolesTableBody">
+                                    <!-- سيتم تعبئته ديناميكيًا -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="securityLogs" class="security-tab-content">
+                    <!-- سجل النشاطات -->
+                    <div class="form-container">
+                        <div class="form-header">
+                            <h2 class="form-title">سجل النشاطات</h2>
+                            <div class="form-actions">
+                                <button class="btn btn-light" onclick="exportActivityLogs()">
+                                    <i class="fas fa-file-export"></i> تصدير السجل
+                                </button>
+                                <button class="btn btn-light" onclick="clearActivityLogs()">
+                                    <i class="fas fa-trash"></i> مسح السجل
+                                </button>
+                            </div>
+                        </div>
+                        <div class="table-container" style="max-height: 400px; overflow-y: auto;">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>التاريخ والوقت</th>
+                                        <th>النشاط</th>
+                                        <th>المستخدم</th>
+                                        <th>تفاصيل</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="activityLogsTableBody">
+                                    <!-- سيتم تعبئته ديناميكيًا -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            settingsContent.appendChild(securitySettingsDiv);
+            
+            // تحميل بيانات إعدادات الأمان
+            loadSecuritySettings();
+        }
+        
+        // تبديل علامة تبويب الأمان
+        function switchSecurityTab(tabId) {
+            // إخفاء جميع علامات التبويب
+            document.querySelectorAll('.security-tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // عرض علامة التبويب المحددة
+            document.getElementById('security' + tabId.charAt(0).toUpperCase() + tabId.slice(1)).classList.add('active');
+            
+            // تحديث العلامة النشطة
+            document.querySelectorAll('#securitySettings .tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            document.querySelector(`#securitySettings .tab[onclick="switchSecurityTab('${tabId}')"]`).classList.add('active');
+        }
+
+        // ===================== وظائف إضافية =====================
+        
+        // تسجيل النشاط
+        function addActivityLog(activity) {
+            const logs = JSON.parse(localStorage.getItem('activityLogs') || '[]');
+            const logEntry = {
+                id: Date.now().toString(36) + Math.random().toString(36).substring(2),
+                timestamp: new Date().toISOString(),
+                activity: activity.action,
+                username: activity.username || getCurrentUser()?.username || 'Unknown',
+                ip: activity.ip || 'local',
+                details: activity.details || {}
+            };
+            
+            logs.unshift(logEntry); // إضافة إلى بداية المصفوفة
+            
+            // الاحتفاظ بأحدث 1000 سجل فقط
+            if (logs.length > 1000) {
+                logs.pop();
+            }
+            
+            localStorage.setItem('activityLogs', JSON.stringify(logs));
+            return logEntry;
+        }
+
+        // تسجيل الخروج
+        function logout() {
+            // تسجيل النشاط
+            const currentUser = getCurrentUser();
+            if (currentUser) {
+                addActivityLog({
+                    action: 'تسجيل خروج',
+                    username: currentUser.username,
+                    details: {
+                        timestamp: new Date().toISOString()
+                    }
+                });
+            }
+            
+            localStorage.removeItem('currentSession');
+            return true;
+        }
+        
+        // معالجة تسجيل الخروج
+        function handleLogout() {
+            if (confirm('هل أنت متأكد من تسجيل الخروج؟')) {
+                logout();
+                
+                // إخفاء واجهة التطبيق
+                document.querySelector('.app-container').style.display = 'none';
+                
+                // عرض شاشة تسجيل الدخول
+                createLoginPage();
+            }
+        }
+
+        // التحقق من جلسة "تذكرني"
+        function checkRememberSession() {
+            const sessionValidation = validateSession();
+            
+            if (sessionValidation.valid) {
+                // إذا كانت الجلسة صالحة، تهيئة التطبيق
+                initializeApp();
+                return true;
+            }
+            
+            return false;
+        }
+
+        // إنشاء إشعار
+        function createNotification(title, message, type = 'info') {
+            // تنفيذ رسالة الإشعار
+            console.log(`${type.toUpperCase()}: ${title} - ${message}`);
+            // هنا يمكنك استدعاء وظيفة إظهار الإشعارات في التطبيق إذا كانت موجودة
+        }
+
+        // ===================== تهيئة مراقبة انتهاء الجلسة =====================
+        
+        // إعداد مراقبة انتهاء الجلسة
+        function setupSessionTimeout() {
+            // إلغاء المراقبة السابقة
+            if (window.sessionTimeoutChecker) {
+                clearInterval(window.sessionTimeoutChecker);
+            }
+            
+            const settings = getSecuritySettings();
+            
+            // التحقق من تفعيل تسجيل الخروج التلقائي
+            if (!settings.autoLogout) {
+                return;
+            }
+            
+            // إنشاء مراقبة جديدة
+            window.sessionTimeoutChecker = setInterval(() => {
+                const sessionValidation = validateSession();
+                
+                if (!sessionValidation.valid) {
+                    // إذا انتهت الجلسة، إظهار شاشة تسجيل الدخول
+                    handleAutoLogout();
+                }
+            }, 60000); // التحقق كل دقيقة
+        }
+
+        // معالجة تسجيل الخروج التلقائي
+        function handleAutoLogout() {
+            // تسجيل الخروج
+            logout();
+            
+            // إخفاء واجهة التطبيق
+            document.querySelector('.app-container').style.display = 'none';
+            
+            // عرض شاشة تسجيل الدخول مع رسالة
+            const loginPage = createLoginPage();
+            
+            // إضافة رسالة تنبيه
+            const errorElement = document.getElementById('loginErrorMessage');
+            errorElement.textContent = 'انتهت صلاحية الجلسة بسبب عدم النشاط. يرجى تسجيل الدخول مرة أخرى.';
+            errorElement.style.display = 'block';
+        }
+    </script>
+
+    <!-- التطبيق الرئيسي والمكونات الأخرى -->
+    <script src="app.js"></script>
+</body>
+
+</html>
