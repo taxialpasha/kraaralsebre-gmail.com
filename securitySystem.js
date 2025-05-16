@@ -147,28 +147,36 @@ const DEFAULT_SESSION_DURATION = 30;
 // سجل الأنشطة
 let activityLog = [];
 
-// تهيئة نظام الأمان
-// تهيئة نظام الأمان
+
+
+/**
+ * وظيفة محسنة لتهيئة نظام الأمان
+ */
 function initSecuritySystem() {
+    console.log("بدء تهيئة نظام الأمان");
+    
     // التحقق من وجود مستخدم مسجل دخوله في الجلسة
     const savedUser = sessionStorage.getItem('currentUser');
     if (savedUser) {
         currentUser = JSON.parse(savedUser);
+        console.log("تم العثور على مستخدم محفوظ:", currentUser.username);
+        
+        // تطبيق الصلاحيات
         applyUserPermissions(currentUser);
         updateUIWithUserInfo(currentUser);
+        
         // تسجيل نشاط تسجيل الدخول التلقائي
         logActivity('login', 'تسجيل دخول تلقائي من الجلسة المحفوظة', currentUser.id);
+        
+        // إضافة زر الأمان إلى الشريط الجانبي (للمسؤول فقط)
+        if (currentUser.role === 'admin') {
+            addSecuritySidebarButton();
+            console.log("تمت إضافة زر الأمان للمسؤول");
+        }
     } else {
         // عرض شاشة تسجيل الدخول
         showLoginScreen();
-    }
-    
-    // إضافة زر الأمان إلى الشريط الجانبي - إضافة جديدة
-    addSecuritySidebarButton();
-    
-    // إضافة علامة تبويب الأمان إلى صفحة الإعدادات
-    if (document.getElementById('settings')) {
-        addSecuritySettingsTab();
+        console.log("تم عرض شاشة تسجيل الدخول - لا يوجد مستخدم محفوظ");
     }
     
     // تحميل المستخدمين من التخزين المحلي
@@ -179,6 +187,11 @@ function initSecuritySystem() {
     
     // تهيئة مستمعات الأحداث لنظام الأمان
     initSecurityEventListeners();
+    
+    // مراقبة تحميل العناصر الديناميكية
+    setupDynamicContentObserver();
+    
+    console.log("اكتملت تهيئة نظام الأمان");
 }
 
 // تهيئة مستمعات الأحداث لنظام الأمان
@@ -228,13 +241,13 @@ function showLoginScreen() {
                 <div class="login-logo">
                     <i class="fas fa-chart-line"></i>
                 </div>
-                <h1 class="login-title">نظام إدارة الاستثمار المتطور</h1>
+                <h1 class="login-title">اداره الاستثمار السعبري<br><span style="font-size:1.2rem;font-weight:400;">Al-Saabri Investment Management</span></h1>
                 <p class="login-subtitle">إدارة الاستثمارات، المستثمرين، والأرباح بكل سهولة</p>
             </div>
             <div class="login-split">
                 <div class="login-info">
                     <div class="login-info-content">
-                        <h2>مرحباً بك في نظام إدارة الاستثمار</h2>
+                        <h2>مرحباً بك في اداره الاستثمار السعبري<br><span style="font-size:1rem;font-weight:400;">Welcome to Al-Saabri Investment Management</span></h2>
                         <p class="date-display"><i class="far fa-calendar-alt"></i> ${formattedDate}</p>
                         <div class="login-features">
                             <div class="feature-item">
@@ -1007,13 +1020,21 @@ function logActivity(type, description, userId = null) {
     return activity;
 }
 
-// تطبيق صلاحيات المستخدم على عناصر واجهة المستخدم
+// securitySystem_improved.js - تحسين نظام الصلاحيات وعرض واجهة الأمان
+
+/**
+ * تطبيق صلاحيات المستخدم على جميع عناصر واجهة المستخدم بشكل شامل
+ * الوظيفة المحسنة لمعالجة مشكلة الصلاحيات في أزرار الصفحات
+ */
 function applyUserPermissions(user) {
     if (!user || !user.permissions) return;
     
     const permissions = user.permissions;
+    console.log("تطبيق الصلاحيات للمستخدم:", user.username, "الدور:", user.role);
     
-    // عناصر القائمة الجانبية
+    // =============================================
+    // 1. صلاحيات الشريط الجانبي
+    // =============================================
     const menuItems = document.querySelectorAll('.menu-item');
     menuItems.forEach(item => {
         const href = item.getAttribute('href');
@@ -1021,163 +1042,393 @@ function applyUserPermissions(user) {
         if (href) {
             const page = href.substring(1); // إزالة # من href
             
-            if (!permissions[page]) {
+            // وظائف خاصة بالمسؤول فقط
+            if ((page === 'security' || page === 'settings') && user.role !== 'admin') {
                 item.style.display = 'none';
+            }
+            // بقية الصفحات تعتمد على الصلاحيات المحددة
+            else if (!permissions[page]) {
+                item.style.display = 'none';
+                console.log(`إخفاء قائمة: ${page} - الصلاحية غير متوفرة`);
             } else {
                 item.style.display = '';
+                console.log(`إظهار قائمة: ${page} - الصلاحية متوفرة`);
             }
         }
     });
     
-    // ===== إدارة صلاحيات المستثمرين =====
+    // =============================================
+    // 2. صلاحيات إدارة المستثمرين
+    // =============================================
     
-    // صلاحيات عرض المستثمرين
+    // 2.1 صلاحيات عرض المستثمرين
     if (!permissions.viewInvestors) {
-        hideElements('.investors-view');
+        hideElements('.page#investors');
+        hideElements('[data-page="investors"]');
+        console.log("إخفاء صفحة المستثمرين - لا يوجد صلاحية عرض المستثمرين");
     }
     
-    // أزرار إضافة المستثمر
+    // 2.2 أزرار إضافة المستثمر
     if (!permissions.addInvestor) {
         hideElements('button[onclick*="openAddInvestorModal"]');
+        hideElements('button[data-action="addInvestor"]');
+        console.log("إخفاء أزرار إضافة المستثمر - لا يوجد صلاحية الإضافة");
     }
     
-    // أزرار تعديل المستثمر
+    // 2.3 أزرار تعديل المستثمر
     if (!permissions.editInvestor) {
         hideElements('button[onclick*="editInvestor"]');
+        hideElements('button[data-action="editInvestor"]');
+        console.log("إخفاء أزرار تعديل المستثمر - لا يوجد صلاحية التعديل");
     }
     
-    // أزرار حذف المستثمر
+    // 2.4 أزرار حذف المستثمر
     if (!permissions.deleteInvestor) {
         hideElements('button[onclick*="openDeleteConfirmationModal"][data-type="investor"]');
         hideElements('button[onclick*="openDeleteConfirmationModal"][onclick*="\'investor\'"]');
+        hideElements('button[data-action="deleteInvestor"]');
+        console.log("إخفاء أزرار حذف المستثمر - لا يوجد صلاحية الحذف");
     }
     
-    // أزرار تصدير واستيراد المستثمرين
+    // 2.5 أزرار تصدير واستيراد المستثمرين
     if (!permissions.exportInvestors) {
         hideElements('button[onclick*="exportInvestors"]');
+        hideElements('button[data-action="exportInvestors"]');
+        console.log("إخفاء أزرار تصدير المستثمرين - لا يوجد صلاحية التصدير");
     }
     
     if (!permissions.importInvestors) {
         hideElements('button[onclick*="importInvestors"]');
+        hideElements('button[data-action="importInvestors"]');
+        console.log("إخفاء أزرار استيراد المستثمرين - لا يوجد صلاحية الاستيراد");
     }
     
-    // ===== إدارة صلاحيات الاستثمارات =====
+    // =============================================
+    // 3. صلاحيات إدارة الاستثمارات
+    // =============================================
     
-    // صلاحيات عرض الاستثمارات
+    // 3.1 صلاحيات عرض الاستثمارات
     if (!permissions.viewInvestments) {
-        hideElements('.investments-view');
+        hideElements('.page#investments');
+        hideElements('[data-page="investments"]');
+        console.log("إخفاء صفحة الاستثمارات - لا يوجد صلاحية عرض الاستثمارات");
     }
     
-    // أزرار إضافة الاستثمار
+    // 3.2 أزرار إضافة الاستثمار
     if (!permissions.addInvestment) {
         hideElements('button[onclick*="openNewInvestmentModal"]');
+        hideElements('button[data-action="addInvestment"]');
+        console.log("إخفاء أزرار إضافة الاستثمار - لا يوجد صلاحية الإضافة");
     }
     
-    // أزرار تعديل الاستثمار
+    // 3.3 أزرار تعديل الاستثمار
     if (!permissions.editInvestment) {
         hideElements('button[onclick*="editInvestment"]');
+        hideElements('button[data-action="editInvestment"]');
+        console.log("إخفاء أزرار تعديل الاستثمار - لا يوجد صلاحية التعديل");
     }
     
-    // أزرار حذف الاستثمار
+    // 3.4 أزرار حذف الاستثمار
     if (!permissions.deleteInvestment) {
         hideElements('button[onclick*="openDeleteConfirmationModal"][data-type="investment"]');
         hideElements('button[onclick*="openDeleteConfirmationModal"][onclick*="\'investment\'"]');
+        hideElements('button[data-action="deleteInvestment"]');
+        console.log("إخفاء أزرار حذف الاستثمار - لا يوجد صلاحية الحذف");
     }
     
-    // ===== إدارة صلاحيات العمليات المالية =====
+    // =============================================
+    // 4. صلاحيات العمليات المالية
+    // =============================================
     
-    // صلاحيات عرض العمليات
+    // 4.1 صلاحيات عرض العمليات
     if (!permissions.viewOperations) {
-        hideElements('.operations-view');
+        hideElements('.page#operations');
+        hideElements('[data-page="operations"]');
+        console.log("إخفاء صفحة العمليات - لا يوجد صلاحية عرض العمليات");
     }
     
-    // صلاحيات الموافقة على العمليات
+    // 4.2 صلاحيات الموافقة على العمليات
     if (!permissions.approveOperations) {
         hideElements('button[onclick*="approveOperation"]');
+        hideElements('button[data-action="approveOperation"]');
+        console.log("إخفاء أزرار الموافقة على العمليات - لا يوجد صلاحية الموافقة");
     }
     
-    // صلاحيات رفض العمليات
+    // 4.3 صلاحيات رفض العمليات
     if (!permissions.rejectOperations) {
         hideElements('button[onclick*="openDeleteConfirmationModal"][data-type="operation"]');
         hideElements('button[onclick*="openDeleteConfirmationModal"][onclick*="\'operation\'"]');
+        hideElements('button[data-action="rejectOperation"]');
+        console.log("إخفاء أزرار رفض العمليات - لا يوجد صلاحية الرفض");
     }
     
-    // صلاحيات السحوبات
+    // 4.4 صلاحيات السحوبات
     if (!permissions.withdrawals) {
         hideElements('button[onclick*="openWithdrawModal"]');
+        hideElements('button[data-action="withdrawal"]');
+        console.log("إخفاء أزرار السحوبات - لا يوجد صلاحية السحب");
     }
     
-    // ===== إدارة صلاحيات الأرباح =====
+    // =============================================
+    // 5. صلاحيات الأرباح
+    // =============================================
     
-    // صلاحيات عرض الأرباح
+    // 5.1 صلاحيات عرض الأرباح
     if (!permissions.viewProfits) {
-        hideElements('.profits-view');
+        hideElements('.page#profits');
+        hideElements('[data-page="profits"]');
+        console.log("إخفاء صفحة الأرباح - لا يوجد صلاحية عرض الأرباح");
     }
     
-    // صلاحيات دفع الأرباح
+    // 5.2 صلاحيات دفع الأرباح
     if (!permissions.payProfits) {
         hideElements('button[onclick*="openPayProfitModal"]');
+        hideElements('button[data-action="payProfit"]');
+        console.log("إخفاء أزرار دفع الأرباح - لا يوجد صلاحية الدفع");
     }
     
-    // ===== إدارة صلاحيات التقارير =====
+    // =============================================
+    // 6. صلاحيات التقارير
+    // =============================================
     
-    // صلاحيات عرض التقارير
+    // 6.1 صلاحيات عرض التقارير
     if (!permissions.viewReports) {
-        hideElements('.reports-view');
+        hideElements('.page#reports');
+        hideElements('[data-page="reports"]');
+        console.log("إخفاء صفحة التقارير - لا يوجد صلاحية عرض التقارير");
     }
     
-    // صلاحيات إنشاء التقارير
+    // 6.2 صلاحيات إنشاء التقارير
     if (!permissions.generateReports) {
         hideElements('button[onclick*="generateReport"]');
+        hideElements('button[data-action="generateReport"]');
+        console.log("إخفاء أزرار إنشاء التقارير - لا يوجد صلاحية الإنشاء");
     }
     
-    // صلاحيات تصدير التقارير
+    // 6.3 صلاحيات تصدير التقارير
     if (!permissions.exportReports) {
         hideElements('button[onclick*="exportReport"]');
+        hideElements('button[data-action="exportReport"]');
+        console.log("إخفاء أزرار تصدير التقارير - لا يوجد صلاحية التصدير");
     }
     
-    // ===== إدارة صلاحيات النظام =====
+    // =============================================
+    // 7. صلاحيات التحليلات المالية
+    // =============================================
     
-    // صلاحيات إعدادات النظام
-    if (!permissions.systemSettings) {
-        hideElements('button[onclick*="switchSettingsTab(\'system\')"]');
-        hideElements('#systemSettings');
+    if (!permissions.analytics) {
+        hideElements('.page#analytics');
+        hideElements('[data-page="analytics"]');
+        console.log("إخفاء صفحة التحليلات - لا يوجد صلاحية التحليلات");
     }
     
-    // صلاحيات إدارة المستخدمين
-    if (!permissions.userManagement) {
-        hideElements('button[onclick*="switchSettingsTab(\'security\')"]');
-        hideElements('#securitySettings');
+    // =============================================
+    // 8. صلاحيات التقويم
+    // =============================================
+    
+    if (!permissions.calendar) {
+        hideElements('.page#calendar');
+        hideElements('[data-page="calendar"]');
+        console.log("إخفاء صفحة التقويم - لا يوجد صلاحية التقويم");
     }
     
-    // صلاحيات النسخ الاحتياطي
-    if (!permissions.backup) {
-        hideElements('button[onclick*="createBackup"], button[onclick*="restoreBackup"]');
+    // =============================================
+    // 9. صلاحيات الإعدادات والأمان
+    // =============================================
+    
+    // الإعدادات العامة والأمان للمسؤول فقط
+    if (user.role !== 'admin') {
+        hideElements('.page#settings');
+        hideElements('.page#security');
+        hideElements('[data-page="settings"]');
+        hideElements('[data-page="security"]');
+        console.log("إخفاء صفحة الإعدادات والأمان - المستخدم ليس مسؤولاً");
     }
     
-    // ===== إظهار/إخفاء واجهات المستخدم المناسبة =====
+    // =============================================
+    // 10. الأزرار داخل الصفحات والحالات الخاصة
+    // =============================================
+    
+    // إخفاء جميع أزرار صفحة معينة إذا لم يكن لدى المستخدم صلاحيات للصفحة
+    if (!permissions.investors) {
+        hideElements('[data-section="investors"] button');
+        console.log("إخفاء جميع أزرار قسم المستثمرين - لا يوجد صلاحية المستثمرين");
+    }
+    
+    if (!permissions.investments) {
+        hideElements('[data-section="investments"] button');
+        console.log("إخفاء جميع أزرار قسم الاستثمارات - لا يوجد صلاحية الاستثمارات");
+    }
+    
+    if (!permissions.profits) {
+        hideElements('[data-section="profits"] button');
+        console.log("إخفاء جميع أزرار قسم الأرباح - لا يوجد صلاحية الأرباح");
+    }
+    
+    if (!permissions.operations) {
+        hideElements('[data-section="operations"] button');
+        console.log("إخفاء جميع أزرار قسم العمليات - لا يوجد صلاحية العمليات");
+    }
+    
+    // =============================================
+    // 11. أزرار الإجراءات في جداول البيانات
+    // =============================================
+    
+    // تعطيل أزرار الإجراءات في جدول المستثمرين حسب الصلاحيات
+    document.querySelectorAll('#investorsTableBody tr, .investors-table tr').forEach(row => {
+        if (!permissions.editInvestor) {
+            const editBtn = row.querySelector('button[onclick*="editInvestor"]');
+            if (editBtn) {
+                editBtn.style.display = 'none';
+                console.log("إخفاء زر تعديل المستثمر في جدول المستثمرين");
+            }
+        }
+        
+        if (!permissions.deleteInvestor) {
+            const deleteBtn = row.querySelector('button[onclick*="openDeleteConfirmationModal"][onclick*="\'investor\'"]');
+            if (deleteBtn) {
+                deleteBtn.style.display = 'none';
+                console.log("إخفاء زر حذف المستثمر في جدول المستثمرين");
+            }
+        }
+    });
+    
+    // تعطيل أزرار الإجراءات في جدول الاستثمارات حسب الصلاحيات
+    document.querySelectorAll('#investmentsTableBody tr, .investments-table tr').forEach(row => {
+        if (!permissions.editInvestment) {
+            const editBtn = row.querySelector('button[onclick*="editInvestment"]');
+            if (editBtn) {
+                editBtn.style.display = 'none';
+                console.log("إخفاء زر تعديل الاستثمار في جدول الاستثمارات");
+            }
+        }
+        
+        if (!permissions.deleteInvestment) {
+            const deleteBtn = row.querySelector('button[onclick*="openDeleteConfirmationModal"][onclick*="\'investment\'"]');
+            if (deleteBtn) {
+                deleteBtn.style.display = 'none';
+                console.log("إخفاء زر حذف الاستثمار في جدول الاستثمارات");
+            }
+        }
+        
+        if (!permissions.withdrawals) {
+            const withdrawBtn = row.querySelector('button[onclick*="openWithdrawModal"]');
+            if (withdrawBtn) {
+                withdrawBtn.style.display = 'none';
+                console.log("إخفاء زر السحب في جدول الاستثمارات");
+            }
+        }
+        
+        if (!permissions.payProfits) {
+            const profitBtn = row.querySelector('button[onclick*="openPayProfitModal"]');
+            if (profitBtn) {
+                profitBtn.style.display = 'none';
+                console.log("إخفاء زر دفع الأرباح في جدول الاستثمارات");
+            }
+        }
+    });
+    
+    // تعطيل أزرار الإجراءات في جدول العمليات حسب الصلاحيات
+    document.querySelectorAll('#operationsTableBody tr, .operations-table tr').forEach(row => {
+        if (!permissions.approveOperations) {
+            const approveBtn = row.querySelector('button[onclick*="approveOperation"]');
+            if (approveBtn) {
+                approveBtn.style.display = 'none';
+                console.log("إخفاء زر الموافقة على العملية في جدول العمليات");
+            }
+        }
+        
+        if (!permissions.rejectOperations) {
+            const rejectBtn = row.querySelector('button[onclick*="openDeleteConfirmationModal"][onclick*="\'operation\'"]');
+            if (rejectBtn) {
+                rejectBtn.style.display = 'none';
+                console.log("إخفاء زر رفض العملية في جدول العمليات");
+            }
+        }
+    });
+    
+    // =============================================
+    // 12. إظهار/إخفاء واجهات المستخدم المناسبة
+    // =============================================
     
     // إظهار قسم الإدارة فقط للمسؤولين
     if (user.role !== 'admin') {
         hideElements('.admin-only');
+        console.log("إخفاء العناصر المخصصة للمسؤول فقط");
     } else {
         showElements('.admin-only');
+        console.log("إظهار العناصر المخصصة للمسؤول");
     }
+    
+    // تطبيق النمط المناسب حسب الدور
+    if (user.role === 'admin') {
+        document.body.classList.add('admin-mode');
+        document.body.classList.remove('user-mode');
+        console.log("تطبيق نمط المسؤول");
+    } else {
+        document.body.classList.add('user-mode');
+        document.body.classList.remove('admin-mode');
+        console.log("تطبيق نمط المستخدم العادي");
+    }
+    
+    // =============================================
+    // 13. معالجة الحالات الخاصة
+    // =============================================
+    
+    // معالجة أزرار معاينة التفاصيل
+    if (!permissions.viewInvestors) {
+        hideElements('button[onclick*="viewInvestor"]');
+        console.log("إخفاء أزرار معاينة المستثمر - لا يوجد صلاحية عرض المستثمرين");
+    }
+    
+    if (!permissions.viewInvestments) {
+        hideElements('button[onclick*="viewInvestment"]');
+        console.log("إخفاء أزرار معاينة الاستثمار - لا يوجد صلاحية عرض الاستثمارات");
+    }
+    
+    if (!permissions.viewOperations) {
+        hideElements('button[onclick*="viewOperation"]');
+        console.log("إخفاء أزرار معاينة العملية - لا يوجد صلاحية عرض العمليات");
+    }
+    
+    // إخفاء الأزرار المضافة ديناميكياً عند إنشاء الجداول
+    // سيتم تنفيذ هذا الإجراء بعد كل تحميل للبيانات
+    document.addEventListener('tableUpdated', function() {
+        applyDynamicPermissions(permissions);
+    });
+    
+    // تنفيذ الآن في حالة كانت الجداول موجودة بالفعل
+    applyDynamicPermissions(permissions);
+    
+    console.log("اكتمل تطبيق الصلاحيات للمستخدم:", user.username);
 }
 
-// إخفاء عناصر واجهة المستخدم
+/**
+ * إخفاء عناصر واجهة المستخدم
+ */
 function hideElements(selector) {
     const elements = document.querySelectorAll(selector);
     elements.forEach(element => {
-        element.style.display = 'none';
+        if (element) {
+            element.style.display = 'none';
+            // إضافة سمة data-hidden-by-permission للتمييز
+            element.setAttribute('data-hidden-by-permission', 'true');
+        }
     });
 }
 
-// إظهار عناصر واجهة المستخدم
+
+
+/**
+ * إظهار عناصر واجهة المستخدم
+ */
 function showElements(selector) {
     const elements = document.querySelectorAll(selector);
     elements.forEach(element => {
-        element.style.display = '';
+        if (element && element.getAttribute('data-hidden-by-permission') === 'true') {
+            element.style.display = '';
+            element.removeAttribute('data-hidden-by-permission');
+        }
     });
 }
 
@@ -3631,19 +3882,37 @@ window.securitySystemPart2 = {
     checkPasswordMatch
 };
 
-// إضافة زر الأمان في الشريط الجانبي
+
+/**
+ * إضافة زر الأمان في الشريط الجانبي - يظهر فقط للمسؤول
+ */
 function addSecuritySidebarButton() {
+    // التحقق من وجود المستخدم وأنه مسؤول
+    if (!currentUser || currentUser.role !== 'admin') {
+        console.log("عدم إضافة زر الأمان في الشريط الجانبي - المستخدم ليس مسؤولاً");
+        return;
+    }
+    
     // البحث عن الشريط الجانبي
     const sidebar = document.querySelector('.sidebar-menu');
-    if (!sidebar) return;
+    if (!sidebar) {
+        console.log("عدم إضافة زر الأمان في الشريط الجانبي - لا يوجد شريط جانبي");
+        return;
+    }
     
     // التحقق من عدم وجود الزر مسبقاً
-    if (document.querySelector('.menu-item[href="#security"]')) return;
+    if (document.querySelector('.menu-item[href="#security"]')) {
+        console.log("عدم إضافة زر الأمان في الشريط الجانبي - الزر موجود بالفعل");
+        return;
+    }
+    
+    console.log("إضافة زر الأمان في الشريط الجانبي للمسؤول");
     
     // إنشاء زر الأمان
     const securityButton = document.createElement('a');
     securityButton.href = "#security";
-    securityButton.className = "menu-item";
+    securityButton.className = "menu-item admin-only";
+    securityButton.setAttribute('data-permission', 'admin');
     securityButton.onclick = function() { showSecurityPage(); return false; };
     securityButton.innerHTML = `
         <div class="menu-icon">
@@ -3656,9 +3925,11 @@ function addSecuritySidebarButton() {
     const settingsButton = document.querySelector('.menu-item[href="#settings"]');
     if (settingsButton) {
         sidebar.insertBefore(securityButton, settingsButton);
+        console.log("تم إضافة زر الأمان قبل زر الإعدادات");
     } else {
         // إذا لم يتم العثور على زر الإعدادات، أضف الزر في نهاية القائمة
         sidebar.appendChild(securityButton);
+        console.log("تم إضافة زر الأمان في نهاية القائمة");
     }
     
     // إنشاء صفحة الأمان إذا لم تكن موجودة
@@ -3922,3 +4193,155 @@ window.securitySystem = {
     saveSecuritySettings
 };
 
+
+
+/**
+ * تطبيق الصلاحيات على العناصر المضافة ديناميكياً
+ */
+function applyDynamicPermissions(permissions) {
+    console.log("تطبيق الصلاحيات على العناصر الديناميكية");
+    
+    // أزرار تفاصيل المستثمر الديناميكية
+    if (!permissions.editInvestor) {
+        hideElements('.investor-actions button[onclick*="editInvestor"]');
+        hideElements('.investor-details-buttons button[onclick*="editInvestor"]');
+        console.log("إخفاء أزرار تعديل المستثمر الديناميكية");
+    }
+    
+    if (!permissions.deleteInvestor) {
+        hideElements('.investor-actions button[onclick*="deleteInvestor"]');
+        hideElements('.investor-actions button[onclick*="openDeleteConfirmationModal"][onclick*="\'investor\'"]');
+        hideElements('.investor-details-buttons button[onclick*="deleteInvestor"]');
+        console.log("إخفاء أزرار حذف المستثمر الديناميكية");
+    }
+    
+    // أزرار تفاصيل الاستثمار الديناميكية
+    if (!permissions.editInvestment) {
+        hideElements('.investment-actions button[onclick*="editInvestment"]');
+        hideElements('.investment-details-buttons button[onclick*="editInvestment"]');
+        console.log("إخفاء أزرار تعديل الاستثمار الديناميكية");
+    }
+    
+    if (!permissions.deleteInvestment) {
+        hideElements('.investment-actions button[onclick*="deleteInvestment"]');
+        hideElements('.investment-actions button[onclick*="openDeleteConfirmationModal"][onclick*="\'investment\'"]');
+        hideElements('.investment-details-buttons button[onclick*="deleteInvestment"]');
+        console.log("إخفاء أزرار حذف الاستثمار الديناميكية");
+    }
+    
+    if (!permissions.withdrawals) {
+        hideElements('.investment-actions button[onclick*="openWithdrawModal"]');
+        hideElements('.investment-details-buttons button[onclick*="openWithdrawModal"]');
+        console.log("إخفاء أزرار السحب الديناميكية");
+    }
+    
+    if (!permissions.payProfits) {
+        hideElements('.investment-actions button[onclick*="openPayProfitModal"]');
+        hideElements('.investment-details-buttons button[onclick*="openPayProfitModal"]');
+        console.log("إخفاء أزرار دفع الأرباح الديناميكية");
+    }
+}
+
+
+
+
+/**
+ * إعداد مراقب للمحتوى الديناميكي لإعادة تطبيق الصلاحيات
+ */
+function setupDynamicContentObserver() {
+    // إنشاء مراقب للتغييرات في الـ DOM
+    const observer = new MutationObserver(function(mutations) {
+        let shouldApplyPermissions = false;
+        
+        // فحص التغييرات للبحث عن إضافة جداول أو أزرار جديدة
+        mutations.forEach(function(mutation) {
+            if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+                for (let i = 0; i < mutation.addedNodes.length; i++) {
+                    const node = mutation.addedNodes[i];
+                    
+                    // فحص إذا كان العنصر المضاف هو عنصر HTML
+                    if (node.nodeType === 1) {
+                        // البحث عن الأزرار أو الجداول
+                        if (
+                            node.tagName === 'BUTTON' || 
+                            node.tagName === 'TABLE' || 
+                            node.querySelector('button') || 
+                            node.querySelector('table')
+                        ) {
+                            shouldApplyPermissions = true;
+                            break;
+                        }
+                    }
+                }
+            }
+        });
+        
+        // إعادة تطبيق الصلاحيات إذا تم العثور على عناصر جديدة
+        if (shouldApplyPermissions && currentUser && currentUser.permissions) {
+            console.log("تم العثور على عناصر جديدة - إعادة تطبيق الصلاحيات");
+            applyDynamicPermissions(currentUser.permissions);
+        }
+    });
+    
+    // بدء المراقبة على كامل الوثيقة
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true
+    });
+    
+    console.log("تم إعداد مراقب المحتوى الديناميكي");
+}
+
+/**
+ * تصدير وظائف النظام للوصول إليها من خارج الملف
+ */
+window.securitySystem = {
+    // وظائف تسجيل الدخول
+    initSecuritySystem,
+    attemptLogin,
+    logout,
+    togglePasswordVisibility,
+    showForgotPasswordForm,
+    resetPassword,
+    showHelpInfo,
+    
+    // وظائف إدارة الصلاحيات
+    applyUserPermissions,
+    hideElements,
+    showElements,
+    
+    // وظائف الشريط الجانبي
+    addSecuritySidebarButton,
+    showSecurityPage: function() {
+        // التحقق من الصلاحيات قبل عرض الصفحة
+        if (!currentUser || currentUser.role !== 'admin') {
+            console.log("رفض الوصول إلى صفحة الأمان - المستخدم ليس مسؤولاً");
+            createNotification('خطأ', 'ليس لديك صلاحية للوصول إلى هذه الصفحة', 'danger');
+            return false;
+        }
+        
+        // عرض صفحة الأمان
+        if (typeof window.showSecurityPage === 'function') {
+            window.showSecurityPage();
+            return true;
+        }
+        return false;
+    },
+    
+    // باقي الوظائف...
+    openAddUserModal,
+    saveNewUser,
+    editUser,
+    updateUser,
+    unlockUser,
+    deleteUser,
+    togglePasswordField: togglePasswordVisibility,
+    selectAllPermissions,
+    deselectAllPermissions,
+    loadDefaultPermissions,
+    changeCurrentUserPassword,
+    exportActivityLog,
+    clearActivityLog,
+    filterActivityLog,
+    saveSecuritySettings
+};
