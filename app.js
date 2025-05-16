@@ -5742,3 +5742,17 @@ function exportReports() {
     
     createNotification('نجاح', 'تم تصدير التقارير بنجاح', 'success');
 }
+
+// تكامل النظام مع التطبيق الرئيسي
+document.addEventListener('DOMContentLoaded', function() {
+    // تحميل البيانات
+    loadData();
+    
+    // عرض الصفحة الرئيسية
+    showPage('dashboard');
+    
+    // تهيئة نظام الأمان - تأكد من وجود هذا السطر
+    securitySystem.initSecuritySystem();
+    
+    // الباقي من كود التهيئة...
+});
