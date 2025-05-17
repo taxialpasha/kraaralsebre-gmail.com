@@ -1,0 +1,286 @@
+/**
+ * وظائف CSS لتحسين مظهر صفحة التحليلات
+ */
+ 
+.analytics-section {
+    background: white;
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    margin-bottom: 20px;
+    overflow: hidden;
+}
+
+.section-header {
+    padding: 15px 20px;
+    border-bottom: 1px solid var(--gray-200);
+}
+
+.section-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--gray-800);
+    margin: 0;
+}
+
+.section-content {
+    padding: 20px;
+}
+
+.section-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.section-charts {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.chart-container {
+    background: white;
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    overflow: hidden;
+}
+
+.chart-container.full-width {
+    grid-column: 1 / -1;
+}
+
+.chart-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 15px;
+    border-bottom: 1px solid var(--gray-200);
+}
+
+.chart-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--gray-700);
+    margin: 0;
+}
+
+.chart-actions {
+    display: flex;
+    gap: 5px;
+}
+
+.chart {
+    height: 300px;
+    padding: 15px;
+}
+
+.section-table {
+    background: white;
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    overflow: hidden;
+}
+
+.table-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 15px;
+    border-bottom: 1px solid var(--gray-200);
+}
+
+.table-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--gray-700);
+    margin: 0;
+}
+
+.table-actions {
+    display: flex;
+    gap: 5px;
+}
+
+/* تغييرات لتحسين مظهر التبويبات */
+.analytics-tabs {
+    margin-bottom: 20px;
+    overflow-x: auto;
+}
+
+.analytics-tabs .tabs {
+    display: flex;
+    gap: 5px;
+    padding-bottom: 5px;
+}
+
+.analytics-tabs .tab {
+    padding: 10px 15px;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    font-weight: 500;
+    white-space: nowrap;
+    background-color: var(--gray-100);
+    color: var(--gray-600);
+    border: none;
+    transition: all 0.2s ease;
+}
+
+.analytics-tabs .tab:hover {
+    background-color: var(--gray-200);
+    color: var(--gray-800);
+}
+
+.analytics-tabs .tab.active {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.analytics-tab-content {
+    display: none;
+}
+
+.analytics-tab-content.active {
+    display: block;
+}
+
+/* تحسينات للبطاقات */
+.card .card-icon {
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+}
+
+.card .card-icon.primary {
+    background-color: var(--primary-color);
+}
+
+.card .card-icon.success {
+    background-color: var(--success-color);
+}
+
+.card .card-icon.info {
+    background-color: var(--info-color);
+}
+
+.card .card-icon.warning {
+    background-color: var(--warning-color);
+}
+
+.card .card-icon.danger {
+    background-color: var(--danger-color);
+}
+
+/* تصحيح للرسوم البيانية */
+canvas {
+    max-width: 100%;
+}
+
+/* أنماط التقارير */
+.report-header {
+    text-align: center;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--gray-200);
+}
+
+.report-title {
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.report-date {
+    font-size: 0.9rem;
+    color: var(--gray-600);
+}
+
+.print-section {
+    margin-bottom: 30px;
+}
+
+.print-section-title {
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin-bottom: 15px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid var(--gray-200);
+}
+
+.print-chart {
+    width: 100%;
+    height: 300px;
+    border: 1px solid var(--gray-200);
+    border-radius: var(--border-radius);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--gray-100);
+}
+
+.chart-placeholder {
+    font-size: 0.9rem;
+    color: var(--gray-600);
+}
+
+.report-footer {
+    margin-top: 30px;
+    padding-top: 10px;
+    border-top: 1px solid var(--gray-200);
+    text-align: center;
+    font-size: 0.8rem;
+    color: var(--gray-600);
+}
+
+/* تحسينات للجداول */
+.table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table th {
+    background-color: var(--gray-100);
+    font-weight: 600;
+    text-align: right;
+    padding: 10px;
+    border-bottom: 1px solid var(--gray-200);
+}
+
+.table td {
+    padding: 10px;
+    border-bottom: 1px solid var(--gray-200);
+}
+
+.table tr:hover td {
+    background-color: rgba(0, 0, 0, 0.02);
+}
+
+/* تصميم متجاوب */
+@media (max-width: 768px) {
+    .section-charts {
+        grid-template-columns: 1fr;
+    }
+    
+    .section-cards {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    }
+    
+    .chart {
+        height: 250px;
+    }
+    
+    .table-container {
+        overflow-x: auto;
+    }
+    
+    .analytics-tabs .tabs {
+        overflow-x: auto;
+        padding-bottom: 10px;
+    }
+}

@@ -225,7 +225,7 @@ function showLoginScreen() {
     const loginOverlay = document.createElement('div');
     loginOverlay.id = 'loginOverlay';
     loginOverlay.className = 'login-overlay';
-    
+
     // الحصول على تاريخ اليوم
     const today = new Date();
     const formattedDate = today.toLocaleDateString('ar-IQ', {
@@ -234,7 +234,7 @@ function showLoginScreen() {
         month: 'long',
         day: 'numeric'
     });
-    
+
     loginOverlay.innerHTML = `
         <div class="login-container">
             <div class="login-header">
@@ -337,90 +337,97 @@ function showLoginScreen() {
             </div>
         </div>
     `;
-    
+
     document.body.appendChild(loginOverlay);
-    
-    // إضافة CSS المحسن لشاشة تسجيل الدخول
+
+    // إضافة CSS المحسن لشاشة تسجيل الدخول - ملء الشاشة بالكامل
     const style = document.createElement('style');
     style.textContent = `
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
         .login-overlay {
             position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
+            top: 0; left: 0; right: 0; bottom: 0;
+            width: 100vw;
+            height: 100vh;
+            min-height: 100vh;
+            min-width: 100vw;
             background-color: var(--bg-color, #f5f5f5);
             z-index: 9999;
             display: flex;
-            align-items: center;
-            justify-content: center;
+            align-items: stretch;
+            justify-content: stretch;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
-        
         .login-container {
+            width: 100vw;
+            height: 100vh;
+            min-width: 100vw;
+            min-height: 100vh;
             background-color: white;
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-            width: 1000px;
-            max-width: 95%;
+            border-radius: 0;
+            box-shadow: none;
+            display: flex;
+            flex-direction: column;
             overflow: hidden;
             opacity: 0;
             transform: translateY(20px);
             animation: fadeInUp 0.5s ease forwards;
         }
-        
         @keyframes fadeInUp {
             to {
                 opacity: 1;
                 transform: translateY(0);
             }
         }
-        
         .login-header {
             background: linear-gradient(135deg, #3498db, #1a5276);
             color: white;
             padding: 30px 20px;
             text-align: center;
         }
-        
         .login-logo {
             font-size: 3.5rem;
             margin-bottom: 15px;
             animation: pulse 2s infinite;
         }
-        
         @keyframes pulse {
             0% { transform: scale(1); }
             50% { transform: scale(1.05); }
             100% { transform: scale(1); }
         }
-        
         .login-title {
             margin: 0;
             font-size: 2rem;
             font-weight: 700;
             text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
         }
-        
         .login-subtitle {
             margin-top: 10px;
             font-size: 1.2rem;
             opacity: 0.9;
         }
-        
         .login-split {
+            flex: 1 1 auto;
             display: flex;
             flex-direction: row;
+            height: 100%;
+            min-height: 0;
         }
-        
         .login-info {
-            flex: 1;
+            flex: 1 1 0;
             background-color: #f9f9f9;
             padding: 30px;
             position: relative;
-            overflow: hidden;
+            overflow: auto;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }
-        
         .login-info::before {
             content: '';
             position: absolute;
@@ -431,31 +438,26 @@ function showLoginScreen() {
             background: radial-gradient(circle, rgba(52, 152, 219, 0.05) 0%, rgba(52, 152, 219, 0) 70%);
             z-index: 0;
         }
-        
         .login-info-content {
             position: relative;
             z-index: 1;
         }
-        
         .login-info h2 {
             color: #2c3e50;
             margin-bottom: 20px;
             font-size: 1.8rem;
         }
-        
         .date-display {
             color: #7f8c8d;
             margin-bottom: 25px;
             font-size: 1rem;
         }
-        
         .login-features {
             display: grid;
             grid-template-columns: 1fr;
             gap: 20px;
             margin-bottom: 30px;
         }
-        
         .feature-item {
             display: flex;
             align-items: center;
@@ -465,12 +467,10 @@ function showLoginScreen() {
             box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
             transition: transform 0.3s ease;
         }
-        
         .feature-item:hover {
             transform: translateY(-3px);
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
         }
-        
         .feature-icon {
             background: linear-gradient(135deg, #3498db, #2980b9);
             color: white;
@@ -483,37 +483,36 @@ function showLoginScreen() {
             font-size: 1.5rem;
             margin-left: 15px;
         }
-        
         .feature-text h3 {
             margin: 0 0 5px 0;
             color: #34495e;
             font-size: 1.1rem;
         }
-        
         .feature-text p {
             margin: 0;
             color: #7f8c8d;
             font-size: 0.9rem;
         }
-        
         .login-version {
             color: #95a5a6;
             font-size: 0.8rem;
             text-align: center;
             margin-top: 20px;
         }
-        
         .login-form-container {
-            flex: 1;
+            flex: 1 1 0;
             padding: 40px;
             display: flex;
             align-items: center;
+            justify-content: center;
+            min-width: 0;
+            background: #fff;
         }
-        
         .login-form {
             width: 100%;
+            max-width: 400px;
+            margin: 0 auto;
         }
-        
         .login-form h2 {
             margin-top: 0;
             text-align: center;
@@ -521,24 +520,20 @@ function showLoginScreen() {
             color: #2c3e50;
             font-size: 1.8rem;
         }
-        
         .login-description {
             text-align: center;
             color: #7f8c8d;
             margin-bottom: 25px;
         }
-        
         .form-group {
             margin-bottom: 20px;
         }
-        
         .form-group label {
             display: block;
             margin-bottom: 8px;
             color: #34495e;
             font-weight: 600;
         }
-        
         .form-control {
             width: 100%;
             padding: 12px 15px;
@@ -547,17 +542,14 @@ function showLoginScreen() {
             font-size: 1rem;
             transition: border-color 0.3s;
         }
-        
         .form-control:focus {
             border-color: #3498db;
             outline: none;
             box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
         }
-        
         .password-input-container {
             position: relative;
         }
-        
         .password-toggle {
             position: absolute;
             right: 10px;
@@ -569,48 +561,39 @@ function showLoginScreen() {
             cursor: pointer;
             font-size: 1rem;
         }
-        
         .password-toggle:hover {
             color: #7f8c8d;
         }
-        
         .remember-me {
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
-        
         .form-check {
             display: flex;
             align-items: center;
         }
-        
         .form-check-input {
             margin-left: 8px;
         }
-        
         .form-check-label {
             font-weight: normal;
             margin: 0;
         }
-        
         .forgot-password {
             color: #3498db;
             text-decoration: none;
             font-size: 0.9rem;
         }
-        
         .forgot-password:hover {
             text-decoration: underline;
         }
-        
         .btn-block {
             width: 100%;
             padding: 12px;
             font-size: 1rem;
             transition: background-color 0.3s, transform 0.3s;
         }
-        
         .btn-primary {
             background: linear-gradient(135deg, #3498db, #2980b9);
             border: none;
@@ -620,29 +603,24 @@ function showLoginScreen() {
             cursor: pointer;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
-        
         .btn-primary:hover {
             background: linear-gradient(135deg, #2980b9, #2471a3);
             transform: translateY(-2px);
             box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
         }
-        
         .login-help {
             text-align: center;
             margin-top: 25px;
             color: #7f8c8d;
             font-size: 0.9rem;
         }
-        
         .login-help a {
             color: #3498db;
             text-decoration: none;
         }
-        
         .login-help a:hover {
             text-decoration: underline;
         }
-        
         .login-footer {
             background-color: #f5f7fa;
             padding: 15px;
@@ -651,7 +629,6 @@ function showLoginScreen() {
             font-size: 0.9rem;
             border-top: 1px solid #e7e7e7;
         }
-        
         #loginError {
             background-color: rgba(231, 76, 60, 0.1);
             border-right: 3px solid #e74c3c;
@@ -660,32 +637,53 @@ function showLoginScreen() {
             font-size: 0.9rem;
             animation: shake 0.5s ease;
         }
-        
         @keyframes shake {
             0%, 100% { transform: translateX(0); }
             10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
             20%, 40%, 60%, 80% { transform: translateX(5px); }
         }
-        
         /* تصميم متجاوب */
-        @media (max-width: 900px) {
+        @media (max-width: 1200px) {
+            .login-container {
+                width: 100vw;
+                height: 100vh;
+            }
             .login-split {
                 flex-direction: column;
             }
-            
             .login-info, .login-form-container {
                 width: 100%;
+                min-width: 0;
                 padding: 20px;
+                min-height: unset;
             }
-            
-            .login-features {
+            .login-form {
+                max-width: 100%;
+            }
+        }
+        @media (max-width: 700px) {
+            .login-header {
+                padding: 20px 5px;
+            }
+            .login-info, .login-form-container {
+                padding: 10px;
+            }
+            .login-form {
+                padding: 0;
+            }
+            .feature-item {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .feature-icon {
+                margin-left: 0;
                 margin-bottom: 10px;
             }
         }
     `;
-    
+
     document.head.appendChild(style);
-    
+
     // تركيز الإدخال على اسم المستخدم
     setTimeout(() => {
         const usernameInput = document.getElementById('username');
